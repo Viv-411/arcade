@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { Toast } from "../mindmeld/useMindMeld";
+import type { Toast } from "../core/useRoomCore";
 
 interface Props {
   toasts: Toast[];

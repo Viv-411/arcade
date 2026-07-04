@@ -1,40 +1,43 @@
-import { useEffect, useState } from "react";
-import type { RoomSnapshot } from "@shared/types";
+import { useState, type ReactNode } from "react";
 import { MAX_PLAYERS, MIN_PLAYERS } from "@shared/types";
+import type { BaseSnapshotShape } from "../core/useRoomCore";
+import { useSecondsLeft } from "../core/hooks";
 
 interface Props {
-  room: RoomSnapshot;
+  room: BaseSnapshotShape;
   playerId: string | null;
+  /** Client route for share links, e.g. "/mindmeld". */
+  joinPath: string;
+  /** One-line summary of the room settings. */
+  settingsLine: string;
+  /** Extra lobby controls (e.g. a host-only difficulty selector). */
+  extras?: ReactNode;
+  roomTypeLabel?: string;
   onToggleReady: () => void;
   onStart: () => void;
   onLeave: () => void;
 }
 
-function useCountdown(endsAt: number | null): number | null {
-  const [left, setLeft] = useState<number | null>(null);
-  useEffect(() => {
-    if (!endsAt) {
-      setLeft(null);
-      return;
-    }
-    const update = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
-    update();
-    const t = setInterval(update, 250);
-    return () => clearInterval(t);
-  }, [endsAt]);
-  return left;
-}
-
-export default function Lobby({ room, playerId, onToggleReady, onStart, onLeave }: Props) {
+/** Shared lobby: room code, share link, player list with ready states, host start. */
+export default function GameLobby({
+  room,
+  playerId,
+  joinPath,
+  settingsLine,
+  extras,
+  onToggleReady,
+  onStart,
+  onLeave,
+}: Props) {
   const [copied, setCopied] = useState(false);
   const me = room.players.find((p) => p.id === playerId);
   const isHost = playerId === room.hostId;
   const allReady = room.players.every((p) => p.ready);
   const canStart =
     isHost && allReady && room.players.length >= MIN_PLAYERS && room.players.length <= MAX_PLAYERS;
-  const autoStartIn = useCountdown(room.lobbyCountdownEndsAt);
+  const autoStartIn = useSecondsLeft(room.lobbyCountdownEndsAt);
 
-  const shareLink = `${window.location.origin}/mindmeld?room=${room.code}`;
+  const shareLink = `${window.location.origin}${joinPath}?room=${room.code}`;
   const copyLink = () => {
     navigator.clipboard.writeText(shareLink).then(
       () => {
@@ -82,6 +85,8 @@ export default function Lobby({ room, playerId, onToggleReady, onStart, onLeave 
         ))}
       </ul>
 
+      {extras}
+
       <div className="lobby-buttons">
         <button className={`btn ${me?.ready ? "" : "primary"}`} onClick={onToggleReady}>
           {me?.ready ? "Unready" : "I'm ready!"}
@@ -106,11 +111,7 @@ export default function Lobby({ room, playerId, onToggleReady, onStart, onLeave 
         </p>
       )}
 
-      <p className="settings-line">
-        ⏱ {room.settings.roundTimeSec}s rounds · max{" "}
-        {room.settings.maxRounds === 0 ? "∞" : room.settings.maxRounds} rounds · match:{" "}
-        {room.settings.matchMode}
-      </p>
+      <p className="settings-line">{settingsLine}</p>
     </div>
   );
 }

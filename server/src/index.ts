@@ -9,6 +9,8 @@ import type {
   SocketData,
 } from "../../shared/events.js";
 import { MindMeldManager } from "./mindmeld/manager.js";
+import { TriviaManager } from "./trivia/manager.js";
+import { OpenTdbSource } from "./trivia/questionSource.js";
 import { InMemoryRoomStore } from "./store.js";
 import { createStatsStore } from "./stats.js";
 
@@ -32,6 +34,12 @@ const io = new Server<
 // Each game gets its own namespace; add more namespaces here as games ship.
 const stats = await createStatsStore(STATS_DB);
 new MindMeldManager(io.of("/mindmeld"), new InMemoryRoomStore(), stats);
+
+const questionSource = new OpenTdbSource();
+// Pre-fetch the OpenTDB category list + session token so the first game
+// doesn't pay the (rate-limited) warm-up cost at start time.
+questionSource.warmUp();
+new TriviaManager(io.of("/trivia"), new InMemoryRoomStore(), questionSource, stats);
 
 app.get("/healthz", (_req, res) => {
   res.json({ ok: true });
