@@ -128,7 +128,15 @@ npm start              # open http://localhost:3001
 
 # Type-check both sides without emitting
 npm run typecheck
+
+# End-to-end tests: builds, boots the server on a test port, and plays full
+# games of both Mind Meld and Speed Trivia (incl. a 10-player game) over real
+# sockets. `npm run test:only` skips the rebuild.
+npm test
 ```
+
+CI (GitHub Actions) runs typecheck + build + the full test suite on every push
+and pull request.
 
 ### Testing multiplayer locally
 
@@ -157,6 +165,12 @@ This is a **single long-lived stateful process** — deploy it to **Render, Rail
 Fly.io** (build command `npm install && npm run build`, start command `npm start`).
 **It cannot run on Vercel** or other serverless platforms: game state lives in server
 memory and Socket.IO needs a persistent connection to one process.
+
+**One-click deploy:** a `render.yaml` blueprint is included — on
+[Render](https://render.com), choose **New → Blueprint**, select this repo, and
+deploy (free tier). Free-tier caveats: the instance sleeps after ~15 min idle
+(~30–60s cold start; open games keep it awake) and the disk is ephemeral, so
+in-memory games and SQLite win stats don't survive restarts/deploys.
 
 ### Tradeoffs / limitations
 

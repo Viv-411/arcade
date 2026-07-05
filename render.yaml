@@ -1,0 +1,13 @@
+# Render Blueprint — deploy with one click:
+# https://dashboard.render.com -> New -> Blueprint -> select this repo.
+# Free tier note: the instance spins down after ~15 min idle (cold start
+# ~30-60s) and in-memory games are lost on restart; the disk is ephemeral so
+# SQLite win stats reset on deploys. See README "Deployment".
+services:
+  - type: web
+    name: arcade
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz

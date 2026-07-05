@@ -14,9 +14,9 @@ before making changes.
    (explicitly requested).
 3. **Pushing:** commits go to `origin main` → https://github.com/Viv-411/arcade.
    Ask before pushing unless the user's request already says to push.
-4. **Verify before committing:** run `npm run typecheck && npm run build`, then run
-   the socket smoke tests (see "Testing") for any game-logic change. Both games must
-   pass — Mind Meld must never regress when touching shared infra.
+4. **Verify before committing:** `npm run typecheck && npm test` (test builds and
+   plays full games of both titles over real sockets). Both games must pass — Mind
+   Meld must never regress when touching shared infra. CI runs the same on GitHub.
 5. Games must remain **testable in two browser tabs** on one machine — player
    identity is per-tab (`sessionStorage`), never move it to `localStorage`.
 6. When adding features, keep the game-module seams clean (see Architecture): shared
@@ -113,30 +113,28 @@ Run npm scripts **from the repo root** (the server resolves `client/dist` and
 
 ## Testing
 
-No test framework; verification is via **socket smoke-test scripts** that play real
-games against a built server, plus typecheck/build. The scripts live in the session
-scratchpad (not committed) — recreate them if missing; the pattern:
+`npm test` — builds, then `tests/run.mjs` boots the built server on port 4123 with
+an isolated temp stats DB, waits for /healthz, and runs each `tests/*.test.mjs` as a
+child process (real `socket.io-client` sockets playing full games). `npm run
+test:only` skips the rebuild. CI (`.github/workflows/ci.yml`) runs typecheck + build
++ tests on every push/PR.
 
-1. `npm run build`, then `PORT=3199 node dist/server/src/index.js &` (kill any stale
-   listener on the port first — `lsof -nP -iTCP:3199 -sTCP:LISTEN -t | xargs kill`;
-   a stale pre-change server once caused a phantom "no ack" failure).
-2. Connect N `socket.io-client` sockets to `http://localhost:3199/<namespace>`
-   (use `createRequire` pointing at this repo's package.json to import the client).
-3. Drive a full game with acks + event assertions. Speed the game up via createRoom
-   settings (e.g. `{ questionsPerGame: 3, revealPauseSec: 1, categoryVoteSec: 10 }`;
-   settings are clamped server-side — mins: 3 questions, 5s question time, 1s reveal).
-4. Register `waitFor(event)` listeners BEFORE triggering the action that emits them —
-   gameOver fires synchronously after the final reveal (missing this caused a false
-   test failure once).
-5. Test both games; also `rm -rf data` after tests (stats DB) — it's gitignored.
-6. Manual UI check: two tabs on http://localhost:5173/<game> (per-tab identity).
+Coverage: full Mind Meld win flow (normalization, no-repeat rejection at lock-in,
+unlock/re-lock, playAgain reset), full trivia flow (host-only difficulty, vote +
+early resolve, decoded questions, hidden correct answer, duplicate/late answer
+rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain), and
+a 10-player trivia game (11th join rejected; Mind Meld still capped at 4).
 
-Coverage that exists in the scripts: full Mind Meld win flow (normalization,
-no-repeat rejection at lock-in, unlock/re-lock, playAgain reset), full trivia flow
-(host-only difficulty, vote + early resolve, decoded questions, hidden correct
-answer, duplicate/late answer rejection, scoring bounds 500–1000, sorted scoreboard,
-tie winners, playAgain), 10-player trivia game + 11th join rejected + Mind Meld still
-capped at 4.
+Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new tests:
+
+- Register `waitFor(event)` listeners BEFORE triggering the action that emits them —
+  gameOver fires synchronously after the final reveal (caused a false failure once).
+- Speed games up via createRoom settings (clamped mins: 3 questions, 5s question
+  time, 1s reveal, 5s vote); trivia falls back to built-in questions offline or when
+  OpenTDB rate-limits, so tests stay deterministic in CI.
+- A stale server process on the test port once caused a phantom "no ack" failure —
+  the orchestrator surfaces the EADDRINUSE crash in its server-log output.
+- Manual UI check: two tabs on http://localhost:5173/<game> (per-tab identity).
 
 ## Environment / ops notes
 
@@ -152,8 +150,10 @@ capped at 4.
 
 ## Current state (update before every commit)
 
-- Both games fully working and verified end-to-end; deployed nowhere yet (hosting
-  plan: Render free tier — build `npm install && npm run build`, start `npm start`).
+- Both games fully working; end-to-end tests committed in `tests/` (`npm test`),
+  GitHub Actions CI on push/PR, and a `render.yaml` blueprint for one-click Render
+  free-tier deploy. Not yet deployed — the owner needs to click through Render's
+  New → Blueprint flow (account actions are the owner's to do).
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 
@@ -174,4 +174,8 @@ capped at 4.
 4. **10-player trivia (commit `0207b30`)** — per-game player limits (base manager
    overridables + GameLobby props); trivia 2–10, Mind Meld unchanged 2–4; verified
    with a 10-client game.
-5. **This file (CLAUDE.md)** — added with the update-before-commit rule.
+5. **CLAUDE.md (commit `5eaf092`)** — added with the update-before-commit rule.
+6. **Durability & deploy readiness** — moved the scratchpad smoke tests into
+   `tests/` with an orchestrator (`npm test` / `npm run test:only`), added GitHub
+   Actions CI (typecheck + build + full test suite), and a `render.yaml` blueprint
+   for one-click free-tier deploys.

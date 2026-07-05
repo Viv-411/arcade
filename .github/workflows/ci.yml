@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      # Plays full games of both Mind Meld and Speed Trivia over real sockets.
+      # Trivia falls back to built-in questions if OpenTDB is unreachable or
+      # rate-limits the runner, so this stays deterministic in CI.
+      - run: node tests/run.mjs
