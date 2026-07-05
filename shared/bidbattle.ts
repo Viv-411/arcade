@@ -90,7 +90,7 @@ export interface BiddingPublic {
 export interface DeliveryPublic {
   deliveringTeam: TeamId;
   target: number;
-  /** Live count only — items are visible to the delivering team during the sprint. */
+  /** Live count; every accepted item is also broadcast to both teams live. */
   count: number;
   deadline: number;
 }
@@ -160,7 +160,7 @@ export interface BidBattleRejoinResult {
   room: BidBattleSnapshot;
   yourVote: number | null;
   yourSuggestions: number;
-  /** Your team's live list if you rejoin mid-delivery on the delivering team. */
+  /** The live named list if you rejoin mid-delivery (visible to both teams). */
   deliveryItems: { raw: string; normalized: string }[] | null;
 }
 

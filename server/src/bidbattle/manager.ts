@@ -304,8 +304,7 @@ export class BidBattleManager extends BaseRoomManager<
     return {
       yourVote: g.votes.get(player.id) ?? null,
       yourSuggestions: g.suggestionCounts.get(player.id) ?? 0,
-      deliveryItems:
-        room.state === "delivery" && player.team === g.deliveringTeam ? g.items : null,
+      deliveryItems: room.state === "delivery" ? g.items : null,
     };
   }
 
@@ -736,9 +735,9 @@ export class BidBattleManager extends BaseRoomManager<
     }
     g.items.push({ raw, normalized });
     ack({ ok: true, data: { count: g.items.length } });
-    // Full item to the delivering team only; opponents just see the count.
+    // Both teams watch the list grow live — the waiting team sees every item too.
     this.bnsp
-      .to(this.teamRoom(room, g.deliveringTeam))
+      .to(room.code)
       .emit("itemAccepted", { raw, normalized, count: g.items.length });
     this.bnsp.to(room.code).emit("deliveryCount", { count: g.items.length });
   }
