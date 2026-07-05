@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { TriviaDifficulty } from "@shared/trivia";
+import {
+  TRIVIA_MAX_PLAYERS,
+  TRIVIA_MIN_PLAYERS,
+  type TriviaDifficulty,
+} from "@shared/trivia";
 import { useTrivia } from "../trivia/useTrivia";
 import GameEntry from "../components/GameEntry";
 import GameLobby from "../components/GameLobby";
@@ -23,7 +27,7 @@ export default function TriviaPage() {
         busy={state.busy}
         blurb={
           <>
-            Race 2–4 players through rapid-fire multiple choice questions. Vote on a
+            Race 2–10 players through rapid-fire multiple choice questions. Vote on a
             category, then answer <strong>fast</strong> — correct answers score more the
             quicker you lock them in!
           </>
@@ -65,7 +69,7 @@ export default function TriviaPage() {
         <section className="howto panel">
           <h3>How to play</h3>
           <ol>
-            <li>2–4 players vote on a question category (or leave it to chance).</li>
+            <li>2–10 players vote on a question category (or leave it to chance).</li>
             <li>Everyone answers the same multiple-choice questions at the same time.</li>
             <li>
               Correct answers earn up to 1000 points — the faster you answer, the more
@@ -83,7 +87,9 @@ export default function TriviaPage() {
         room={room}
         playerId={state.playerId}
         joinPath="/trivia"
-        settingsLine={`❓ ${room.settings.questionsPerGame} questions · ⏱ ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty}`}
+        settingsLine={`❓ ${room.settings.questionsPerGame} questions · ⏱ ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty} · up to ${TRIVIA_MAX_PLAYERS} players`}
+        minPlayers={TRIVIA_MIN_PLAYERS}
+        maxPlayers={TRIVIA_MAX_PLAYERS}
         extras={
           <label className="field difficulty-field">
             <span>Difficulty {isHost ? "" : "(host chooses)"}</span>

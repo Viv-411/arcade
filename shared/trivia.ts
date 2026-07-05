@@ -28,6 +28,9 @@ export const DEFAULT_TRIVIA_SETTINGS: TriviaSettings = {
 /** The always-present "Surprise Me / Any" category vote option. */
 export const ANY_CATEGORY_ID = -1;
 
+export const TRIVIA_MIN_PLAYERS = 2;
+export const TRIVIA_MAX_PLAYERS = 10;
+
 export interface TriviaPublicPlayer {
   id: string;
   name: string;

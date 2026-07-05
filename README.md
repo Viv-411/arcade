@@ -71,7 +71,7 @@ no-op — the game itself never touches the database.
 
 ## Speed Trivia — the rules
 
-- **2–4 players.** When the host starts, everyone votes on a category
+- **2–10 players.** When the host starts, everyone votes on a category
   (~5 random real categories plus "Surprise Me / Any", 15s). Most votes wins;
   ties break randomly; non-voters are ignored. Everyone voting ends the vote early.
 - The whole game's questions are then fetched at once and everyone answers the same
@@ -192,8 +192,10 @@ memory and Socket.IO needs a persistent connection to one process.
 ### Speed Trivia decisions
 
 - Trivia reuses the exact lobby/matchmaking/reconnection behavior as Mind Meld
-  (including 2–4 players and public auto-start) via the shared base modules; Mind
-  Meld's behavior was preserved unchanged through the refactor.
+  (including public auto-start) via the shared base modules; Mind Meld's behavior
+  was preserved unchanged through the refactor.
+- Player limits are per-game: Mind Meld stays 2–4, Speed Trivia allows **2–10**
+  (public trivia rooms auto-start immediately at 10 or 20s after 2+ join).
 - Trivia has **no AFK removal** by design (see rules above) — the shared AFK
   machinery is Mind Meld-specific and lives only in its manager.
 - A mid-question disconnect never ends the game on the spot; the "fewer than 2

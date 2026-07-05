@@ -3,6 +3,8 @@ import type { Ack, SocketData } from "../../../shared/events.js";
 import {
   ANY_CATEGORY_ID,
   DEFAULT_TRIVIA_SETTINGS,
+  TRIVIA_MAX_PLAYERS,
+  TRIVIA_MIN_PLAYERS,
   type CategoryOption,
   type ScoreboardEntry,
   type TriviaClientEvents,
@@ -92,6 +94,9 @@ function sample<T>(arr: T[], n: number): T[] {
 }
 
 export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer, TriviaRoom> {
+  protected minPlayers = TRIVIA_MIN_PLAYERS;
+  protected maxPlayers = TRIVIA_MAX_PLAYERS;
+
   constructor(
     private tnsp: TriviaNamespace,
     store: RoomStore<TriviaRoom>,

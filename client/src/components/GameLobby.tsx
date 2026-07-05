@@ -12,11 +12,16 @@ interface Props {
   settingsLine: string;
   /** Extra lobby controls (e.g. a host-only difficulty selector). */
   extras?: ReactNode;
-  roomTypeLabel?: string;
+  /** Player limits for this game (defaults: 2-4). */
+  minPlayers?: number;
+  maxPlayers?: number;
   onToggleReady: () => void;
   onStart: () => void;
   onLeave: () => void;
 }
+
+/** Don't render a wall of placeholders in big lobbies. */
+const MAX_EMPTY_SLOTS_SHOWN = 3;
 
 /** Shared lobby: room code, share link, player list with ready states, host start. */
 export default function GameLobby({
@@ -25,6 +30,8 @@ export default function GameLobby({
   joinPath,
   settingsLine,
   extras,
+  minPlayers = MIN_PLAYERS,
+  maxPlayers = MAX_PLAYERS,
   onToggleReady,
   onStart,
   onLeave,
@@ -34,8 +41,10 @@ export default function GameLobby({
   const isHost = playerId === room.hostId;
   const allReady = room.players.every((p) => p.ready);
   const canStart =
-    isHost && allReady && room.players.length >= MIN_PLAYERS && room.players.length <= MAX_PLAYERS;
+    isHost && allReady && room.players.length >= minPlayers && room.players.length <= maxPlayers;
   const autoStartIn = useSecondsLeft(room.lobbyCountdownEndsAt);
+  const openSlots = Math.max(0, maxPlayers - room.players.length);
+  const shownSlots = Math.min(openSlots, MAX_EMPTY_SLOTS_SHOWN);
 
   const shareLink = `${window.location.origin}${joinPath}?room=${room.code}`;
   const copyLink = () => {
@@ -78,11 +87,14 @@ export default function GameLobby({
             </span>
           </li>
         ))}
-        {Array.from({ length: MAX_PLAYERS - room.players.length }).map((_, i) => (
+        {Array.from({ length: shownSlots }).map((_, i) => (
           <li key={`empty-${i}`} className="empty-slot">
             Waiting for player…
           </li>
         ))}
+        {openSlots > shownSlots && (
+          <li className="empty-slot">…room for {openSlots - shownSlots} more</li>
+        )}
       </ul>
 
       {extras}
@@ -103,8 +115,8 @@ export default function GameLobby({
 
       {isHost && !canStart && (
         <p className="hint">
-          {room.players.length < MIN_PLAYERS
-            ? "Need at least 2 players to start."
+          {room.players.length < minPlayers
+            ? `Need at least ${minPlayers} players to start.`
             : !allReady
               ? "Waiting for everyone to be ready."
               : ""}
