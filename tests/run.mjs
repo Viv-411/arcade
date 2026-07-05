@@ -10,7 +10,12 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SERVER = path.join(ROOT, "dist", "server", "src", "index.js");
 const PORT = Number(process.env.TEST_PORT) || 4123;
-const TESTS = ["mindmeld.test.mjs", "trivia.test.mjs", "trivia-10p.test.mjs"];
+const TESTS = [
+  "mindmeld.test.mjs",
+  "trivia.test.mjs",
+  "trivia-10p.test.mjs",
+  "bidbattle.test.mjs",
+];
 
 if (!existsSync(SERVER)) {
   console.error("dist/ not found — run `npm run build` first (or use `npm test`).");

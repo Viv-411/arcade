@@ -25,9 +25,10 @@ before making changes.
 
 ## What this project is
 
-A real-time multiplayer web arcade for party games, playable in the browser. Two
-games are live: **Mind Meld** 🧠 (2–4 players converge on the same word) and
-**Speed Trivia** ⚡ (2–10 players race through multiple-choice questions). The
+A real-time multiplayer web arcade for party games, playable in the browser. Three
+games are live: **Mind Meld** 🧠 (2–4 players converge on the same word),
+**Speed Trivia** ⚡ (2–10 players race through multiple-choice questions), and
+**Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2). The
 README.md holds the full player-facing rules; this file holds contributor context.
 
 ## Architecture (the important mental model)
@@ -48,7 +49,12 @@ build`, start `npm start`, `PORT` env respected.
                             start validation, public auto-start (20s at 2+, instant at
                             max), rejoin/reconnect, lobby disconnect grace (30s),
                             host reassignment, empty-room GC (5 min), playAgain.
-                            Subclasses implement abstract hooks for game state.
+                            Subclasses implement abstract hooks for game state, plus
+                            optional overrides: roomMin/MaxPlayers(room) for per-room
+                            capacity, quickPlayEligible/quickPlayCreateSettings for
+                            mode-filtered matchmaking pools, canAutoStartPartial,
+                            canStartExtra (extra host-start validation), and
+                            onPlayerJoined/onRejoin (e.g. team socket rooms).
 /server/src/store.ts        RoomStore interface (in-memory Map impl) — ALL room state
                             access goes through it so Redis could replace it later.
 /server/src/stats.ts        SQLite win stats via better-sqlite3 (data/stats.db,
@@ -58,6 +64,11 @@ build`, start `npm start`, `PORT` env respected.
 /server/src/trivia/         manager.ts — vote → fetch → question loop → finish.
                             questionSource.ts — QuestionSource adapter interface +
                             OpenTdbSource (see OpenTDB notes below).
+/server/src/bidbattle/      manager.ts — team auction state machine (lobby →
+                            category → bidding → delivery → review → repeat/finish).
+                            Teams live on the game's own player type; per-team
+                            visibility uses socket.io rooms `${code}#A`/`#B`.
+                            categories.ts — curated category deck.
 /client/src/core/           useRoomCore.ts — client half of shared infra (per-tab
                             session, silent rejoin on connect, lobby actions, toasts,
                             patchRoom). hooks.ts — countdown/progress hooks.
@@ -86,6 +97,16 @@ scoring). Clients render optimistically but never decide results.
   game) or <2 remain in the room.
 - Trivia scoring: correct = `round(1000 × factor)`, factor decays linearly 1.0 → 0.5
   across the question time; wrong/no answer = 0. Ties share the win.
+- Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
+  play pools; no partial-lobby countdown. **Leaving mid-match forfeits for the
+  leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
+  bid turn counts as declining). Bid timeout = decline-to-raise, except an unopened
+  auction: opener timeout passes the opening once, and a second timeout redraws the
+  category with no point. Custom ballot categories need unanimous (1v1) / 3 (2v2)
+  votes or the round falls back to a random deck draw. Review is honor-system:
+  unflagged counts, un-defended flags drop, un-finalized defenses count. During
+  delivery, item text goes ONLY to the delivering team's socket room; opponents
+  get counts.
 
 ### OpenTDB constraints (server/src/trivia/questionSource.ts)
 
@@ -122,8 +143,12 @@ test:only` skips the rebuild. CI (`.github/workflows/ci.yml`) runs typecheck + b
 Coverage: full Mind Meld win flow (normalization, no-repeat rejection at lock-in,
 unlock/re-lock, playAgain reset), full trivia flow (host-only difficulty, vote +
 early resolve, decoded questions, hidden correct answer, duplicate/late answer
-rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain), and
-a 10-player trivia game (11th join rejected; Mind Meld still capped at 4).
+rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain),
+a 10-player trivia game (11th join rejected; Mind Meld still capped at 4), and
+Bid Battle 1v1 + 2v2 (ballot with custom approval, opener-timeout pass +
+double-timeout redraw, raise/challenge validation, dedup, team-only item
+visibility, full flag/defend/accept/uphold review math, forfeit on leave,
+per-mode quick play pools).
 
 Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new tests:
 
@@ -150,10 +175,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 
 ## Current state (update before every commit)
 
-- Both games fully working; end-to-end tests committed in `tests/` (`npm test`),
-  GitHub Actions CI on push/PR, and a `render.yaml` blueprint for one-click Render
-  free-tier deploy. Not yet deployed — the owner needs to click through Render's
-  New → Blueprint flow (account actions are the owner's to do).
+- All three games fully working; end-to-end tests committed in `tests/`
+  (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint for
+  one-click Render free-tier deploy. Not yet deployed — the owner needs to click
+  through Render's New → Blueprint flow (account actions are the owner's to do).
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 
@@ -175,7 +200,13 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
    overridables + GameLobby props); trivia 2–10, Mind Meld unchanged 2–4; verified
    with a 10-client game.
 5. **CLAUDE.md (commit `5eaf092`)** — added with the update-before-commit rule.
-6. **Durability & deploy readiness** — moved the scratchpad smoke tests into
-   `tests/` with an orchestrator (`npm test` / `npm run test:only`), added GitHub
-   Actions CI (typecheck + build + full test suite), and a `render.yaml` blueprint
-   for one-click free-tier deploys.
+6. **Durability & deploy readiness (commit `1fd2fc1`)** — moved the scratchpad
+   smoke tests into `tests/` with an orchestrator (`npm test` / `npm run
+   test:only`), added GitHub Actions CI (typecheck + build + full test suite), and
+   a `render.yaml` blueprint for one-click free-tier deploys.
+7. **Bid Battle** — third game: team category-naming auction (1v1/2v2). Added the
+   optional capacity/matchmaking/team hooks to the shared core (defaults preserve
+   the other games; verified by the existing suite). The listener-ordering race
+   bit AGAIN here — the pre-existing trivia tests registered questionReveal
+   listeners after answering and flaked once 4+ extra clients ran in the same
+   process; fixed by registering before acting (the helpers.mjs gotcha).

@@ -1,7 +1,7 @@
 # 🕹 Arcade
 
-A real-time multiplayer web arcade for party games: **Mind Meld** 🧠 and
-**Speed Trivia** ⚡.
+A real-time multiplayer web arcade for party games: **Mind Meld** 🧠,
+**Speed Trivia** ⚡, and **Bid Battle** 💰.
 
 ## How it works
 
@@ -114,6 +114,46 @@ implementation handles OpenTDB's constraints:
   offline-safe resort fills from a small built-in question set — a game always gets
   its questions.
 
+## Bid Battle — the rules
+
+A team category-naming auction, **1v1 or 2v2** (exactly 2 or 4 players, Team A vs
+Team B). First team to 3 points (configurable) wins the match. You pick the mode
+before choosing Quick Play / Create Private / Join by Code; quick play pools are
+per-mode and auto-balance four solos into teams.
+
+Each round:
+
+1. **Category.** Quick play auto-draws from a curated server deck (~45 wide
+   categories: car brands, dog breeds, world capitals…). Private rooms hold a 20s
+   **ballot**: anyone may add custom categories (2 per player, 8 total) and everyone
+   casts one vote. A custom category wins ONLY if it reaches the approval
+   threshold — **unanimous in 1v1, 3 votes in 2v2** — otherwise (including a 2–2
+   split) the round uses a random deck draw. Non-voters just make approval harder.
+2. **Bidding.** Teams alternate on a 10s clock; any member may act for their team
+   (the first action locks the turn). **Raise** to any higher integer, or
+   **decline to raise ("make them name it")** — which ends the auction and makes
+   the last/highest bidder deliver. **Timeout = declining**: the silent team hands
+   the bid to the last bidder (nobody loses a point to the clock). Opening-turn
+   edge case: if the opener times out with no bid, the opening passes to the other
+   team; if they *also* time out, no point is awarded and a fresh category is drawn.
+3. **Delivery.** The delivering team has 60s to name at least their bid. Teammates
+   type into one shared live list; **exact duplicates are auto-rejected instantly**
+   (same normalization as Mind Meld). The opposing team sees only the live count.
+   Name extra for a buffer, or hit Done early.
+4. **Review (honor system).** The full list is revealed. The opposing team flags
+   items as invalid/semantic dupes; the namers **concede** or **defend** each flag;
+   the opposing team then **accepts** or **upholds** each defense. Burden is on the
+   namer — an upheld flag drops the item. Timeout defaults: unflagged items count,
+   un-defended flags drop, un-finalized defenses count. Valid count ≥ bid → the
+   delivering team scores; otherwise the challengers do. The losing team opens the
+   next auction.
+
+> ⚠️ **Honor mode caveat:** counting and exact-duplicate detection are automatic,
+> but validity and semantic duplicates ("Mercedes" vs "Mercedes-Benz") are judged
+> by the *opposing team*, with no external validation. A bad-faith challenger can
+> uphold flags on perfectly valid items. It's designed for private lobbies with
+> people you trust; quick play uses the same honor review — play nice.
+
 ## Running it
 
 ```bash
@@ -224,3 +264,26 @@ in-memory games and SQLite win stats don't survive restarts/deploys.
 - If two rooms start games at nearly the same moment, the second room's question
   fetch waits ~5s in the throttle queue — players just see "Loading questions…"
   slightly longer.
+
+### Bid Battle decisions
+
+- The team layer is Bid Battle-only: the shared room core gained optional,
+  backwards-compatible hooks (per-room player capacity, mode-filtered Quick Play,
+  partial-auto-start opt-out, extra start validation, join/rejoin callbacks) and
+  the game keeps `team` on its own player type. Mind Meld and Trivia are untouched.
+- Players are auto-assigned to the smaller team on join (so lobbies default to
+  balanced); private lobbies can swap freely before start; the host can flip
+  1v1/2v2 in the lobby, which re-balances everyone in join order.
+- Quick play rooms auto-start the moment they're full (2 or 4) — there is no
+  partial-lobby countdown since team sizes are exact. Public full rooms also
+  restart immediately on Play Again.
+- **Leaving mid-match forfeits it for the leaver's team** (in 2v2 the whole team
+  loses). Disconnects do NOT forfeit — timers keep the match moving (a silent
+  bidding turn declines, missing delivery time just yields fewer items), and a
+  reconnecting player resumes on their team with full state.
+- A 3-second pause separates the category reveal from the first bid clock so
+  everyone can read the category.
+- Ballot votes can be changed until the ballot resolves; it resolves early once
+  every connected player has voted. Bids are capped at 500.
+- Category ballots dedupe suggestions by normalized text; the deck avoids
+  repeating a category within the same match.

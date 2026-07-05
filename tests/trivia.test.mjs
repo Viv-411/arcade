@@ -77,9 +77,11 @@ const overPromise = waitFor(a, "gameOver", () => true, 90000);
 for (let i = 1; i < 3; i++) {
   await waitFor(a, "questionStart", (p) => p.index === i, 60000);
   await waitFor(b, "questionStart", (p) => p.index === i, 10000);
+  // Register BEFORE answering: the reveal fires the instant the last answer lands.
+  const revealPromise = waitFor(a, "questionReveal", (p) => p.index === i, 15000);
   await emit(a, "answer", { optionIndex: 0 });
   await emit(b, "answer", { optionIndex: 0 });
-  await waitFor(a, "questionReveal", (p) => p.index === i, 15000);
+  await revealPromise;
   console.log(`  ok: question ${i + 1} resolved`);
 }
 const over = await overPromise;

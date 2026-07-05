@@ -9,6 +9,7 @@ import type {
   SocketData,
 } from "../../shared/events.js";
 import { MindMeldManager } from "./mindmeld/manager.js";
+import { BidBattleManager } from "./bidbattle/manager.js";
 import { TriviaManager } from "./trivia/manager.js";
 import { OpenTdbSource } from "./trivia/questionSource.js";
 import { InMemoryRoomStore } from "./store.js";
@@ -40,6 +41,8 @@ const questionSource = new OpenTdbSource();
 // doesn't pay the (rate-limited) warm-up cost at start time.
 questionSource.warmUp();
 new TriviaManager(io.of("/trivia"), new InMemoryRoomStore(), questionSource, stats);
+
+new BidBattleManager(io.of("/bidbattle"), new InMemoryRoomStore(), stats);
 
 app.get("/healthz", (_req, res) => {
   res.json({ ok: true });

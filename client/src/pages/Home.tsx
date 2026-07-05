@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 
 const COMING_SOON = [
   { name: "Sketch Wars", emoji: "🎨", blurb: "Draw fast, guess faster." },
-  { name: "Word Duel", emoji: "⚔️", blurb: "Head-to-head word battles." },
 ];
 
 export default function Home() {
@@ -33,6 +32,15 @@ export default function Home() {
           <p>
             Vote on a category, then race to answer multiple-choice questions —
             faster correct answers score more points.
+          </p>
+          <span className="badge play-badge">▶ Play now</span>
+        </Link>
+        <Link to="/bidbattle" className="game-card active">
+          <div className="game-emoji">💰</div>
+          <h2>Bid Battle</h2>
+          <p>
+            Team auction, 1v1 or 2v2: bid how many <em>car brands</em> you can name —
+            or dare the other team to prove their number.
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>

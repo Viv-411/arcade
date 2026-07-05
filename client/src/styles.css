@@ -989,3 +989,279 @@ select:focus {
   max-width: 320px;
   margin: 0 auto 12px;
 }
+
+/* ---------- bid battle ---------- */
+
+.mode-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.team-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+@media (min-width: 560px) {
+  .team-panels {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.team-panel {
+  border: 2px solid var(--panel-edge);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+
+.team-panel h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
+}
+
+.team-panel.team-a {
+  border-color: var(--cyan);
+}
+
+.team-panel.team-a h3 {
+  color: var(--cyan);
+}
+
+.team-panel.team-b {
+  border-color: var(--pink);
+}
+
+.team-panel.team-b h3 {
+  color: var(--pink);
+}
+
+.team-panel .player-list {
+  margin: 8px 0;
+}
+
+.score-bar {
+  gap: 10px;
+}
+
+.team-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  border-radius: 10px;
+  padding: 4px 10px;
+}
+
+.team-score.team-a .team-points {
+  color: var(--cyan);
+}
+
+.team-score.team-b .team-points {
+  color: var(--pink);
+}
+
+.team-score.mine {
+  background: #0f0f26;
+}
+
+.team-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.team-points {
+  font-family: var(--font-arcade);
+  font-size: 1.3rem;
+}
+
+.score-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.score-target {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.category-banner {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 0;
+}
+
+.category-banner strong {
+  color: var(--yellow);
+}
+
+.bid-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #0f0f26;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.bid-amount {
+  font-family: var(--font-arcade);
+  font-size: 2rem;
+  color: var(--yellow);
+  margin-right: 12px;
+}
+
+.bid-holder {
+  color: var(--muted);
+}
+
+.turn-banner {
+  text-align: center;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.turn-banner.my-turn {
+  color: var(--green);
+  animation: pulse 1.5s infinite;
+}
+
+.bid-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.challenge-btn {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: transparent;
+}
+
+.bid-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.bid-chip.team-a {
+  color: var(--cyan);
+}
+
+.bid-chip.team-b {
+  color: var(--pink);
+}
+
+.delivery-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.delivery-count-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.delivery-count {
+  font-family: var(--font-arcade);
+  font-size: 2.2rem;
+  color: var(--green);
+}
+
+.delivery-target {
+  color: var(--muted);
+}
+
+.delivery-list {
+  margin-top: 12px;
+}
+
+.opposing-wait {
+  text-align: center;
+  color: var(--muted);
+  padding: 16px 0;
+}
+
+.review-list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f0f26;
+  border-radius: 10px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.review-word {
+  flex: 1;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.review-status {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.review-item.status-conceded .review-word,
+.review-item.status-upheld .review-word {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.review-item.status-flagged {
+  border: 1px solid var(--yellow);
+}
+
+.review-item.status-accepted {
+  border: 1px solid var(--green);
+}
+
+.review-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.suggested-by {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}

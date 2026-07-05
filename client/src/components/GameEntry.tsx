@@ -5,6 +5,8 @@ import { NAME_KEY } from "../core/useRoomCore";
 interface Props {
   busy: boolean;
   blurb: ReactNode;
+  /** Prominent controls between the name field and the action buttons (e.g. a mode toggle). */
+  preActions?: ReactNode;
   /** Optional game-specific room settings controls (state owned by the page). */
   advanced?: ReactNode;
   onCreate: (name: string) => void;
@@ -13,7 +15,15 @@ interface Props {
 }
 
 /** Shared entry screen: name + Create private room / Join with code / Quick Play. */
-export default function GameEntry({ busy, blurb, advanced, onCreate, onJoin, onQuickPlay }: Props) {
+export default function GameEntry({
+  busy,
+  blurb,
+  preActions,
+  advanced,
+  onCreate,
+  onJoin,
+  onQuickPlay,
+}: Props) {
   const [params] = useSearchParams();
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? "");
   const [code, setCode] = useState(() => (params.get("room") ?? "").toUpperCase());
@@ -38,6 +48,8 @@ export default function GameEntry({ busy, blurb, advanced, onCreate, onJoin, onQ
           autoFocus
         />
       </label>
+
+      {preActions}
 
       <div className="entry-buttons">
         <button

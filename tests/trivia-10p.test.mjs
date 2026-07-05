@@ -58,11 +58,13 @@ const overPromise = waitFor(host, "gameOver", () => true, 90000);
 for (let i = 0; i < 3; i++) {
   if (i > 0) await waitFor(host, "questionStart", (p) => p.index === i, 60000);
   await sleep(150); // let questionStart reach everyone
+  // Register BEFORE answering: the reveal fires the instant the last answer lands.
+  const revealPromise = waitFor(host, "questionReveal", (p) => p.index === i, 20000);
   const acks = await Promise.all(
     clients.map((c, idx) => emit(c, "answer", { optionIndex: idx % 4 })),
   );
   assert(acks.every((a) => a.ok), `all 10 answers accepted on question ${i + 1}`);
-  const rev = await waitFor(host, "questionReveal", (p) => p.index === i, 20000);
+  const rev = await revealPromise;
   assert(rev.perPlayer.length === N, `reveal ${i + 1} covers all ${N} players`);
   assert(rev.scoreboard.length === N, `scoreboard ${i + 1} has ${N} entries`);
 }

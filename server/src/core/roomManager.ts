@@ -108,6 +108,33 @@ export abstract class BaseRoomManager<
   protected afterLeaveDuringGame(_room: TRoom): void {}
   /** Called after a disconnect while a game is in progress. */
   protected onDisconnectDuringGame(_room: TRoom): void {}
+  /** Per-room player limits — override when capacity depends on room settings. */
+  protected roomMinPlayers(_room: TRoom): number {
+    return this.minPlayers;
+  }
+  protected roomMaxPlayers(_room: TRoom): number {
+    return this.maxPlayers;
+  }
+  /** Whether a public lobby may countdown-start before it is full. */
+  protected canAutoStartPartial(_room: TRoom): boolean {
+    return true;
+  }
+  /** Extra host-start validation; return an error message to block the start. */
+  protected canStartExtra(_room: TRoom): string | null {
+    return null;
+  }
+  /** Whether a public lobby matches this quickPlay request (e.g. same mode). */
+  protected quickPlayEligible(_room: TRoom, _payload: unknown): boolean {
+    return true;
+  }
+  /** Settings for the room quickPlay creates when no lobby matched. */
+  protected quickPlayCreateSettings(_payload: unknown): Partial<TSettings> | undefined {
+    return undefined;
+  }
+  /** Called when a player joins a room (e.g. to auto-assign a team). */
+  protected onPlayerJoined(_room: TRoom, _player: TPlayer, _socket: AnySocket): void {}
+  /** Called when a player rejoins and is rebound (e.g. to rejoin team rooms). */
+  protected onRejoin(_room: TRoom, _player: TPlayer, _socket: AnySocket): void {}
 
   // ---------- base event wiring ----------
 
@@ -190,6 +217,7 @@ export abstract class BaseRoomManager<
     socket.data.roomCode = room.code;
     socket.join(room.code);
     this.cancelEmptyRoomTimer(room);
+    this.onPlayerJoined(room, player, socket);
     socket.to(room.code).emit("playerJoined", { player: this.publicPlayer(room, player) });
     this.updateLobbyCountdown(room);
     this.broadcastRoom(room);
@@ -257,8 +285,11 @@ export abstract class BaseRoomManager<
     if (room.state !== "lobby") {
       return ack({ ok: false, error: "That game has already started." });
     }
-    if (room.players.size >= this.maxPlayers) {
-      return ack({ ok: false, error: `That room is full (${this.maxPlayers} players max).` });
+    if (room.players.size >= this.roomMaxPlayers(room)) {
+      return ack({
+        ok: false,
+        error: `That room is full (${this.roomMaxPlayers(room)} players max).`,
+      });
     }
     this.detachFromCurrentRoom(socket);
     const player = this.addPlayerToRoom(socket, room, name);
@@ -286,7 +317,8 @@ export abstract class BaseRoomManager<
         room.isPublic &&
         room.state === "lobby" &&
         room.players.size >= 1 &&
-        room.players.size < this.maxPlayers &&
+        room.players.size < this.roomMaxPlayers(room) &&
+        this.quickPlayEligible(room, payload) &&
         (!oldest || room.createdAt < oldest.createdAt)
       ) {
         oldest = room;
@@ -295,7 +327,11 @@ export abstract class BaseRoomManager<
     if (oldest) {
       return this.joinRoom(socket, { code: oldest.code, name }, ack);
     }
-    this.createRoom(socket, { name, isPublic: true }, ack);
+    this.createRoom(
+      socket,
+      { name, isPublic: true, settings: this.quickPlayCreateSettings(payload) },
+      ack,
+    );
   }
 
   /**
@@ -310,16 +346,16 @@ export abstract class BaseRoomManager<
       room.lobbyCountdownEndsAt = null;
     }
     const connected = [...room.players.values()].filter((p) => p.connected);
-    if (room.players.size >= this.maxPlayers) {
+    if (room.players.size >= this.roomMaxPlayers(room)) {
       this.launchGame(room);
       return;
     }
-    if (connected.length >= this.minPlayers) {
+    if (connected.length >= this.roomMinPlayers(room) && this.canAutoStartPartial(room)) {
       room.lobbyCountdownEndsAt = Date.now() + PUBLIC_AUTO_START_MS;
       room.lobbyCountdownTimer = setTimeout(() => {
         room.lobbyCountdownTimer = null;
         room.lobbyCountdownEndsAt = null;
-        if (room.state === "lobby" && room.players.size >= this.minPlayers) {
+        if (room.state === "lobby" && room.players.size >= this.roomMinPlayers(room)) {
           this.launchGame(room);
         } else {
           this.broadcastRoom(room);
@@ -348,12 +384,24 @@ export abstract class BaseRoomManager<
       this.emitError(socket, "Only the host can start the game.");
       return;
     }
-    if (room.players.size < this.minPlayers || room.players.size > this.maxPlayers) {
-      this.emitError(socket, `This game needs ${this.minPlayers}-${this.maxPlayers} players.`);
+    const min = this.roomMinPlayers(room);
+    const max = this.roomMaxPlayers(room);
+    if (room.players.size < min || room.players.size > max) {
+      this.emitError(
+        socket,
+        min === max
+          ? `This game needs exactly ${min} players.`
+          : `This game needs ${min}-${max} players.`,
+      );
       return;
     }
     if (![...room.players.values()].every((p) => p.ready)) {
       this.emitError(socket, "Everyone must be ready first.");
+      return;
+    }
+    const blocked = this.canStartExtra(room);
+    if (blocked) {
+      this.emitError(socket, blocked);
       return;
     }
     this.launchGame(room);
@@ -492,6 +540,7 @@ export abstract class BaseRoomManager<
     socket.data.playerId = player.id;
     socket.data.roomCode = room.code;
     socket.join(room.code);
+    this.onRejoin(room, player, socket);
     ack({
       ok: true,
       data: {
