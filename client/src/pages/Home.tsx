@@ -39,8 +39,8 @@ export default function Home() {
           <div className="game-emoji">💰</div>
           <h2>Bid Battle</h2>
           <p>
-            Team auction, 1v1 or 2v2: bid how many <em>car brands</em> you can name —
-            or dare the other team to prove their number.
+            Team auction, 1v1 or 2v2: bid how many items in a category your team can
+            name — or dare the other team to prove their number.
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>

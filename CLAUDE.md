@@ -215,4 +215,6 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 8. **Delivery spectating** — owner asked for the waiting team to see the named
    list live during delivery (same view as the namers), replacing the original
    count-only opponent view. itemAccepted now broadcasts room-wide; client state
-   renamed myItems → liveItems.
+   renamed myItems → liveItems. (Owner separately committed the server half as
+   `aa0ec81 "Bidding Wars v1"` mid-task; the rest landed in `c5d7f3d`.) Game
+   descriptions then made category-generic (not "car brands") per owner request.

@@ -27,9 +27,9 @@ export default function BidBattlePage() {
           busy={state.busy}
           blurb={
             <>
-              A team category auction: bid how many <em>car brands</em> (or dog breeds, or world
-              capitals…) your team can name. Raise the stakes — or say{" "}
-              <strong>"make them name it"</strong> and watch them sweat.
+              A team auction: a category drops, and teams bid how many items they can name.
+              Raise the stakes — or say <strong>"make them name it"</strong> and watch them
+              sweat.
             </>
           }
           preActions={
