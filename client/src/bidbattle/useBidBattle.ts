@@ -14,8 +14,8 @@ import type {
 import { useRoomCore, type GameApi } from "../core/useRoomCore";
 
 interface BidBattleGameState {
-  /** My team's live list during the delivery sprint. */
-  myItems: { raw: string; normalized: string }[];
+  /** The live named list during the delivery sprint (visible to both teams). */
+  liveItems: { raw: string; normalized: string }[];
   myVote: number | null;
   result: RoundResult | null;
   winner: { winnerTeam: TeamId; scores: Record<TeamId, number>; reason?: string } | null;
@@ -31,7 +31,7 @@ type GameAction =
   | { type: "reset"; init?: Partial<BidBattleGameState> };
 
 const initialGame: BidBattleGameState = {
-  myItems: [],
+  liveItems: [],
   myVote: null,
   result: null,
   winner: null,
@@ -40,16 +40,16 @@ const initialGame: BidBattleGameState = {
 function gameReducer(state: BidBattleGameState, action: GameAction): BidBattleGameState {
   switch (action.type) {
     case "newRound":
-      return { ...state, myItems: [], myVote: null, result: null };
+      return { ...state, liveItems: [], myVote: null, result: null };
     case "votedSelf":
       return { ...state, myVote: action.optionId };
     case "itemAccepted":
       return {
         ...state,
-        myItems: [...state.myItems, { raw: action.raw, normalized: action.normalized }],
+        liveItems: [...state.liveItems, { raw: action.raw, normalized: action.normalized }],
       };
     case "setItems":
-      return { ...state, myItems: action.items };
+      return { ...state, liveItems: action.items };
     case "roundResult":
       return { ...state, result: action.result };
     case "gameOver":
@@ -70,7 +70,7 @@ export function useBidBattle() {
       dispatchGame({
         type: "reset",
         init: {
-          myItems: data.deliveryItems ?? [],
+          liveItems: data.deliveryItems ?? [],
           myVote: data.yourVote,
           winner:
             data.room.state === "finished" && data.room.winnerTeam

@@ -194,18 +194,18 @@ const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10,
   const end = await ended;
   assert(end.deliveringTeam === turn && end.target === 1, "opponents challenge at 1");
 
-  // Teammate sees accepted items; opponents only see the count.
+  // Both teams watch the named list live: teammates AND opponents see items.
   const [d1, d2] = socksByTeam[end.deliveringTeam];
   const [o1] = socksByTeam[end.deliveringTeam === "A" ? "B" : "A"];
-  const mateSees = waitFor(d2, "itemAccepted", () => true, 5000);
+  const mateSees = waitFor(d2, "itemAccepted", (p) => p.raw === "Alpha Thing", 5000);
+  const oppSees = waitFor(o1, "itemAccepted", (p) => p.raw === "Alpha Thing", 5000);
   const oppCount = waitFor(o1, "deliveryCount", (p) => p.count === 1, 5000);
-  let oppSawItem = false;
-  o1.once("itemAccepted", () => (oppSawItem = true));
   const item = await emit(d1, "submitItem", { text: "Alpha Thing" });
   assert(item.ok, "delivering teammate submits an item");
   await mateSees;
+  await oppSees;
   await oppCount;
-  assert(!oppSawItem, "opposing team sees the count but not the item");
+  assert(true, "teammates AND the waiting team see each item live");
 
   const resultP = waitFor(p1, "roundResult", () => true, 15000);
   const overP = waitFor(p1, "gameOver", () => true, 20000);

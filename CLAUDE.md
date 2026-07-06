@@ -105,8 +105,9 @@ scoring). Clients render optimistically but never decide results.
   category with no point. Custom ballot categories need unanimous (1v1) / 3 (2v2)
   votes or the round falls back to a random deck draw. Review is honor-system:
   unflagged counts, un-defended flags drop, un-finalized defenses count. During
-  delivery, item text goes ONLY to the delivering team's socket room; opponents
-  get counts.
+  delivery BOTH teams see every accepted item live (owner request 2026-07-05;
+  originally count-only for opponents). The `${code}#A`/`#B` team socket rooms
+  remain for future team-scoped messaging.
 
 ### OpenTDB constraints (server/src/trivia/questionSource.ts)
 
@@ -204,9 +205,14 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
    smoke tests into `tests/` with an orchestrator (`npm test` / `npm run
    test:only`), added GitHub Actions CI (typecheck + build + full test suite), and
    a `render.yaml` blueprint for one-click free-tier deploys.
-7. **Bid Battle** — third game: team category-naming auction (1v1/2v2). Added the
-   optional capacity/matchmaking/team hooks to the shared core (defaults preserve
-   the other games; verified by the existing suite). The listener-ordering race
-   bit AGAIN here — the pre-existing trivia tests registered questionReveal
-   listeners after answering and flaked once 4+ extra clients ran in the same
-   process; fixed by registering before acting (the helpers.mjs gotcha).
+7. **Bid Battle (commit `5c2f2a9`)** — third game: team category-naming auction
+   (1v1/2v2). Added the optional capacity/matchmaking/team hooks to the shared
+   core (defaults preserve the other games; verified by the existing suite). The
+   listener-ordering race bit AGAIN here — the pre-existing trivia tests
+   registered questionReveal listeners after answering and flaked once 4+ extra
+   clients ran in the same process; fixed by registering before acting (the
+   helpers.mjs gotcha).
+8. **Delivery spectating** — owner asked for the waiting team to see the named
+   list live during delivery (same view as the namers), replacing the original
+   count-only opponent view. itemAccepted now broadcasts room-wide; client state
+   renamed myItems → liveItems.

@@ -6,12 +6,12 @@ import { useSecondsLeft } from "../core/hooks";
 interface Props {
   room: BidBattleSnapshot;
   myTeam: TeamId | null;
-  myItems: { raw: string; normalized: string }[];
+  liveItems: { raw: string; normalized: string }[];
   onSubmitItem: (text: string, onResult?: (ok: boolean) => void) => void;
   onDone: () => void;
 }
 
-export default function DeliveryScreen({ room, myTeam, myItems, onSubmitItem, onDone }: Props) {
+export default function DeliveryScreen({ room, myTeam, liveItems, onSubmitItem, onDone }: Props) {
   const delivery = room.delivery;
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -20,7 +20,7 @@ export default function DeliveryScreen({ room, myTeam, myItems, onSubmitItem, on
   if (!delivery) return null;
   const delivering = myTeam === delivery.deliveringTeam;
   const normalized = normalizeWord(text);
-  const alreadySaid = normalized.length > 0 && myItems.some((i) => i.normalized === normalized);
+  const alreadySaid = normalized.length > 0 && liveItems.some((i) => i.normalized === normalized);
 
   const submit = () => {
     if (!normalized || alreadySaid) return;
@@ -65,10 +65,10 @@ export default function DeliveryScreen({ room, myTeam, myItems, onSubmitItem, on
           {alreadySaid && <p className="used-warning">⚠ already said — doesn't count</p>}
           <p className="hint">
             Name at least {delivery.target}. Extras build a buffer for the review. Your whole team
-            shares this list.
+            shares this list — and the other team is watching it live.
           </p>
           <div className="word-chips delivery-list">
-            {myItems.map((i, idx) => (
+            {liveItems.map((i, idx) => (
               <span key={idx} className="word-chip">
                 {i.raw}
               </span>
@@ -82,11 +82,18 @@ export default function DeliveryScreen({ room, myTeam, myItems, onSubmitItem, on
         </>
       ) : (
         <div className="opposing-wait">
-          <div className="spinner" />
           <p>
-            Team {delivery.deliveringTeam} is naming <strong>{room.category}</strong>… You'll get
-            to challenge their list in the review.
+            Team {delivery.deliveringTeam} is naming <strong>{room.category}</strong> — watch
+            their list and get your flags ready for the review!
           </p>
+          <div className="word-chips delivery-list">
+            {liveItems.map((i, idx) => (
+              <span key={idx} className="word-chip">
+                {i.raw}
+              </span>
+            ))}
+            {liveItems.length === 0 && <span className="hint">Nothing yet…</span>}
+          </div>
         </div>
       )}
     </div>

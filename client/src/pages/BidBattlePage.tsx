@@ -131,7 +131,7 @@ export default function BidBattlePage() {
         <DeliveryScreen
           room={room}
           myTeam={myTeam}
-          myItems={state.myItems}
+          liveItems={state.liveItems}
           onSubmitItem={actions.submitItem}
           onDone={actions.finishDelivery}
         />

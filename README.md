@@ -138,8 +138,9 @@ Each round:
    team; if they *also* time out, no point is awarded and a fresh category is drawn.
 3. **Delivery.** The delivering team has 60s to name at least their bid. Teammates
    type into one shared live list; **exact duplicates are auto-rejected instantly**
-   (same normalization as Mind Meld). The opposing team sees only the live count.
-   Name extra for a buffer, or hit Done early.
+   (same normalization as Mind Meld). The waiting team watches the list grow live
+   too — same view as the namers — so they can line up their review flags. Name
+   extra for a buffer, or hit Done early.
 4. **Review (honor system).** The full list is revealed. The opposing team flags
    items as invalid/semantic dupes; the namers **concede** or **defend** each flag;
    the opposing team then **accepts** or **upholds** each defense. Burden is on the
