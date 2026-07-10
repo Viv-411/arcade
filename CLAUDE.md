@@ -121,6 +121,32 @@ scoring). Clients render optimistically but never decide results.
   General Knowledge (id 9) → built-in question set (so games start even offline).
 - Never send `correctIndex` to clients before the reveal.
 
+## Accounts (Supabase) — foundation only
+
+Optional accounts exist (email/password + Google OAuth) but **nothing is gated**:
+anonymous play is a hard requirement and must never regress. Key facts:
+
+- Client: `client/src/auth/` — `supabaseClient.ts` exports a NULL client when
+  `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are unset (everything must keep
+  working in that state); `AuthContext.tsx` provides `useAuth()` incl. a
+  `requireAuth(action)` gate for FUTURE gated actions (none exist yet — don't
+  gate existing features). Corner `AuthButton` + `AuthModal` are the only auth UI.
+- Server: `server/src/auth.ts` verifies Supabase JWTs (HS256,
+  `SUPABASE_JWT_SECRET`), attaches `req.userId` on `/api/*` and
+  `socket.data.userId` via per-namespace handshake middleware — always optional,
+  never rejects. `server/src/supabaseAdmin.ts` is the only sanctioned service-role
+  entry point (returns null when unconfigured). Server loads root `.env` via
+  `process.loadEnvFile` (Node 21+).
+- Schema: `supabase/migrations/` — profiles (signup trigger creates rows),
+  trivia_sets, questions; RLS on everything (see README for policies + manual
+  test checklist). `shared/database.types.ts` is HAND-WRITTEN to match; after
+  schema changes run `npm run db:types` against a running local stack.
+- Env vars documented in `.env.example` + README; the owner supplies all keys
+  from the Supabase dashboard. Google OAuth requires the manual checklist in the
+  README (Google Cloud + Supabase dashboard steps) — login failing before that is
+  expected. Trivia-set posting UI and solo play are LATER phases; only the schema
+  exists now.
+
 ## Commands
 
 ```bash
@@ -180,6 +206,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint for
   one-click Render free-tier deploy. Not yet deployed — the owner needs to click
   through Render's New → Blueprint flow (account actions are the owner's to do).
+- Supabase accounts foundation is coded but NOT yet connected: the owner still
+  has to create the Supabase project, copy the four keys into env, push the
+  migrations, and do the Google OAuth checklist (all in README). Until then the
+  login button shows "not configured" — expected.
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 
@@ -218,3 +248,9 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
    renamed myItems → liveItems. (Owner separately committed the server half as
    `aa0ec81 "Bidding Wars v1"` mid-task; the rest landed in `c5d7f3d`.) Game
    descriptions then made category-generic (not "car brands") per owner request.
+9. **Supabase accounts foundation** — optional login (email/password + Google),
+   JWT middleware + optional socket handshake auth, profiles/trivia_sets/questions
+   schema with RLS + signup trigger, local-dev config + db:* scripts, .env.example,
+   big README section (env vars, RLS checklist, manual Supabase/Google steps).
+   NO gated features, NO posting UI, NO solo play yet. All game tests pass with
+   zero Supabase config (anonymous path verified).

@@ -9,3 +9,6 @@ data/
 .DS_Store
 *.log
 .env
+.env.local
+supabase/.temp/
+supabase/.branches/

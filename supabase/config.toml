@@ -1,0 +1,38 @@
+# Supabase local dev config (`supabase start` — requires Docker + the
+# Supabase CLI: https://supabase.com/docs/guides/local-development).
+project_id = "arcade"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173", "http://localhost:3001"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+# Local dev skips confirmation emails; hosted projects confirm by default.
+enable_confirmations = false
+
+# To test Google OAuth against LOCAL Supabase, uncomment and export the two
+# env vars first (see README "Google login setup"). Hosted projects configure
+# Google in the dashboard instead.
+# [auth.external.google]
+# enabled = true
+# client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+# secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"

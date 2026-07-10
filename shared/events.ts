@@ -66,4 +66,6 @@ export interface ServerToClientEvents {
 export interface SocketData {
   playerId?: string;
   roomCode?: string;
+  /** Supabase user id when the socket connected with a valid access token. */
+  userId?: string | null;
 }

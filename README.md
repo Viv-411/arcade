@@ -200,6 +200,145 @@ while a refresh of either tab still reconnects to the same game.)
 | `PORT`     | `3001`          | Port the Node server listens on  |
 | `STATS_DB` | `data/stats.db` | Path of the SQLite stats file    |
 
+## User accounts (Supabase) — optional, foundation only
+
+Accounts are built on Supabase (Auth + Postgres) and are **completely optional**: a
+logged-in user is just an anonymous player who additionally has an account. All
+three games work fully anonymously with zero configuration — if the Supabase env
+vars are unset, the only difference is that the corner "Sign in" button explains
+auth isn't configured. **No game or feature is gated behind login**, and nothing
+will be without a deliberate future decision (a reusable `requireAuth()` gate is
+wired in `client/src/auth/AuthContext.tsx` for that future, but no gated actions
+exist yet).
+
+What exists in this phase:
+
+- **Login button** in the top-right corner on every page → modal with email/password
+  signup + login, "Continue with Google", and sign-out; shows your username when
+  logged in. Session persists across refreshes (Supabase JS client).
+- **Server-side identity (optional everywhere):** Express middleware verifies the
+  Supabase access token (HS256 with `SUPABASE_JWT_SECRET`) and sets `req.userId` on
+  `/api` routes (`GET /api/me` returns it); every game namespace's Socket.IO
+  handshake reads an optional token into `socket.data.userId`. Missing/invalid
+  token = anonymous, always allowed.
+- **Database schema + RLS** (in `supabase/migrations/`): `profiles` (auto-created
+  by a Postgres trigger on signup — chosen over a server call so profiles exist
+  even if the app server never sees the user), plus `trivia_sets` and `questions`
+  tables defined now so the schema is stable. **The trivia-set posting UI is a
+  later phase — this is schema only.**
+
+### Environment variables
+
+Copy `.env.example` to `.env` (gitignored) for local dev; set the same values in
+your host's dashboard (e.g. Render → Environment) for production. **You provide
+all of these from your Supabase project dashboard — they cannot be created by
+code.** With none of them set, the arcade runs fully anonymous.
+
+| Var | Where it's used | Where you get it |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | client (public) | Dashboard → Project Settings → API → Project URL |
+| `VITE_SUPABASE_ANON_KEY` | client (public) | Dashboard → Project Settings → API → `anon` key |
+| `VITE_APP_BASE_URL` | client (public) | Your app's origin: `http://localhost:5173` locally, your deployed URL in prod (OAuth redirect target) |
+| `SUPABASE_URL` | server | Same Project URL as above |
+| `SUPABASE_SERVICE_ROLE_KEY` | server, **SECRET** | Dashboard → Project Settings → API → `service_role` key. Bypasses RLS — never expose to the client |
+| `SUPABASE_JWT_SECRET` | server, **SECRET** | Dashboard → Project Settings → API → JWT Settings → JWT Secret |
+
+Client vars are baked in at `vite build` time; server vars are read at runtime
+(the server also loads a repo-root `.env` if present).
+
+### Row Level Security (RLS)
+
+**Every table has RLS enabled.** This matters because the `anon` and authenticated
+keys are public — **without RLS, anyone with your anon key can read/write every
+row in the table.** If you ever add a table, enable RLS before inserting data.
+
+Policies shipped in the migration:
+
+- `profiles`: readable by anyone (usernames are public identity); updatable only
+  by the owner; no client inserts/deletes (rows come from the signup trigger and
+  the `auth.users` cascade).
+- `trivia_sets`: owner can always read their own; others can read only when
+  `visibility != 'private'` **and** `is_removed = false` (moderation flag);
+  insert/update/delete only by the owner.
+- `questions`: inherit their set's access for both reads and writes.
+
+**Manual RLS test checklist** (run in the Supabase dashboard's SQL editor / API
+docs, or via two browser profiles once posting exists):
+
+1. Sign up as user A and user B.
+2. As A, insert a `trivia_sets` row with `visibility='private'` (SQL editor uses
+   the service role, so test via the client/API with A's token).
+3. As B: verify you can NOT select A's private set, and can NOT update/delete it.
+4. As B: verify you CAN select it after A sets `visibility='public'` — and can
+   NOT select it again after A sets `is_removed=true`.
+5. With only the anon key (no login): verify you can read `profiles` and public
+   sets, and can NOT insert/update/delete anything on any table.
+6. As B, try `update profiles set username='hacked' where id=<A's id>` via the
+   API — it must affect 0 rows.
+
+### Local Supabase development
+
+Requires Docker plus the [Supabase CLI](https://supabase.com/docs/guides/local-development)
+(`brew install supabase/tap/supabase`).
+
+```bash
+npm run db:start    # boots local Supabase (applies supabase/migrations/)
+npm run db:reset    # re-applies migrations from scratch
+npm run db:types    # regenerates shared/database.types.ts from the local schema
+npm run db:push     # pushes migrations to your linked hosted project
+```
+
+`supabase start` prints a local API URL and anon key — put those in `.env` to
+develop against the local stack. `shared/database.types.ts` is checked in
+(hand-written to match the migration) so the repo typechecks without Docker;
+regenerate it after any schema change.
+
+### What you must do by hand (in order) vs what is coded
+
+Everything below requires your Supabase/Google accounts and **cannot be done by
+code**. Until you finish steps 1–3, the login button shows "accounts not
+configured" — that's expected, not a bug. Anonymous play works regardless.
+
+1. Create a project at [supabase.com](https://supabase.com) (free tier is fine).
+2. Copy four values from Project Settings → API: Project URL, `anon` key,
+   `service_role` key, and the JWT Secret.
+3. Set the env vars (table above) in local `.env` and in your host's dashboard.
+4. Apply the schema to the hosted project: `supabase link --project-ref <ref>`
+   then `npm run db:push` (or paste `supabase/migrations/*.sql` into the SQL
+   editor).
+5. Auth → URL Configuration: set the Site URL to your production origin and add
+   BOTH redirect URLs to the allow-list: `http://localhost:5173` (dev) and your
+   production origin (e.g. `https://arcade.onrender.com`).
+6. (Later, optional) configure any additional OAuth providers the same way as
+   Google below.
+
+**Google login setup (all manual — Google login will fail until done; expected,
+not a code bug):**
+
+1. In Google Cloud Console → APIs & Services → Credentials, create an
+   **OAuth 2.0 Client ID** (type: Web application).
+2. Set its **Authorized redirect URI** to the Supabase callback URL shown on
+   Supabase → Authentication → Providers → Google (looks like
+   `https://<ref>.supabase.co/auth/v1/callback`).
+3. Paste the Client ID + Client Secret into that Supabase Google provider page
+   and enable it.
+4. Add your localhost and production URLs to Supabase's redirect allow-list
+   (step 5 above) — the app sends users back to `VITE_APP_BASE_URL`.
+5. While your Google consent screen is in **"testing"** mode, only whitelisted
+   test users can log in — add yourself, or publish the consent screen.
+
+### Notes for the later phases (why the schema looks like this)
+
+- `questions.options` and `questions.correct_index` are intentionally readable by
+  any client allowed to view the set: future **solo play will score client-side**.
+  That's fine for practice but **not cheat-proof** — solo results must never feed
+  a public/competitive leaderboard without server-side answer checking.
+- When solo mode is built, the trivia question card / answer buttons / reveal
+  should be extracted from `client/src/trivia/QuestionScreen.tsx` into shared
+  **presentational** components driven by either the existing socket engine or a
+  local solo controller — reuse the UI, not the networking. (No solo controller
+  exists in this phase.)
+
 ## Deployment
 
 This is a **single long-lived stateful process** — deploy it to **Render, Railway, or

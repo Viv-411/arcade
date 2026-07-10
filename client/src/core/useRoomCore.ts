@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
+import { getAccessToken } from "../auth/supabaseClient";
 
 /**
  * Game-agnostic client half of the multiplayer infrastructure: one socket
@@ -141,7 +142,13 @@ export interface RoomCoreOptions<TSnap> {
 export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptions<TSnap>) {
   const socketRef = useRef<Socket<any, any> | null>(null);
   if (!socketRef.current) {
-    socketRef.current = io(opts.namespace, { path: "/socket.io", autoConnect: false });
+    socketRef.current = io(opts.namespace, {
+      path: "/socket.io",
+      autoConnect: false,
+      // Optional Supabase token, re-read on every (re)connect. Absent =
+      // anonymous, which every game fully supports.
+      auth: (cb) => cb({ token: getAccessToken() ?? undefined }),
+    });
   }
   const socket = socketRef.current;
   const [state, dispatch] = useReducer(makeReducer<TSnap>(), {

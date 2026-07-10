@@ -1265,3 +1265,93 @@ select:focus {
   font-weight: 400;
   font-size: 0.85rem;
 }
+
+/* ---------- auth ---------- */
+
+.auth-corner {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 60;
+  background: var(--panel);
+  border-color: var(--panel-edge);
+}
+
+.auth-corner.authed {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.auth-overlay {
+  z-index: 90;
+}
+
+.auth-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.auth-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.google-btn {
+  width: 100%;
+  background: #fff;
+  color: #1a1a2e;
+}
+
+.google-g {
+  font-weight: 900;
+  background: linear-gradient(90deg, #4285f4, #ea4335, #fbbc05, #34a853);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.auth-divider {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 12px 0 4px;
+}
+
+.auth-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.auth-username {
+  font-family: var(--font-arcade);
+  color: var(--green);
+  font-size: 1rem;
+}
+
+.auth-email {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.auth-notice {
+  color: var(--cyan);
+  font-weight: 700;
+}
