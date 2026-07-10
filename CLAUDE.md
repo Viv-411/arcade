@@ -131,12 +131,14 @@ anonymous play is a hard requirement and must never regress. Key facts:
   working in that state); `AuthContext.tsx` provides `useAuth()` incl. a
   `requireAuth(action)` gate for FUTURE gated actions (none exist yet — don't
   gate existing features). Corner `AuthButton` + `AuthModal` are the only auth UI.
-- Server: `server/src/auth.ts` verifies Supabase JWTs (HS256,
-  `SUPABASE_JWT_SECRET`), attaches `req.userId` on `/api/*` and
-  `socket.data.userId` via per-namespace handshake middleware — always optional,
-  never rejects. `server/src/supabaseAdmin.ts` is the only sanctioned service-role
-  entry point (returns null when unconfigured). Server loads root `.env` via
-  `process.loadEnvFile` (Node 21+).
+- Server: `server/src/auth.ts` verifies Supabase JWTs via the project's public
+  JWKS endpoint (new asymmetric signing keys — the owner's project issues ES256
+  tokens) with an HS256 `SUPABASE_JWT_SECRET` fallback for legacy projects;
+  attaches `req.userId` on `/api/*` and `socket.data.userId` via per-namespace
+  handshake middleware — always optional, never rejects.
+  `server/src/supabaseAdmin.ts` is the only sanctioned service-role entry point
+  (returns null when unconfigured). Server loads root `.env` via
+  `process.loadEnvFile` (Node 21+). Uses `jose`, not `jsonwebtoken`.
 - Schema: `supabase/migrations/` — profiles (signup trigger creates rows),
   trivia_sets, questions; RLS on everything (see README for policies + manual
   test checklist). `shared/database.types.ts` is HAND-WRITTEN to match; after
@@ -206,10 +208,14 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint for
   one-click Render free-tier deploy. Not yet deployed — the owner needs to click
   through Render's New → Blueprint flow (account actions are the owner's to do).
-- Supabase accounts foundation is coded but NOT yet connected: the owner still
-  has to create the Supabase project, copy the four keys into env, push the
-  migrations, and do the Google OAuth checklist (all in README). Until then the
-  login button shows "not configured" — expected.
+- Supabase project EXISTS and is connected: local `.env` (gitignored) holds the
+  owner's project URL + publishable/secret keys (new sb_* format, ES256 tokens).
+  Live-verified: admin API, password sign-in, and server-side JWKS verification
+  of /api/me all work. STILL PENDING: (1) apply supabase/migrations/ to the
+  hosted project (needs the DB password or dashboard SQL editor — profiles
+  table doesn't exist yet), (2) set Site URL / redirect allow-list to
+  http://localhost:5173 + prod origin in Auth → URL Configuration, (3) Google
+  OAuth checklist, (4) env vars on Render when deploying.
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 

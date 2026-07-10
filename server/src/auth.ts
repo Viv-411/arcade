@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import jwt from "jsonwebtoken";
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -11,33 +11,59 @@ declare global {
   }
 }
 
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function subOf(payload: JWTPayload): string | null {
+  return typeof payload.sub === "string" && payload.sub.length > 0 ? payload.sub : null;
+}
+
 /**
- * Verify a Supabase access token (HS256, signed with the project's JWT
- * secret) and return the user id, or null for missing/invalid tokens or when
- * SUPABASE_JWT_SECRET is unset. Auth is always OPTIONAL: anonymous players
- * are first-class, so verification failures never reject a request/socket —
- * they just leave it anonymous.
+ * Verify a Supabase access token and return the user id, or null.
+ *
+ * Two verification paths, matching Supabase's two JWT modes:
+ * - New projects use asymmetric JWT signing keys: verified against the
+ *   project's public JWKS endpoint (`SUPABASE_URL`/auth/v1/.well-known/
+ *   jwks.json) — no secret required on our side.
+ * - Legacy projects sign HS256 with a shared secret: set SUPABASE_JWT_SECRET
+ *   and it is tried first.
+ *
+ * Auth is always OPTIONAL: anonymous players are first-class, so verification
+ * failures never reject a request/socket — they just leave it anonymous.
  */
-export function verifySupabaseToken(token: unknown): string | null {
+export async function verifySupabaseToken(token: unknown): Promise<string | null> {
+  if (typeof token !== "string" || token.length === 0) return null;
   const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret || typeof token !== "string" || token.length === 0) return null;
-  try {
-    const payload = jwt.verify(token, secret, { algorithms: ["HS256"] });
-    if (typeof payload === "object" && typeof payload.sub === "string") {
-      return payload.sub;
+  if (secret) {
+    try {
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+        algorithms: ["HS256"],
+      });
+      return subOf(payload);
+    } catch {
+      /* fall through to JWKS */
     }
-    return null;
-  } catch {
-    return null;
   }
+  const url = process.env.SUPABASE_URL;
+  if (url) {
+    try {
+      jwks ??= createRemoteJWKSet(new URL("/auth/v1/.well-known/jwks.json", url));
+      const { payload } = await jwtVerify(token, jwks);
+      return subOf(payload);
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /** Express middleware: attaches req.userId from a Bearer token, if present. */
 export const optionalAuth: RequestHandler = (req, _res, next) => {
   const header = req.headers.authorization;
   const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
-  req.userId = verifySupabaseToken(token);
-  next();
+  void verifySupabaseToken(token).then((userId) => {
+    req.userId = userId;
+    next();
+  });
 };
 
 /**
@@ -49,6 +75,8 @@ export function socketOptionalAuth(
   socket: { handshake: { auth: Record<string, unknown> }; data: { userId?: string | null } },
   next: (err?: Error) => void,
 ): void {
-  socket.data.userId = verifySupabaseToken(socket.handshake.auth?.token);
-  next();
+  void verifySupabaseToken(socket.handshake.auth?.token).then((userId) => {
+    socket.data.userId = userId;
+    next();
+  });
 }

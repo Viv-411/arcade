@@ -237,11 +237,11 @@ code.** With none of them set, the arcade runs fully anonymous.
 | Var | Where it's used | Where you get it |
 | --- | --- | --- |
 | `VITE_SUPABASE_URL` | client (public) | Dashboard → Project Settings → API → Project URL |
-| `VITE_SUPABASE_ANON_KEY` | client (public) | Dashboard → Project Settings → API → `anon` key |
+| `VITE_SUPABASE_ANON_KEY` | client (public) | Dashboard → API Keys → publishable key (`sb_publishable_…`; the legacy `anon` JWT also works) |
 | `VITE_APP_BASE_URL` | client (public) | Your app's origin: `http://localhost:5173` locally, your deployed URL in prod (OAuth redirect target) |
-| `SUPABASE_URL` | server | Same Project URL as above |
-| `SUPABASE_SERVICE_ROLE_KEY` | server, **SECRET** | Dashboard → Project Settings → API → `service_role` key. Bypasses RLS — never expose to the client |
-| `SUPABASE_JWT_SECRET` | server, **SECRET** | Dashboard → Project Settings → API → JWT Settings → JWT Secret |
+| `SUPABASE_URL` | server | Same Project URL as above (also used to verify JWTs via the project's public JWKS endpoint) |
+| `SUPABASE_SERVICE_ROLE_KEY` | server, **SECRET** | Dashboard → API Keys → secret key (`sb_secret_…`; legacy `service_role` JWT also works). Bypasses RLS — never expose to the client |
+| `SUPABASE_JWT_SECRET` | server, **SECRET**, *legacy only* | Only for projects still on the shared HS256 JWT secret (Project Settings → JWT). Projects on the new **asymmetric JWT signing keys** leave this unset — tokens verify against the JWKS endpoint automatically |
 
 Client vars are baked in at `vite build` time; server vars are read at runtime
 (the server also loads a repo-root `.env` if present).
