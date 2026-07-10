@@ -208,14 +208,18 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint for
   one-click Render free-tier deploy. Not yet deployed — the owner needs to click
   through Render's New → Blueprint flow (account actions are the owner's to do).
-- Supabase project EXISTS and is connected: local `.env` (gitignored) holds the
-  owner's project URL + publishable/secret keys (new sb_* format, ES256 tokens).
-  Live-verified: admin API, password sign-in, and server-side JWKS verification
-  of /api/me all work. STILL PENDING: (1) apply supabase/migrations/ to the
-  hosted project (needs the DB password or dashboard SQL editor — profiles
-  table doesn't exist yet), (2) set Site URL / redirect allow-list to
-  http://localhost:5173 + prod origin in Auth → URL Configuration, (3) Google
-  OAuth checklist, (4) env vars on Render when deploying.
+- Supabase project EXISTS, is connected, and the schema is APPLIED: local
+  `.env` (gitignored) holds the owner's project URL + publishable/secret keys
+  (new sb_* format, ES256 tokens). Migrations pushed to the hosted DB via the
+  IPv4 pooler (`aws-1-us-west-2.pooler.supabase.com` — the direct db host is
+  IPv6-only from this network; the DB password is NOT stored in the repo, ask
+  the owner if needed). Live-verified end to end: admin API, password sign-in,
+  server-side JWKS verification of /api/me, signup trigger creating profiles,
+  and the full RLS checklist (private-set isolation, anon-key restrictions,
+  public/removed visibility, profile write protection). STILL PENDING (owner,
+  dashboard-only): (1) Site URL / redirect allow-list → http://localhost:5173
+  + prod origin in Auth → URL Configuration (needed for email-confirm links +
+  Google), (2) Google OAuth checklist, (3) env vars on Render when deploying.
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 
