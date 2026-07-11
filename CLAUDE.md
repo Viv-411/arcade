@@ -216,10 +216,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   the owner if needed). Live-verified end to end: admin API, password sign-in,
   server-side JWKS verification of /api/me, signup trigger creating profiles,
   and the full RLS checklist (private-set isolation, anon-key restrictions,
-  public/removed visibility, profile write protection). STILL PENDING (owner,
-  dashboard-only): (1) Site URL / redirect allow-list → http://localhost:5173
-  + prod origin in Auth → URL Configuration (needed for email-confirm links +
-  Google), (2) Google OAuth checklist, (3) env vars on Render when deploying.
+  public/removed visibility, profile write protection). Google OAuth is
+  configured by the owner and verified as far as automation can go
+  (provider enabled in /auth/v1/settings; /auth/v1/authorize 302s to
+  accounts.google.com with a real client id) — the interactive consent hop is
+  human-only. STILL PENDING: env vars on Render when deploying (and the prod
+  origin added to Supabase's redirect allow-list at that point).
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 
