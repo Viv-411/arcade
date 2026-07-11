@@ -205,9 +205,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 ## Current state (update before every commit)
 
 - All three games fully working; end-to-end tests committed in `tests/`
-  (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint for
-  one-click Render free-tier deploy. Not yet deployed — the owner needs to click
-  through Render's New → Blueprint flow (account actions are the owner's to do).
+  (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint.
+  DEPLOYED by the owner to Render: https://arcade-1628.onrender.com (free tier;
+  sleeps when idle). Render deploys are owner-managed — no Render credentials
+  in this environment.
 - Supabase project EXISTS, is connected, and the schema is APPLIED: local
   `.env` (gitignored) holds the owner's project URL + publishable/secret keys
   (new sb_* format, ES256 tokens). Migrations pushed to the hosted DB via the
@@ -220,8 +221,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   configured by the owner and verified as far as automation can go
   (provider enabled in /auth/v1/settings; /auth/v1/authorize 302s to
   accounts.google.com with a real client id) — the interactive consent hop is
-  human-only. STILL PENDING: env vars on Render when deploying (and the prod
-  origin added to Supabase's redirect allow-list at that point).
+  human-only. Google round-trip confirmed working by the owner on localhost.
+  STILL PENDING (owner, dashboards): set the five env vars on the Render
+  service and redeploy (VITE_* vars are BUILD-time — missing them shows
+  "accounts not configured" on the deployed site), set VITE_APP_BASE_URL to
+  https://arcade-1628.onrender.com, and add that URL to Supabase's redirect
+  allow-list.
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
 

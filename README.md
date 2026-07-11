@@ -246,6 +246,14 @@ code.** With none of them set, the arcade runs fully anonymous.
 Client vars are baked in at `vite build` time; server vars are read at runtime
 (the server also loads a repo-root `.env` if present).
 
+> **Render gotcha:** because `VITE_*` vars are baked during the build, they must
+> exist in Render's Environment tab *before* the build runs — adding or changing
+> them triggers/needs a redeploy. If the deployed site shows "Accounts not
+> configured", the env vars were missing at build time; set them and redeploy.
+> Also set `VITE_APP_BASE_URL` to the Render URL and add that URL to Supabase's
+> redirect allow-list (Auth → URL Configuration) or OAuth/email links will
+> bounce back to localhost.
+
 ### Row Level Security (RLS)
 
 **Every table has RLS enabled.** This matters because the `anon` and authenticated

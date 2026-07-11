@@ -11,3 +11,18 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
+    # Supabase config — values live in the Render dashboard (sync: false),
+    # never in the repo. The VITE_* ones are baked into the client during
+    # buildCommand, so changing them requires a redeploy. All optional:
+    # without them the arcade runs fully anonymous ("accounts not configured").
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_APP_BASE_URL # this service's public URL, e.g. https://arcade-1628.onrender.com
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
