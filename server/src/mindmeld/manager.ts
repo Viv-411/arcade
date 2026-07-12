@@ -303,8 +303,12 @@ export class MindMeldManager extends BaseRoomManager<
     if (isWin) {
       room.state = "finished";
       room.winner = { word: entries[0].normalized, rounds: game.roundNumber };
-      const participants = [...room.players.values()].map((p) => ({ id: p.id, name: p.name }));
-      this.stats.recordGame(participants, participants.map((p) => p.id));
+      const participants = [...room.players.values()].map((p) => ({
+        id: p.id,
+        name: p.name,
+        userId: p.userId,
+      }));
+      this.stats.recordGame(participants, participants.map((p) => p.id), "mindmeld");
       this.mnsp.to(room.code).emit("gameWin", {
         word: room.winner.word,
         rounds: room.winner.rounds,
@@ -348,8 +352,12 @@ export class MindMeldManager extends BaseRoomManager<
     room.gameOverReason = reason;
     this.clearGameTimers(room);
     room.game.deadline = null;
-    const participants = [...room.players.values()].map((p) => ({ id: p.id, name: p.name }));
-    if (participants.length > 0) this.stats.recordGame(participants, []);
+    const participants = [...room.players.values()].map((p) => ({
+      id: p.id,
+      name: p.name,
+      userId: p.userId,
+    }));
+    if (participants.length > 0) this.stats.recordGame(participants, [], "mindmeld");
     this.mnsp.to(room.code).emit("gameOver", { reason });
     this.broadcastRoom(room);
   }

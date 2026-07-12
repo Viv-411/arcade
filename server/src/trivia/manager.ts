@@ -537,9 +537,13 @@ export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer,
     room.game.questionDeadline = null;
     const finalScoreboard = this.scoreboard(room);
     const winners = this.winners(room);
-    const participants = [...room.players.values()].map((p) => ({ id: p.id, name: p.name }));
+    const participants = [...room.players.values()].map((p) => ({
+      id: p.id,
+      name: p.name,
+      userId: p.userId,
+    }));
     if (participants.length > 0) {
-      this.stats.recordGame(participants, winners.map((w) => w.playerId));
+      this.stats.recordGame(participants, winners.map((w) => w.playerId), "trivia");
     }
     this.tnsp.to(room.code).emit("gameOver", { finalScoreboard, winners, reason });
     this.broadcastRoom(room);

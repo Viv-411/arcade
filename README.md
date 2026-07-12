@@ -211,7 +211,22 @@ will be without a deliberate future decision (a reusable `requireAuth()` gate is
 wired in `client/src/auth/AuthContext.tsx` for that future, but no gated actions
 exist yet).
 
-What exists in this phase:
+What exists (accounts phase 2 — account page + durable stats):
+
+- **Account page** (`/account`, via the corner button when signed in): email,
+  linked sign-in methods, member-since date, username + display-name editing
+  (unique usernames enforced by the DB), per-account game stats, sign out.
+- **Durable per-account stats**: when a game finishes, the server records each
+  *signed-in* participant's result to the `player_stats` table in Postgres via a
+  service-role-only SQL function (`record_game_result`) — clients cannot call it,
+  so stats can't be inflated. Anonymous players are unaffected (their per-tab
+  stats stay in the local SQLite file, which resets on redeploys). Stats count
+  only games finished while signed in.
+- **Identity linking**: Supabase automatically links a Google sign-in to an
+  existing email/password account when the (verified) email matches — one
+  account, multiple sign-in methods, shown on the account page.
+
+What existed from phase 1:
 
 - **Login button** in the top-right corner on every page → modal with email/password
   signup + login, "Continue with Google", and sign-out; shows your username when

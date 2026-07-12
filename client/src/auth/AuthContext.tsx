@@ -20,6 +20,8 @@ interface AuthContextValue {
   loading: boolean;
   openAuthModal: () => void;
   signOut: () => Promise<void>;
+  /** Re-fetch the profile row (e.g. after the user edits their username). */
+  refreshProfile: () => void;
   /**
    * Reusable gate for future auth-required actions (none exist yet): runs the
    * action immediately when logged in, otherwise opens the login modal and
@@ -35,6 +37,7 @@ const AuthContext = createContext<AuthContextValue>({
   loading: false,
   openAuthModal: () => {},
   signOut: async () => {},
+  refreshProfile: () => {},
   requireAuth: () => false,
 });
 
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // The signup trigger creates the profile row; fetch its username (retry
   // once in case the trigger is a beat behind on a brand-new signup).
+  const [profileNonce, setProfileNonce] = useState(0);
   useEffect(() => {
     if (!supabase || !user) {
       setUsername(null);
@@ -95,7 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, profileNonce]);
+
+  const refreshProfile = useCallback(() => setProfileNonce((n) => n + 1), []);
 
   const openAuthModal = useCallback(() => setModalOpen(true), []);
 
@@ -126,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         openAuthModal,
         signOut,
+        refreshProfile,
         requireAuth,
       }}
     >

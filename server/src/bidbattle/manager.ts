@@ -906,9 +906,13 @@ export class BidBattleManager extends BaseRoomManager<
     room.gameOverReason = reason ?? null;
     room.game.winnerTeam = winnerTeam;
     this.clearGameTimers(room);
-    const participants = [...room.players.values()].map((p) => ({ id: p.id, name: p.name }));
+    const participants = [...room.players.values()].map((p) => ({
+      id: p.id,
+      name: p.name,
+      userId: p.userId,
+    }));
     const winnerIds = this.teamMembers(room, winnerTeam).map((p) => p.id);
-    if (participants.length > 0) this.stats.recordGame(participants, winnerIds);
+    if (participants.length > 0) this.stats.recordGame(participants, winnerIds, "bidbattle");
     this.bnsp
       .to(room.code)
       .emit("gameOver", { winnerTeam, scores: { ...room.game.scores }, reason });

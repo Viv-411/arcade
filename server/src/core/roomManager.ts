@@ -26,6 +26,8 @@ export interface BasePlayer {
   socketId: string | null;
   connected: boolean;
   ready: boolean;
+  /** Supabase user id when the player's socket was authenticated (else null). */
+  userId: string | null;
   /** Pending removal after disconnecting from a lobby. */
   removalTimer: NodeJS.Timeout | null;
 }
@@ -209,6 +211,7 @@ export abstract class BaseRoomManager<
       socketId: socket.id,
       connected: true,
       ready: false,
+      userId: socket.data.userId ?? null,
       removalTimer: null,
     });
     room.players.set(player.id, player);
@@ -537,6 +540,9 @@ export abstract class BaseRoomManager<
     this.cancelEmptyRoomTimer(room);
     player.socketId = socket.id;
     player.connected = true;
+    // Keep account identity fresh: a player who logged in mid-session gets
+    // their games attributed from this rejoin onward.
+    player.userId = socket.data.userId ?? player.userId;
     socket.data.playerId = player.id;
     socket.data.roomCode = room.code;
     socket.join(room.code);

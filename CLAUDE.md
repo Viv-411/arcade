@@ -271,3 +271,14 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
    big README section (env vars, RLS checklist, manual Supabase/Google steps).
    NO gated features, NO posting UI, NO solo play yet. All game tests pass with
    zero Supabase config (anonymous path verified).
+10. **Account page + durable stats** — /account route (details, linked
+    providers, username/display-name editing, stats, sign out); migration
+    20260712000000: profile backfill for pre-trigger users (fixed the owner's
+    account → @iamfunny411), player_stats table (owner-only select, writes only
+    via the service-role-only record_game_result function). BasePlayer carries
+    userId from the socket handshake (refreshed on rejoin); all three managers
+    pass participants+game key to the stats store, which records signed-in
+    players to Postgres fire-and-forget alongside the local SQLite. Owner's
+    email+Google identities confirmed auto-linked (same verified email).
+    Live-verified: authed game win → correct player_stats row; clients denied
+    record_game_result (42501); owner-only stats reads.

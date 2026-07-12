@@ -117,9 +117,45 @@ export interface Database {
           },
         ];
       };
+      player_stats: {
+        Row: {
+          user_id: string;
+          games_played: number;
+          wins: number;
+          per_game: Json;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          games_played?: number;
+          wins?: number;
+          per_game?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          games_played?: number;
+          wins?: number;
+          per_game?: Json;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "player_stats_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      record_game_result: {
+        Args: { p_user_id: string; p_game: string; p_won: boolean };
+        Returns: undefined;
+      };
+    };
     Enums: {
       set_visibility: "private" | "unlisted" | "public";
     };
