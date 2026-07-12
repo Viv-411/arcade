@@ -38,7 +38,8 @@ body {
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 16px 16px 64px;
+  /* Top padding clears the fixed corner buttons (bell + sign in). */
+  padding: 56px 16px 64px;
 }
 
 h1,
@@ -111,8 +112,13 @@ h3 {
   color: var(--muted);
   font: inherit;
   cursor: pointer;
-  padding: 8px 0 0;
+  padding: 6px 0 2px;
+  margin-top: 8px;
   text-align: left;
+}
+
+.link-btn:hover {
+  color: var(--text);
 }
 
 .field {
@@ -151,7 +157,24 @@ select:focus {
 
 .home-header {
   text-align: center;
-  padding: 24px 0 8px;
+  padding: 4px 0 8px;
+}
+
+.home-links {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.home-link-btn {
+  border-radius: 999px;
+  background: var(--panel);
+  border-color: var(--panel-edge);
+}
+
+.home-link-btn:hover {
+  border-color: var(--cyan);
 }
 
 .arcade-title {
@@ -421,6 +444,7 @@ select:focus {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
+  margin-top: 14px;
 }
 
 .hint {
@@ -433,7 +457,7 @@ select:focus {
   color: var(--muted);
   text-align: center;
   font-size: 0.85rem;
-  margin-bottom: 0;
+  margin: 14px 0 0;
 }
 
 /* ---------- game board ---------- */
@@ -443,7 +467,8 @@ select:focus {
   align-items: center;
   gap: 12px;
   position: sticky;
-  top: 8px;
+  /* Sticks below the fixed corner buttons instead of colliding with them. */
+  top: 56px;
   z-index: 5;
 }
 
@@ -1485,6 +1510,10 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.notif-item:last-of-type {
+  margin-bottom: 0;
+}
+
 .notif-text {
   flex: 1;
   min-width: 140px;
@@ -1503,7 +1532,7 @@ select:focus {
 
 .invite-friends {
   text-align: center;
-  margin-bottom: 12px;
+  margin: 14px 0;
 }
 
 .invite-list {
@@ -1552,10 +1581,59 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.friend-qr-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: zoom-in;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .friend-qr {
   width: 120px;
   height: 120px;
   border-radius: 10px;
+  border: 2px solid var(--panel-edge);
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.friend-qr-btn:hover .friend-qr {
+  transform: scale(1.04);
+  border-color: var(--cyan);
+}
+
+.friend-qr-hint {
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.qr-overlay {
+  cursor: zoom-out;
+}
+
+.qr-big-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.friend-qr-big {
+  width: min(80vw, 340px);
+  height: min(80vw, 340px);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(34, 230, 230, 0.35);
+}
+
+.qr-big-caption {
+  color: var(--text);
+  text-align: center;
+  margin: 0;
 }
 
 .share-friend-actions {
@@ -1575,6 +1653,10 @@ select:focus {
 .friend-count {
   color: var(--muted);
   font-weight: 400;
+}
+
+.friends .player-list li {
+  flex-wrap: wrap;
 }
 
 .add-banner {

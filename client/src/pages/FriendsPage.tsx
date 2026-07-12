@@ -22,6 +22,7 @@ export default function FriendsPage() {
   const [addInput, setAddInput] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrExpanded, setQrExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [presence, setPresence] = useState<Record<string, FriendPresence>>({});
 
@@ -56,8 +57,9 @@ export default function FriendsPage() {
       setQrUrl(null);
       return;
     }
+    // Rendered large once, displayed small — stays crisp when expanded.
     void QRCode.toDataURL(myLink, {
-      width: 200,
+      width: 512,
       margin: 1,
       color: { dark: "#0d0d1f", light: "#f2f2ff" },
     }).then(setQrUrl, () => setQrUrl(null));
@@ -171,7 +173,16 @@ export default function FriendsPage() {
             <div className="share-friend">
               <p className="hint">…or have them scan / open your invite link:</p>
               <div className="share-friend-row">
-                {qrUrl && <img className="friend-qr" src={qrUrl} alt="Friend invite QR code" />}
+                {qrUrl && (
+                  <button
+                    className="friend-qr-btn"
+                    title="Tap to enlarge"
+                    onClick={() => setQrExpanded(true)}
+                  >
+                    <img className="friend-qr" src={qrUrl} alt="Friend invite QR code" />
+                    <span className="friend-qr-hint">tap to enlarge</span>
+                  </button>
+                )}
                 <div className="share-friend-actions">
                   <code className="friend-link">{myLink}</code>
                   <button className="btn small" onClick={copyLink}>
@@ -260,6 +271,16 @@ export default function FriendsPage() {
         <h1 className="mm-title">👥 Friends</h1>
       </header>
       {body}
+      {qrExpanded && qrUrl && (
+        <div className="overlay qr-overlay" onClick={() => setQrExpanded(false)}>
+          <div className="qr-big-box">
+            <img className="friend-qr-big" src={qrUrl} alt="Friend invite QR code (enlarged)" />
+            <p className="qr-big-caption">
+              Scan with a phone camera to add <strong>@{username}</strong>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

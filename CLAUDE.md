@@ -302,3 +302,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     non-member rejections, join-via-invite, unfriend lockout, offline
     detection. Gotcha: the invite endpoint checks room membership BEFORE
     friendship, so a non-member non-friend gets the membership error.
+12. **Visual polish pass** — expandable QR (rendered at 512px, tap-to-enlarge
+    overlay), 👥 Friends pill on the home header, and layout fixes: `.page`
+    top padding (56px) clears the fixed corner buttons, the sticky in-game
+    round-bar now sticks at top:56px so it can't collide with them,
+    `.lobby-buttons`/`.settings-line`/`.link-btn` gained breathing room.
+    If new fixed/sticky top-of-page elements are added, keep them below the
+    56px corner-button band.

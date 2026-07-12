@@ -14,6 +14,11 @@ export default function Home() {
           <span className="neon-yellow">DE</span>
         </h1>
         <p className="tagline">Party games to play with friends, live in your browser.</p>
+        <nav className="home-links">
+          <Link to="/friends" className="btn small home-link-btn" title="Friends">
+            👥 Friends
+          </Link>
+        </nav>
       </header>
 
       <div className="game-grid">
