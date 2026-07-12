@@ -1,0 +1,88 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { GAME_NAMES } from "@shared/social";
+import { useAuth } from "../auth/AuthContext";
+import { useSocial } from "./SocialContext";
+
+/** Corner bell: pending friend requests + live lobby invites. */
+export default function NotificationBell() {
+  const { user } = useAuth();
+  const { ready, incoming, invites, unreadCount, acceptRequest, removeFriendship, dismissInvite, refresh } =
+    useSocial();
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  if (!user || !ready) return null;
+
+  return (
+    <>
+      <button
+        className="btn small bell-btn"
+        title="Notifications"
+        onClick={() => {
+          setOpen((o) => !o);
+          if (!open) void refresh();
+        }}
+      >
+        🔔{unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
+      </button>
+      {open && (
+        <div className="notif-panel panel">
+          <div className="notif-head">
+            <strong>Notifications</strong>
+            <button className="auth-close notif-close" onClick={() => setOpen(false)}>
+              ✕
+            </button>
+          </div>
+
+          {invites.map((inv) => (
+            <div key={inv.id} className="notif-item">
+              <span className="notif-text">
+                🎮 <strong>@{inv.from.username}</strong> invited you to{" "}
+                {GAME_NAMES[inv.game] ?? inv.game}
+              </span>
+              <span className="notif-actions">
+                <button
+                  className="btn small primary"
+                  onClick={() => {
+                    dismissInvite(inv.id);
+                    setOpen(false);
+                    navigate(inv.link);
+                  }}
+                >
+                  Join
+                </button>
+                <button className="btn small" onClick={() => dismissInvite(inv.id)}>
+                  ✕
+                </button>
+              </span>
+            </div>
+          ))}
+
+          {incoming.map((req) => (
+            <div key={req.rowId} className="notif-item">
+              <span className="notif-text">
+                👥 <strong>@{req.username}</strong> wants to be friends
+              </span>
+              <span className="notif-actions">
+                <button className="btn small primary" onClick={() => void acceptRequest(req.rowId)}>
+                  Accept
+                </button>
+                <button className="btn small" onClick={() => void removeFriendship(req.rowId)}>
+                  Decline
+                </button>
+              </span>
+            </div>
+          ))}
+
+          {invites.length === 0 && incoming.length === 0 && (
+            <p className="hint">Nothing new. 🎉</p>
+          )}
+          <Link to="/friends" className="link-btn notif-friends-link" onClick={() => setOpen(false)}>
+            Manage friends →
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}

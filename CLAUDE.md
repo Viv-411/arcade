@@ -148,6 +148,17 @@ anonymous play is a hard requirement and must never regress. Key facts:
   README (Google Cloud + Supabase dashboard steps) — login failing before that is
   expected. Trivia-set posting UI and solo play are LATER phases; only the schema
   exists now.
+- Friends/social layer: `friendships` table (one row per pair, unique
+  least/greatest index; RLS = participants only, addressee-only accept) managed
+  directly from the client via supabase-js; `/social` Socket.IO namespace
+  (server/src/social/manager.ts) for presence + lobby invites, validated
+  server-side (service-role friendship lookup, room-membership + lobby-state
+  checks via the shared room stores, 10s per-friend invite cooldown). Presence
+  registry in server/src/core/presence.ts is fed by the room core (setRoom on
+  join/rejoin, clearRoom on removal) and by /social connect/disconnect. Client:
+  SocialContext (friends via RLS queries + 45s poll, invites via socket),
+  NotificationBell (corner 🔔), FriendsPage (/friends, add by username / link /
+  QR via the `qrcode` package), InviteFriends panel in both lobby components.
 
 ## Commands
 
@@ -282,3 +293,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     email+Google identities confirmed auto-linked (same verified email).
     Live-verified: authed game win → correct player_stats row; clients denied
     record_game_result (42501); owner-only stats reads.
+11. **Friends system** — migration 20260712100000 (friendships + RLS), /social
+    namespace (presence + validated lobby invites), core presence registry,
+    /friends page (add by username / invite link / QR), corner notification
+    bell, InviteFriends panel in lobbies. Live-verified end to end: request
+    lifecycle, forged-request and RLS isolation, addressee-only accept,
+    presence with lobby activity, invite delivery + rate limit + non-friend /
+    non-member rejections, join-via-invite, unfriend lockout, offline
+    detection. Gotcha: the invite endpoint checks room membership BEFORE
+    friendship, so a non-member non-friend gets the membership error.

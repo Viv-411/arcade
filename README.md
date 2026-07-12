@@ -226,6 +226,27 @@ What exists (accounts phase 2 — account page + durable stats):
   existing email/password account when the (verified) email matches — one
   account, multiple sign-in methods, shown on the account page.
 
+What exists (accounts phase 3 — friends):
+
+- **Friends** (signed-in players only; anonymous play is untouched): add by
+  username, by sharing your personal invite link, or by having a friend scan
+  your **QR code** (it encodes the invite link — scan with any phone camera, no
+  in-app scanner needed). Requests are accepted/declined in the friends page
+  (`/friends`) or the corner **🔔 notification menu**; either side can unfriend.
+- **Data model**: one `friendships` row per pair (a unique `least/greatest`
+  index blocks duplicate/reverse requests). RLS: only the two people involved
+  can see a relationship; you can only send requests as yourself; only the
+  addressee can accept; either side can delete.
+- **Presence + lobby invites** (Brawl Stars style): a `/social` Socket.IO
+  namespace tracks which signed-in players are online and which room they're in
+  (server-observed, never client-reported). In any game lobby, **Invite
+  friends** lists your friends with live status; one tap sends a real-time
+  invite that pops into their 🔔 menu with a Join button. The server validates
+  every invite: you must actually be in that (still-joinable) lobby, the target
+  must be an accepted friend and online, and repeat invites are rate-limited.
+  Friend lists are always read server-side with the service role — client-
+  supplied ids are never trusted.
+
 What existed from phase 1:
 
 - **Login button** in the top-right corner on every page → modal with email/password

@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Namespace, Socket } from "socket.io";
 import type { SocketData } from "../../../shared/events.js";
+import type { GameKey } from "../../../shared/social.js";
 import type { RoomStore } from "../store.js";
+import { presence } from "./presence.js";
 
 /**
  * Game-agnostic multiplayer room infrastructure shared by every game:
@@ -69,6 +71,8 @@ export abstract class BaseRoomManager<
 > {
   protected minPlayers = 2;
   protected maxPlayers = 4;
+  /** Game identifier derived from the link path, e.g. "mindmeld". */
+  protected gameKey: GameKey;
 
   constructor(
     protected nsp: AnyNamespace,
@@ -76,6 +80,7 @@ export abstract class BaseRoomManager<
     /** Client route for share links, e.g. "/mindmeld". */
     protected linkPath: string,
   ) {
+    this.gameKey = linkPath.slice(1) as GameKey;
     nsp.on("connection", (socket: AnySocket) => {
       this.bindBaseEvents(socket);
       this.bindGameEvents(socket);
@@ -220,6 +225,7 @@ export abstract class BaseRoomManager<
     socket.data.roomCode = room.code;
     socket.join(room.code);
     this.cancelEmptyRoomTimer(room);
+    if (player.userId) presence.setRoom(player.userId, this.gameKey, room.code);
     this.onPlayerJoined(room, player, socket);
     socket.to(room.code).emit("playerJoined", { player: this.publicPlayer(room, player) });
     this.updateLobbyCountdown(room);
@@ -426,6 +432,7 @@ export abstract class BaseRoomManager<
     if (player.removalTimer) clearTimeout(player.removalTimer);
     player.removalTimer = null;
     room.players.delete(player.id);
+    if (player.userId) presence.clearRoom(player.userId, room.code);
     this.onPlayerRemoved(room, player, reason);
     this.nsp.to(room.code).emit("playerLeft", { playerId: player.id, name: player.name, reason });
 
@@ -546,6 +553,7 @@ export abstract class BaseRoomManager<
     socket.data.playerId = player.id;
     socket.data.roomCode = room.code;
     socket.join(room.code);
+    if (player.userId) presence.setRoom(player.userId, this.gameKey, room.code);
     this.onRejoin(room, player, socket);
     ack({
       ok: true,

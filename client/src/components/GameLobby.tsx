@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { MAX_PLAYERS, MIN_PLAYERS } from "@shared/types";
+import type { GameKey } from "@shared/social";
 import type { BaseSnapshotShape } from "../core/useRoomCore";
 import { useSecondsLeft } from "../core/hooks";
+import InviteFriends from "../social/InviteFriends";
 
 interface Props {
   room: BaseSnapshotShape;
@@ -72,6 +74,8 @@ export default function GameLobby({
       {autoStartIn !== null && (
         <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>
       )}
+
+      <InviteFriends game={joinPath.slice(1) as GameKey} code={room.code} />
 
       <ul className="player-list">
         {room.players.map((p) => (

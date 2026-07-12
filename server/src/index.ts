@@ -15,6 +15,7 @@ import { OpenTdbSource } from "./trivia/questionSource.js";
 import { InMemoryRoomStore } from "./store.js";
 import { createStatsStore } from "./stats.js";
 import { optionalAuth, socketOptionalAuth } from "./auth.js";
+import { SocialManager } from "./social/manager.js";
 
 // npm scripts run from the repo root, so resolve paths from cwd. This keeps
 // the same logic working for both tsx (dev) and the compiled dist build.
@@ -45,21 +46,35 @@ const io = new Server<
 // Every namespace reads an OPTIONAL Supabase token from the handshake —
 // authenticated sockets get socket.data.userId, anonymous ones stay welcome.
 const stats = await createStatsStore(STATS_DB);
+// Room types are private to each manager; the stores are shared with the
+// social manager (for invite validation), so they're loosely typed here.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mindmeldStore = new InMemoryRoomStore<any>();
 const mindmeldNsp = io.of("/mindmeld");
 mindmeldNsp.use(socketOptionalAuth);
-new MindMeldManager(mindmeldNsp, new InMemoryRoomStore(), stats);
+new MindMeldManager(mindmeldNsp, mindmeldStore, stats);
 
 const questionSource = new OpenTdbSource();
 // Pre-fetch the OpenTDB category list + session token so the first game
 // doesn't pay the (rate-limited) warm-up cost at start time.
 questionSource.warmUp();
+const triviaStore = new InMemoryRoomStore<any>();
 const triviaNsp = io.of("/trivia");
 triviaNsp.use(socketOptionalAuth);
-new TriviaManager(triviaNsp, new InMemoryRoomStore(), questionSource, stats);
+new TriviaManager(triviaNsp, triviaStore, questionSource, stats);
 
+const bidbattleStore = new InMemoryRoomStore<any>();
 const bidbattleNsp = io.of("/bidbattle");
 bidbattleNsp.use(socketOptionalAuth);
-new BidBattleManager(bidbattleNsp, new InMemoryRoomStore(), stats);
+new BidBattleManager(bidbattleNsp, bidbattleStore, stats);
+
+// Presence + lobby invites for signed-in players (reads the same room stores
+// to validate invites; anonymous play never touches this namespace).
+new SocialManager(io.of("/social") as any, {
+  mindmeld: mindmeldStore,
+  trivia: triviaStore,
+  bidbattle: bidbattleStore,
+});
 
 app.get("/healthz", (_req, res) => {
   res.json({ ok: true });

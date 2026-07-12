@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { bidBattleModeSize, type BidBattleMode, type BidBattleSnapshot, type TeamId } from "@shared/bidbattle";
 import { useSecondsLeft } from "../core/hooks";
+import InviteFriends from "../social/InviteFriends";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -75,6 +76,8 @@ export default function BidBattleLobby({
       )}
 
       {autoStartIn !== null && <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>}
+
+      <InviteFriends game="bidbattle" code={room.code} />
 
       <div className="team-panels">
         {teams.map((t) => {

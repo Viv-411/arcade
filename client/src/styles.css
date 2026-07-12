@@ -1268,11 +1268,16 @@ select:focus {
 
 /* ---------- auth ---------- */
 
-.auth-corner {
+.corner-buttons {
   position: fixed;
   top: 12px;
   right: 12px;
   z-index: 60;
+  display: flex;
+  gap: 8px;
+}
+
+.auth-corner {
   background: var(--panel);
   border-color: var(--panel-edge);
 }
@@ -1419,4 +1424,168 @@ select:focus {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* ---------- friends & notifications ---------- */
+
+.bell-btn {
+  position: relative;
+  background: var(--panel);
+  border-color: var(--panel-edge);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.notif-panel {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  z-index: 70;
+  width: min(92vw, 360px);
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-top: 0;
+}
+
+.notif-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.notif-close {
+  position: static;
+}
+
+.notif-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #0f0f26;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.notif-text {
+  flex: 1;
+  min-width: 140px;
+}
+
+.notif-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.notif-friends-link {
+  display: block;
+  text-align: center;
+  padding-top: 8px;
+}
+
+.invite-friends {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.invite-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.invite-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f0f26;
+  border-radius: 10px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.invite-row .player-name {
+  flex: 1;
+}
+
+.invite-status {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.invite-sent {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.share-friend {
+  margin-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+  padding-top: 10px;
+}
+
+.share-friend-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.friend-qr {
+  width: 120px;
+  height: 120px;
+  border-radius: 10px;
+}
+
+.share-friend-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.friend-link {
+  color: var(--cyan);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.friend-count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.add-banner {
+  border-color: var(--cyan);
+  text-align: center;
+}
+
+.friends .panel h3 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }

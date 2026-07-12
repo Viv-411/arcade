@@ -89,6 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       if (data?.username) {
         setUsername(data.username);
+        // Sensible default for the game-entry name field on first login.
+        if (!localStorage.getItem("arcade:name")) {
+          localStorage.setItem("arcade:name", data.username);
+        }
       } else if (attempt < 2) {
         setTimeout(() => void fetchProfile(attempt + 1), 1200);
       } else {

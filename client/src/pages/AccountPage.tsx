@@ -214,6 +214,9 @@ export default function AccountPage() {
         </div>
 
         <div className="lobby-buttons">
+          <Link to="/friends" className="btn">
+            👥 Friends
+          </Link>
           <button className="btn danger" onClick={() => void signOut()}>
             Sign out
           </button>
