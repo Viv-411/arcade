@@ -15,6 +15,7 @@ const TESTS = [
   "trivia.test.mjs",
   "trivia-10p.test.mjs",
   "bidbattle.test.mjs",
+  "imposter.test.mjs",
 ];
 
 if (!existsSync(SERVER)) {

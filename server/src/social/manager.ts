@@ -1,10 +1,11 @@
 import type { Namespace } from "socket.io";
 import type { Ack, SocketData } from "../../../shared/events.js";
-import type {
-  FriendPresence,
-  GameKey,
-  SocialClientEvents,
-  SocialServerEvents,
+import {
+  GAME_PATHS,
+  type FriendPresence,
+  type GameKey,
+  type SocialClientEvents,
+  type SocialServerEvents,
 } from "../../../shared/social.js";
 import type { AnySocket } from "../core/roomManager.js";
 import { presence } from "../core/presence.js";
@@ -174,7 +175,7 @@ export class SocialManager {
         from: { userId, username: me?.username ?? "a friend" },
         game,
         code,
-        link: `/${game}?room=${code}`,
+        link: `${GAME_PATHS[game]}?room=${code}`,
       });
     }
     ack({ ok: true, data: { sent: true } });

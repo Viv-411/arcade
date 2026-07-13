@@ -11,6 +11,7 @@ import type {
 import { MindMeldManager } from "./mindmeld/manager.js";
 import { BidBattleManager } from "./bidbattle/manager.js";
 import { TriviaManager } from "./trivia/manager.js";
+import { ImposterManager } from "./imposter/manager.js";
 import { OpenTdbSource } from "./trivia/questionSource.js";
 import { InMemoryRoomStore } from "./store.js";
 import { createStatsStore } from "./stats.js";
@@ -68,12 +69,18 @@ const bidbattleNsp = io.of("/bidbattle");
 bidbattleNsp.use(socketOptionalAuth);
 new BidBattleManager(bidbattleNsp, bidbattleStore, stats);
 
+const imposterStore = new InMemoryRoomStore<any>();
+const imposterNsp = io.of("/imposter");
+imposterNsp.use(socketOptionalAuth);
+new ImposterManager(imposterNsp as any, imposterStore, stats);
+
 // Presence + lobby invites for signed-in players (reads the same room stores
 // to validate invites; anonymous play never touches this namespace).
 new SocialManager(io.of("/social") as any, {
   mindmeld: mindmeldStore,
   trivia: triviaStore,
   bidbattle: bidbattleStore,
+  imposter: imposterStore,
 });
 
 app.get("/healthz", (_req, res) => {

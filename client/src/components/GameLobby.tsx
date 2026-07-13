@@ -17,6 +17,8 @@ interface Props {
   /** Player limits for this game (defaults: 2-4). */
   minPlayers?: number;
   maxPlayers?: number;
+  /** Social game key when it differs from the route (e.g. imposter). */
+  gameKey?: GameKey;
   onToggleReady: () => void;
   onStart: () => void;
   onLeave: () => void;
@@ -34,6 +36,7 @@ export default function GameLobby({
   extras,
   minPlayers = MIN_PLAYERS,
   maxPlayers = MAX_PLAYERS,
+  gameKey,
   onToggleReady,
   onStart,
   onLeave,
@@ -75,7 +78,7 @@ export default function GameLobby({
         <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>
       )}
 
-      <InviteFriends game={joinPath.slice(1) as GameKey} code={room.code} />
+      <InviteFriends game={gameKey ?? (joinPath.slice(1) as GameKey)} code={room.code} />
 
       <ul className="player-list">
         {room.players.map((p) => (

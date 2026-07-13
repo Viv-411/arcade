@@ -5,6 +5,9 @@ import TriviaPage from "./pages/TriviaPage";
 import BidBattlePage from "./pages/BidBattlePage";
 import AccountPage from "./pages/AccountPage";
 import FriendsPage from "./pages/FriendsPage";
+import ImposterChoicePage from "./pages/ImposterChoicePage";
+import ImposterLocalPage from "./pages/ImposterLocalPage";
+import ImposterOnlinePage from "./pages/ImposterOnlinePage";
 import { AuthProvider } from "./auth/AuthContext";
 import AuthButton from "./auth/AuthButton";
 import { SocialProvider } from "./social/SocialContext";
@@ -23,6 +26,9 @@ export default function App() {
           <Route path="/mindmeld" element={<MindMeldPage />} />
           <Route path="/trivia" element={<TriviaPage />} />
           <Route path="/bidbattle" element={<BidBattlePage />} />
+          <Route path="/imposter" element={<ImposterChoicePage />} />
+          <Route path="/imposter/local" element={<ImposterLocalPage />} />
+          <Route path="/imposter-online" element={<ImposterOnlinePage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="*" element={<Home />} />

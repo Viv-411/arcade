@@ -8,12 +8,21 @@ import type { Ack } from "./events.js";
  * Anonymous sockets may connect but every event requires a verified userId.
  */
 
-export type GameKey = "mindmeld" | "trivia" | "bidbattle";
+export type GameKey = "mindmeld" | "trivia" | "bidbattle" | "imposter";
 
 export const GAME_NAMES: Record<GameKey, string> = {
   mindmeld: "Mind Meld",
   trivia: "Speed Trivia",
   bidbattle: "Bid Battle",
+  imposter: "Imposter",
+};
+
+/** Client routes per game (imposter's online route differs from its key). */
+export const GAME_PATHS: Record<GameKey, string> = {
+  mindmeld: "/mindmeld",
+  trivia: "/trivia",
+  bidbattle: "/bidbattle",
+  imposter: "/imposter-online",
 };
 
 export interface FriendPresence {

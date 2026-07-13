@@ -1,7 +1,7 @@
 # 🕹 Arcade
 
 A real-time multiplayer web arcade for party games: **Mind Meld** 🧠,
-**Speed Trivia** ⚡, and **Bid Battle** 💰.
+**Speed Trivia** ⚡, **Bid Battle** 💰, and **Imposter** 🕵️.
 
 ## How it works
 
@@ -199,6 +199,64 @@ while a refresh of either tab still reconnects to the same game.)
 | ---------- | --------------- | -------------------------------- |
 | `PORT`     | `3001`          | Port the Node server listens on  |
 | `STATS_DB` | `data/stats.db` | Path of the SQLite stats file    |
+
+## Imposter — the rules
+
+A social-deduction word game with **two modes** behind one entry (`/imposter`):
+**On this device** (pass-and-play, one shared phone) and **Online** (everyone on
+their own device). Both share the same built-in word bank (~10 categories × 25+
+words, no external API) and the same reveal rules; they differ only in what
+drives play.
+
+Core idea: everyone secretly receives the same word — except the imposter(s),
+who see only "You are the Imposter" (plus the **category** as a hint when hints
+are ON — never the word itself, and there's nothing more to curate since the
+hint is just the category label). Players take turns giving ONE-word clues that
+prove they know the word without giving it away.
+
+### On this device (works offline, no accounts, no server)
+
+Set player count (3+), names (optional), imposters (1..players-1, with a warning
+when the ratio makes crew wins unlikely), category or random, hints on/off.
+Each player taps their name to privately view their card (a hand-off screen
+guards against peeking, and each card can be viewed **only once**). Then you
+play out loud — the app doesn't capture clues — and hit **Reveal results** to
+show every role and the word. New round reshuffles with the same settings.
+
+### Online (route `/imposter-online`, namespace `/imposter`)
+
+3–10 players; reuses the shared lobby/room codes/Quick Play/ready/reconnection
+infra and friends-list lobby invites. The host configures (in the lobby):
+imposter count, category, hints, word steal (default on), typed vs spoken clues
+(default typed), and clue rounds before a forced vote (default 3).
+
+- **Role secrecy is server-authoritative**: roles and the word are assigned
+  server-side and each client receives ONLY its own card. The word is never
+  sent to an imposter's client, and nobody's role is sent to anyone before the
+  final reveal — including across refreshes (rejoin restores only your own
+  card). The test suite sweeps every mid-game broadcast to prove it.
+- **Clue rounds**: turn-based, starting from a randomly announced player, 30s
+  per turn; a disconnected/idle player is auto-skipped after the timer (they
+  simply contribute no clue). Typed clues must be a single word, and crew may
+  not say the secret word itself (deliberately unenforced for imposters — the
+  rejection would confirm their guess). Spoken mode advances turns with a
+  "said it" tap (active player or host) and keeps no text.
+- **Continue-or-vote**: after each round everyone votes "another round" vs
+  "accuse now" — majority accuse goes to the vote, ties mean another round,
+  and after the round cap the vote is forced.
+- **Accusation vote**: secret until the tally reveal. Ties trigger one runoff
+  among the tied; a still-tied runoff eliminates nobody and returns to clues
+  (benefit of the doubt) — unless it was the forced final vote, in which case
+  the deadlocked crew loses. The eliminated player's role is revealed.
+- **Word steal** (optional): when the LAST imposter is voted out, they get one
+  typed guess at the word — a normalized match wins the game for the imposters
+  on the spot.
+- **Win check (parity)**: all imposters out (and no successful steal) → crew
+  wins; a crew elimination that leaves imposters ≥ crew → imposters win;
+  otherwise a fresh clue cycle starts (round cap reset) with a new starter.
+
+Categories come from the built-in word bank in `shared/imposterWords.ts` —
+user-uploaded category packs could reuse the accounts/DB foundation later.
 
 ## User accounts (Supabase) — optional, foundation only
 

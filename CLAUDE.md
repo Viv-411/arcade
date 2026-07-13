@@ -25,11 +25,13 @@ before making changes.
 
 ## What this project is
 
-A real-time multiplayer web arcade for party games, playable in the browser. Three
+A real-time multiplayer web arcade for party games, playable in the browser. Four
 games are live: **Mind Meld** 🧠 (2–4 players converge on the same word),
-**Speed Trivia** ⚡ (2–10 players race through multiple-choice questions), and
-**Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2). The
-README.md holds the full player-facing rules; this file holds contributor context.
+**Speed Trivia** ⚡ (2–10 players race through multiple-choice questions),
+**Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2), and
+**Imposter** 🕵️ (social deduction, 3–10 players online PLUS a fully client-side
+pass-and-play mode). The README.md holds the full player-facing rules; this file
+holds contributor context.
 
 ## Architecture (the important mental model)
 
@@ -97,6 +99,17 @@ scoring). Clients render optimistically but never decide results.
   game) or <2 remain in the room.
 - Trivia scoring: correct = `round(1000 × factor)`, factor decays linearly 1.0 → 0.5
   across the question time; wrong/no answer = 0. Ties share the win.
+- Imposter (online): 3–10 players. ROLE SECRECY IS CRITICAL — the server sends
+  each socket ONLY its own card (yourRole / rejoinExtra); snapshots include
+  word/allRoles/winners ONLY when state === "finished" (the imposter test
+  sweeps every mid-game roomUpdate to enforce this — keep it passing). The
+  crew-can't-say-the-word check is deliberately NOT applied to imposters
+  (rejection would confirm their guess). Namespace is /imposter but the client
+  route is /imposter-online (gameKey overridden after super(); GAME_PATHS in
+  shared/social.ts maps invite links). Round-cap counter resets each
+  elimination cycle; forced-final-vote deadlock = imposters win. The
+  pass-and-play mode (/imposter/local) is PURE React state — no server, no
+  accounts; keep it that way.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools; no partial-lobby countdown. **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -337,3 +350,15 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
       tradeoff).
     - MM disconnect fast-path (round resolves when all CONNECTED players are
       locked) is spec'd behavior, kept as-is; the harness asserts it.
+14. **Imposter (fourth game)** — two modes behind /imposter: pass-and-play
+    (/imposter/local, pure client state, offline-capable) and online
+    (/imposter-online ↔ namespace /imposter) on the shared room core. Built-in
+    word bank in shared/imposterWords.ts (10 categories × 25+). Server manager:
+    reveal → clue rounds (turn timers, auto-skip) → continue-or-vote → secret
+    accusation vote (tie → runoff → no-elimination; forced after round cap) →
+    optional word steal → parity win check → cycles. Tests cover secrecy
+    (per-socket cards, no-leak snapshot sweep, rejoin), tie/runoff, steal
+    success+fail, forced votes, skips, parity. Home page has no more
+    coming-soon placeholders. Test gotcha that bit here: back-to-back server
+    events (consecutive clueTurns) outrun re-registered waitFor listeners —
+    use the queueing collector pattern from tests/imposter.test.mjs.

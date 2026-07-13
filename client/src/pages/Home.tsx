@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
 
-const COMING_SOON = [
-  { name: "Sketch Wars", emoji: "🎨", blurb: "Draw fast, guess faster." },
-];
+const COMING_SOON: { name: string; emoji: string; blurb: string }[] = [];
 
 export default function Home() {
   return (
@@ -37,6 +35,15 @@ export default function Home() {
           <p>
             Vote on a category, then race to answer multiple-choice questions —
             faster correct answers score more points.
+          </p>
+          <span className="badge play-badge">▶ Play now</span>
+        </Link>
+        <Link to="/imposter" className="game-card active">
+          <div className="game-emoji">🕵️</div>
+          <h2>Imposter</h2>
+          <p>
+            Everyone knows the secret word — except one player. Give clues, sniff out the
+            faker, vote them out. Pass-and-play or online.
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
