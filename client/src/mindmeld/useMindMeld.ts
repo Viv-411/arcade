@@ -156,9 +156,8 @@ export function useMindMeld() {
   );
 
   const unlock = useCallback(() => {
-    core.socket.emit("unlock");
-    dispatchGame({ type: "unlockedSelf" });
-  }, [core.socket]);
+    if (core.emitEvent("unlock")) dispatchGame({ type: "unlockedSelf" });
+  }, [core.emitEvent]);
 
   const createRoom = useCallback(
     (name: string, isPublic: boolean, settings?: Partial<RoomSettings>) =>

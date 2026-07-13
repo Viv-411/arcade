@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { MatchMode } from "@shared/types";
 import { useMindMeld } from "../mindmeld/useMindMeld";
+import { useJoinLinkOverride } from "../core/hooks";
 import GameEntry from "../components/GameEntry";
 import GameLobby from "../components/GameLobby";
 import GameBoard from "../mindmeld/GameBoard";
@@ -13,6 +14,7 @@ export default function MindMeldPage() {
   const { room } = state;
   const [roundTimeSec, setRoundTimeSec] = useState(60);
   const [matchMode, setMatchMode] = useState<MatchMode>("strict");
+  useJoinLinkOverride(room?.code ?? null, actions.leaveRoom);
 
   let screen: JSX.Element;
   if (!room) {

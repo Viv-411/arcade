@@ -1,4 +1,22 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+
+/**
+ * Following an invite/share link (?room=CODE) while already in a DIFFERENT
+ * room of the same game should honor the link: leave the current room so the
+ * entry screen (with the code prefilled) can take over. Without this, tapping
+ * a friend's invite while in a room silently did nothing.
+ */
+export function useJoinLinkOverride(
+  currentCode: string | null | undefined,
+  leaveRoom: () => void,
+): void {
+  const [params] = useSearchParams();
+  const target = (params.get("room") ?? "").toUpperCase();
+  useEffect(() => {
+    if (currentCode && target && target !== currentCode) leaveRoom();
+  }, [target, currentCode, leaveRoom]);
+}
 
 /** Whole seconds remaining until an epoch-ms deadline (null when no deadline). */
 export function useSecondsLeft(deadline: number | null | undefined): number | null {

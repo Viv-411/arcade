@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { BidBattleMode } from "@shared/bidbattle";
 import { useBidBattle } from "../bidbattle/useBidBattle";
+import { useJoinLinkOverride } from "../core/hooks";
 import GameEntry from "../components/GameEntry";
 import BidBattleLobby from "../bidbattle/BidBattleLobby";
 import ScoreBar from "../bidbattle/ScoreBar";
@@ -18,6 +19,7 @@ export default function BidBattlePage() {
   const [mode, setMode] = useState<BidBattleMode>("1v1");
   const [targetPoints, setTargetPoints] = useState(3);
   const myTeam = room?.players.find((p) => p.id === state.playerId)?.team ?? null;
+  useJoinLinkOverride(room?.code ?? null, actions.leaveRoom);
 
   let screen: JSX.Element;
   if (!room) {

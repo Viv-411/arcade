@@ -373,9 +373,23 @@ export abstract class BaseRoomManager<
     }
   }
 
+  /**
+   * A socket with no room binding usually means it reconnected but hasn't
+   * rejoined yet (refresh, network blip, host idle-wake). Give feedback
+   * instead of silently dropping the click — the retry will work once the
+   * client's automatic rejoin lands.
+   */
+  private noSessionFeedback(socket: AnySocket): void {
+    this.emitError(socket, "Reconnecting your session — try that again in a second.");
+  }
+
   private toggleReady(socket: AnySocket): void {
     const ctx = this.roomOf(socket);
-    if (!ctx || ctx.room.state !== "lobby") return;
+    if (!ctx) {
+      this.noSessionFeedback(socket);
+      return;
+    }
+    if (ctx.room.state !== "lobby") return;
     ctx.player.ready = !ctx.player.ready;
     this.broadcastRoom(ctx.room);
   }
@@ -383,7 +397,10 @@ export abstract class BaseRoomManager<
   /** Host-initiated start with the shared validation rules. */
   protected handleHostStart(socket: AnySocket): void {
     const ctx = this.roomOf(socket);
-    if (!ctx) return;
+    if (!ctx) {
+      this.noSessionFeedback(socket);
+      return;
+    }
     const { room, player } = ctx;
     if (room.state !== "lobby") {
       this.emitError(socket, "The game has already started.");
@@ -569,7 +586,10 @@ export abstract class BaseRoomManager<
 
   private playAgain(socket: AnySocket): void {
     const ctx = this.roomOf(socket);
-    if (!ctx) return;
+    if (!ctx) {
+      this.noSessionFeedback(socket);
+      return;
+    }
     const { room } = ctx;
     if (room.state !== "finished") return;
     room.state = "lobby";

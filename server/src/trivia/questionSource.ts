@@ -143,6 +143,8 @@ interface OpenTdbResponse {
   token?: string;
 }
 
+const QUESTION_CACHE_TTL_MS = 10 * 60_000;
+
 export class OpenTdbSource implements QuestionSource {
   private categories: TriviaCategory[] | null = null;
   private categoriesPromise: Promise<TriviaCategory[]> | null = null;
@@ -150,6 +152,10 @@ export class OpenTdbSource implements QuestionSource {
   // Serialize every network call and space them out for the rate limit.
   private queue: Promise<unknown> = Promise.resolve();
   private lastRequestAt = 0;
+  // Recent fetches per category+difficulty: when several rooms start games
+  // near-simultaneously, cache hits skip the (rate-limited) queue entirely so
+  // later rooms aren't stuck on "Loading questions…".
+  private questionCache = new Map<string, { at: number; questions: PreparedQuestion[] }>();
 
   /** Fetch a URL, waiting in line so we never exceed ~1 request / 5s. */
   private throttledFetch(url: string): Promise<unknown> {
@@ -278,6 +284,12 @@ export class OpenTdbSource implements QuestionSource {
    * Knowledge -> built-in questions (e.g. offline).
    */
   async getQuestions(opts: GetQuestionsOpts): Promise<PreparedQuestion[]> {
+    const cacheKey = `${opts.category ?? "any"}:${opts.difficulty ?? "any"}`;
+    const hit = this.questionCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < QUESTION_CACHE_TTL_MS && hit.questions.length >= opts.amount) {
+      return shuffle(hit.questions).slice(0, opts.amount);
+    }
+
     const collected: PreparedQuestion[] = [];
     const seen = new Set<string>();
     const collect = (batch: PreparedQuestion[]) => {
@@ -303,7 +315,9 @@ export class OpenTdbSource implements QuestionSource {
         console.warn("[opentdb] question fetch failed:", err);
       }
     }
-    if (collected.length < opts.amount) {
+    if (collected.length >= opts.amount) {
+      this.questionCache.set(cacheKey, { at: Date.now(), questions: [...collected] });
+    } else {
       collect(builtinQuestions(opts.amount - collected.length, seen));
     }
     return collected;

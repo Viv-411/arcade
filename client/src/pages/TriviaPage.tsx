@@ -6,6 +6,7 @@ import {
   type TriviaDifficulty,
 } from "@shared/trivia";
 import { useTrivia } from "../trivia/useTrivia";
+import { useJoinLinkOverride } from "../core/hooks";
 import GameEntry from "../components/GameEntry";
 import GameLobby from "../components/GameLobby";
 import VoteScreen from "../trivia/VoteScreen";
@@ -18,6 +19,7 @@ export default function TriviaPage() {
   const { room } = state;
   const [questionsPerGame, setQuestionsPerGame] = useState(10);
   const [questionTimeSec, setQuestionTimeSec] = useState(20);
+  useJoinLinkOverride(room?.code ?? null, actions.leaveRoom);
 
   let screen: JSX.Element;
   if (!room) {

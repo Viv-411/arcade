@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { NAME_KEY } from "../core/useRoomCore";
 
@@ -29,6 +29,17 @@ export default function GameEntry({
   const [code, setCode] = useState(() => (params.get("room") ?? "").toUpperCase());
   const [showJoin, setShowJoin] = useState(() => Boolean(params.get("room")));
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // A ?room= code can arrive while this screen is already mounted (e.g.
+  // tapping a friend's lobby invite while sitting on the entry screen) —
+  // the initializers above only run once, so track changes too.
+  useEffect(() => {
+    const fromUrl = (params.get("room") ?? "").toUpperCase();
+    if (fromUrl) {
+      setCode(fromUrl);
+      setShowJoin(true);
+    }
+  }, [params]);
 
   const trimmed = name.trim();
   const remember = () => localStorage.setItem(NAME_KEY, trimmed);

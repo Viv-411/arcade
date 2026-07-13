@@ -164,10 +164,11 @@ export function useTrivia() {
 
   const voteCategory = useCallback(
     (categoryId: number) => {
-      core.socket.emit("voteCategory", { categoryId });
-      dispatchGame({ type: "votedSelf", categoryId });
+      if (core.emitEvent("voteCategory", { categoryId })) {
+        dispatchGame({ type: "votedSelf", categoryId });
+      }
     },
-    [core.socket],
+    [core.emitEvent],
   );
 
   const answer = useCallback(
@@ -185,8 +186,8 @@ export function useTrivia() {
   );
 
   const setDifficulty = useCallback(
-    (difficulty: TriviaDifficulty) => core.socket.emit("setDifficulty", { difficulty }),
-    [core.socket],
+    (difficulty: TriviaDifficulty) => core.emitEvent("setDifficulty", { difficulty }),
+    [core.emitEvent],
   );
 
   const createRoom = useCallback(

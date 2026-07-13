@@ -309,3 +309,31 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     `.lobby-buttons`/`.settings-line`/`.link-btn` gained breathing room.
     If new fixed/sticky top-of-page elements are added, keep them below the
     56px corner-button band.
+13. **Multiplayer reliability fixes** (after owner reports: playAgain
+    sometimes dead, invites sometimes failing, multi-game issues). Root
+    causes + fixes, all verified by a 50-account stress harness (scratchpad
+    stress.mjs pattern; two clean iterations across all games, quick-play
+    stampedes, invites, reconnects, menus):
+    - Fire-and-forget emits (playAgain/toggleReady/startGame/votes/flags/…)
+      sent while the socket was disconnected were buffered by socket.io and
+      flushed on reconnect BEFORE the automatic rejoin rebound the session —
+      the server dropped them silently. Client now refuses to emit while
+      disconnected (`emitEvent` guard in useRoomCore, toast + reconnect) and
+      the server answers session-less lobby actions with an errorMsg instead
+      of silence.
+    - Game sockets could connect BEFORE the Supabase session finished loading
+      → anonymous membership → friend invites failed ("not in that lobby")
+      and stats went unattributed. supabaseClient now emits onIdentityChange
+      (sign-in/out or initial session resolution, never token refreshes) and
+      useRoomCore re-handshakes + auto-rejoins, healing userId binding.
+    - Following a lobby-invite/share link (?room=CODE) did nothing if the
+      entry screen was already mounted (useState initializer) or the player
+      was in another room. GameEntry now syncs the param via effect, and
+      useJoinLinkOverride (core/hooks) leaves the current room when a link
+      targets a different one — wired into all three game pages.
+    - Concurrent trivia rooms queued 5.5s apart on the OpenTDB throttle; a
+      10-min question cache per category+difficulty now serves same-category
+      games instantly (repeat questions across different rooms: accepted
+      tradeoff).
+    - MM disconnect fast-path (round resolves when all CONNECTED players are
+      locked) is spec'd behavior, kept as-is; the harness asserts it.

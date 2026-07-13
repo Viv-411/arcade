@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
-import { getAccessToken } from "../auth/supabaseClient";
+import { getAccessToken, onIdentityChange } from "../auth/supabaseClient";
 
 /**
  * Game-agnostic client half of the multiplayer infrastructure: one socket
@@ -226,8 +226,18 @@ export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptio
     );
     optsRef.current.bindGameEvents?.(socket, apiRef.current);
 
+    // If the signed-in identity changes (including the initial session
+    // resolving AFTER this socket already connected anonymously), re-handshake
+    // so the server binds the right userId; the connect handler's automatic
+    // rejoin restores the room seamlessly.
+    const offIdentity = onIdentityChange(() => {
+      if (socket.connected) socket.disconnect();
+      socket.connect();
+    });
+
     socket.connect();
     return () => {
+      offIdentity();
       socket.removeAllListeners();
       socket.disconnect();
     };
@@ -276,12 +286,34 @@ export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptio
   );
   const quickPlay = useCallback((name: string) => joinAction("quickPlay", { name }), [joinAction]);
 
-  const toggleReady = useCallback(() => socket.emit("toggleReady"), [socket]);
-  const startGame = useCallback(() => socket.emit("startGame"), [socket]);
-  const playAgain = useCallback(() => socket.emit("playAgain"), [socket]);
+  /**
+   * Guarded fire-and-forget emit: while disconnected, socket.io would buffer
+   * the packet and flush it on reconnect BEFORE our rejoin rebinds the
+   * session — the server would drop it as "not in a room". Refuse instead,
+   * tell the player, and kick off a reconnect so the retry works.
+   */
+  const emitEvent = useCallback(
+    (event: string, payload?: unknown): boolean => {
+      if (!socket.connected) {
+        toast("Reconnecting — try that again in a second.", "info");
+        socket.connect();
+        return false;
+      }
+      if (payload === undefined) socket.emit(event as any);
+      else socket.emit(event as any, payload);
+      return true;
+    },
+    [socket, toast],
+  );
+
+  const toggleReady = useCallback(() => emitEvent("toggleReady"), [emitEvent]);
+  const startGame = useCallback(() => emitEvent("startGame"), [emitEvent]);
+  const playAgain = useCallback(() => emitEvent("playAgain"), [emitEvent]);
 
   const leaveRoom = useCallback(() => {
-    socket.emit("leaveRoom");
+    // Leaving is honored locally even while disconnected; the server cleans
+    // the seat up via its disconnect handling.
+    if (socket.connected) socket.emit("leaveRoom");
     clearSession(optsRef.current.gameKey);
     dispatch({ type: "leftRoom" });
     optsRef.current.onSession?.("left");
@@ -305,6 +337,7 @@ export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptio
     toast,
     patchRoom,
     emitWithAck,
+    emitEvent,
     actions: {
       createRoom,
       joinRoom,

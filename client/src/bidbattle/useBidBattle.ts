@@ -190,12 +190,12 @@ export function useBidBattle() {
   );
 
   const setMode = useCallback(
-    (mode: BidBattleMode) => core.socket.emit("setMode", { mode }),
-    [core.socket],
+    (mode: BidBattleMode) => core.emitEvent("setMode", { mode }),
+    [core.emitEvent],
   );
   const assignTeam = useCallback(
-    (team: TeamId) => core.socket.emit("assignTeam", { team }),
-    [core.socket],
+    (team: TeamId) => core.emitEvent("assignTeam", { team }),
+    [core.emitEvent],
   );
   const suggestCategory = useCallback(
     (text: string) => withToastOnError("submitCategorySuggestion", { text }),
@@ -203,16 +203,17 @@ export function useBidBattle() {
   );
   const voteCategory = useCallback(
     (optionId: number) => {
-      core.socket.emit("voteCategory", { optionId });
-      dispatchGame({ type: "votedSelf", optionId });
+      if (core.emitEvent("voteCategory", { optionId })) {
+        dispatchGame({ type: "votedSelf", optionId });
+      }
     },
-    [core.socket],
+    [core.emitEvent],
   );
   const raiseBid = useCallback(
     (amount: number) => withToastOnError("raiseBid", { amount }),
     [withToastOnError],
   );
-  const challengeBid = useCallback(() => core.socket.emit("challengeBid"), [core.socket]);
+  const challengeBid = useCallback(() => core.emitEvent("challengeBid"), [core.emitEvent]);
   const submitItem = useCallback(
     (text: string, onResult?: (ok: boolean, error?: string) => void) => {
       core.emitWithAck("submitItem", { text }, (res) => {
@@ -222,20 +223,20 @@ export function useBidBattle() {
     },
     [core.emitWithAck, core.toast],
   );
-  const finishDelivery = useCallback(() => core.socket.emit("finishDelivery"), [core.socket]);
+  const finishDelivery = useCallback(() => core.emitEvent("finishDelivery"), [core.emitEvent]);
   const flagItem = useCallback(
-    (index: number) => core.socket.emit("flagItem", { index }),
-    [core.socket],
+    (index: number) => core.emitEvent("flagItem", { index }),
+    [core.emitEvent],
   );
   const respondToFlag = useCallback(
     (index: number, action: "concede" | "defend") =>
-      core.socket.emit("respondToFlag", { index, action }),
-    [core.socket],
+      core.emitEvent("respondToFlag", { index, action }),
+    [core.emitEvent],
   );
   const finalizeFlag = useCallback(
     (index: number, action: "accept" | "uphold") =>
-      core.socket.emit("finalizeFlag", { index, action }),
-    [core.socket],
+      core.emitEvent("finalizeFlag", { index, action }),
+    [core.emitEvent],
   );
 
   return {
