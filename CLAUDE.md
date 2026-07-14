@@ -362,3 +362,13 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     coming-soon placeholders. Test gotcha that bit here: back-to-back server
     events (consecutive clueTurns) outrun re-registered waitFor listeners —
     use the queueing collector pattern from tests/imposter.test.mjs.
+15. **Cowork phase start — PROJECT_CONTEXT.md** — reconciled the design brief
+    `PROJECT_CONTEXT.md` against the live code and committed it to the repo,
+    marking the start of the Cowork phase (research/docs/dashboards/context
+    upkeep run through Cowork; coding stays in Claude Code). Corrected stale
+    design claims to match reality: player identity is `sessionStorage`
+    per-tab (not `localStorage`); JWT verification uses `jose` + JWKS ES256
+    with an HS256 fallback (not `getUser`); Bid Battle delivery shows both
+    teams every accepted item live (not count-only); filled in verified
+    env-var names, the Render deploy URL, and all four merged games. No code
+    changed — docs only.
