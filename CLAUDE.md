@@ -253,6 +253,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   allow-list.
 - git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
 - Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
+- Keep-alive: `.github/workflows/keepalive.yml` pings the deployed `/healthz`
+  every 5 min (cron + manual dispatch) to stop the Render free-tier 15-min
+  spin-down. Best-effort (GitHub cron jitter; auto-disables after 60 days with
+  no commits). Update `PING_URL` in that file if the deploy URL changes. This
+  is a stopgap for the free tier — the real fix is the ~$8/mo Render Starter
+  instance (no sleep).
 
 ## Session history
 
@@ -372,3 +378,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     teams every accepted item live (not count-only); filled in verified
     env-var names, the Render deploy URL, and all four merged games. No code
     changed — docs only.
+16. **Keep-alive workflow (Cowork)** — added `.github/workflows/keepalive.yml`,
+    a scheduled GitHub Actions job (`*/5` cron + `workflow_dispatch`) that curls
+    the deployed `/healthz` to prevent the Render free-tier spin-down. Chosen
+    over UptimeRobot to avoid a third-party account/credentials. No app code
+    changed; only takes effect once pushed to `origin` (GitHub runs the cron).
+    Motivated by a Cowork monetization/cost review: running costs are near-zero,
+    the free tier's cold start is the main UX cost, and this mitigates it.

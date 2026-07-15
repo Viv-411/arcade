@@ -1,0 +1,37 @@
+name: keep-alive
+
+# Pings the deployed app's /healthz endpoint on a schedule so the Render
+# free-tier web service does not spin down after 15 minutes of inactivity
+# (cold starts take ~1 minute, which is a bad first impression for a game).
+#
+# Notes / caveats (see CLAUDE.md):
+#  - GitHub cron is best-effort and can be delayed under load; */5 usually
+#    keeps gaps under Render's 15-min sleep threshold, but not guaranteed.
+#  - GitHub auto-disables scheduled workflows after 60 days with no repo
+#    commits. This repo is committed to regularly, so that is not expected
+#    to bite — but if pings stop, check the Actions tab for a disabled run.
+#  - Keeping the service awake 24/7 consumes ~730 of Render's 750 free
+#    instance-hours/month. Fine for ONE free service; a second would exceed it.
+#  - If the deploy URL changes, update PING_URL below.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping /healthz
+        env:
+          PING_URL: https://arcade-1628.onrender.com/healthz
+        run: |
+          if curl -fsS --retry 3 --retry-delay 5 --max-time 90 "$PING_URL"; then
+            echo "pinged OK"
+          else
+            # A cold start can return 5xx while the service wakes; don't fail the
+            # job for that — the request itself is what resets the idle timer.
+            echo "ping did not get a 2xx (service may be cold-starting) — that's OK"
+          fi
