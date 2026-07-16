@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 
-const COMING_SOON: { name: string; emoji: string; blurb: string }[] = [];
+const SOLO_COMING_SOON = [
+  { name: "Solo Trivia", emoji: "🎯", blurb: "Practice runs on any question set." },
+  { name: "Daily Challenge", emoji: "📅", blurb: "One puzzle a day, streaks included." },
+];
 
 export default function Home() {
   return (
@@ -56,7 +59,17 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        {COMING_SOON.map((g) => (
+      </div>
+
+      <h2 className="section-title">🎮 Singleplayer</h2>
+      <div className="game-grid">
+        <Link to="/imposter/local" className="game-card active">
+          <div className="game-emoji">📱</div>
+          <h2>Imposter: Pass &amp; Play</h2>
+          <p>One device, no internet — deal secret cards around the room and play out loud.</p>
+          <span className="badge play-badge">▶ Play now</span>
+        </Link>
+        {SOLO_COMING_SOON.map((g) => (
           <div key={g.name} className="game-card disabled">
             <div className="game-emoji">{g.emoji}</div>
             <h2>{g.name}</h2>
@@ -65,7 +78,6 @@ export default function Home() {
           </div>
         ))}
       </div>
-
     </div>
   );
 }

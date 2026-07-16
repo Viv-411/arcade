@@ -78,7 +78,11 @@ export default function GameLobby({
         <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>
       )}
 
-      <InviteFriends game={gameKey ?? (joinPath.slice(1) as GameKey)} code={room.code} />
+      <InviteFriends
+        game={gameKey ?? (joinPath.slice(1) as GameKey)}
+        code={room.code}
+        openSeats={Math.max(0, maxPlayers - room.players.length)}
+      />
 
       <ul className="player-list">
         {room.players.map((p) => (

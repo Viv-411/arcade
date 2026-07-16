@@ -157,6 +157,83 @@ export interface Database {
           },
         ];
       };
+      chats: {
+        Row: {
+          id: string;
+          kind: "dm" | "group";
+          name: string | null;
+          created_by: string;
+          dm_key: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: "dm" | "group";
+          name?: string | null;
+          created_by: string;
+          dm_key?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          id: string;
+          kind: "dm" | "group";
+          name: string | null;
+          created_by: string;
+          dm_key: string | null;
+          created_at: string;
+        }>;
+        Relationships: [];
+      };
+      chat_members: {
+        Row: { chat_id: string; user_id: string; last_read_at: string; joined_at: string };
+        Insert: { chat_id: string; user_id: string; last_read_at?: string; joined_at?: string };
+        Update: Partial<{ chat_id: string; user_id: string; last_read_at: string; joined_at: string }>;
+        Relationships: [
+          {
+            foreignKeyName: "chat_members_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          chat_id: string;
+          sender_id: string;
+          kind: "text" | "invite";
+          body: string;
+          invite: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          sender_id: string;
+          kind?: "text" | "invite";
+          body: string;
+          invite?: Json | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          id: string;
+          chat_id: string;
+          sender_id: string;
+          kind: "text" | "invite";
+          body: string;
+          invite: Json | null;
+          created_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey";
+            columns: ["sender_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       player_stats: {
         Row: {
           user_id: string;

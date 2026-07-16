@@ -5,6 +5,7 @@ import TriviaPage from "./pages/TriviaPage";
 import BidBattlePage from "./pages/BidBattlePage";
 import AccountPage from "./pages/AccountPage";
 import FriendsPage from "./pages/FriendsPage";
+import MessagesPage from "./pages/MessagesPage";
 import ImposterChoicePage from "./pages/ImposterChoicePage";
 import ImposterLocalPage from "./pages/ImposterLocalPage";
 import ImposterOnlinePage from "./pages/ImposterOnlinePage";
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/imposter-online" element={<ImposterOnlinePage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </SocialProvider>

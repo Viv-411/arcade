@@ -305,6 +305,27 @@ What exists (accounts phase 3 — friends):
   Friend lists are always read server-side with the service role — client-
   supplied ids are never trusted.
 
+What exists (accounts phase 4 — messages):
+
+- **Friend DMs**: message any *accepted* friend (requests pending or declined
+  can't chat). One conversation per friendship, created on first message from
+  the friends page (💬) or a lobby invite.
+- **Group chats**: name a group and add 1–9 of your accepted friends; everyone
+  in it can chat and post game invites.
+- **Chat-based lobby invites**: the lobby "Invite friends" panel still shows
+  who's online (presence can be glitchy, so it's informational) — but invites
+  now go through Messages: one tap posts an invite card (with a Join button)
+  into a DM or group chat, where it persists even if the friend is offline.
+  Online recipients also get the live 🔔 notification. **Capacity rule**: a
+  group invite is only allowed when every other member could fit — e.g. a
+  3-person group can't be invited to a 1v1 Bid Battle lobby with one open
+  seat (the server enforces this; the panel greys those groups out).
+- **Security model**: the chat tables have **deny-all RLS** — clients can't
+  read or write them even with a valid session. Everything flows through the
+  game server (service role), which validates friendship for DMs, membership
+  for reads/posts, and lobby membership + capacity for invites. Delivery is
+  realtime over the `/social` socket; unread state is tracked per member.
+
 What existed from phase 1:
 
 - **Login button** in the top-right corner on every page → modal with email/password

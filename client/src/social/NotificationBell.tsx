@@ -7,12 +7,23 @@ import { useSocial } from "./SocialContext";
 /** Corner bell: pending friend requests + live lobby invites. */
 export default function NotificationBell() {
   const { user } = useAuth();
-  const { ready, incoming, invites, unreadCount, acceptRequest, removeFriendship, dismissInvite, refresh } =
-    useSocial();
+  const {
+    ready,
+    incoming,
+    invites,
+    unreadCount,
+    unreadMessages,
+    acceptRequest,
+    removeFriendship,
+    dismissInvite,
+    refresh,
+    refreshChats,
+  } = useSocial();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   if (!user || !ready) return null;
+  const totalBadge = unreadCount + unreadMessages;
 
   return (
     <>
@@ -21,10 +32,13 @@ export default function NotificationBell() {
         title="Notifications"
         onClick={() => {
           setOpen((o) => !o);
-          if (!open) void refresh();
+          if (!open) {
+            void refresh();
+            void refreshChats();
+          }
         }}
       >
-        🔔{unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
+        🔔{totalBadge > 0 && <span className="bell-badge">{totalBadge}</span>}
       </button>
       {open && (
         <div className="notif-panel panel">
@@ -75,12 +89,33 @@ export default function NotificationBell() {
             </div>
           ))}
 
-          {invites.length === 0 && incoming.length === 0 && (
+          {unreadMessages > 0 && (
+            <div className="notif-item">
+              <span className="notif-text">
+                💬 {unreadMessages} unread conversation{unreadMessages === 1 ? "" : "s"}
+              </span>
+              <button
+                className="btn small primary"
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/messages");
+                }}
+              >
+                Open
+              </button>
+            </div>
+          )}
+          {invites.length === 0 && incoming.length === 0 && unreadMessages === 0 && (
             <p className="hint">Nothing new. 🎉</p>
           )}
-          <Link to="/friends" className="link-btn notif-friends-link" onClick={() => setOpen(false)}>
-            Manage friends →
-          </Link>
+          <div className="notif-links">
+            <Link to="/messages" className="link-btn" onClick={() => setOpen(false)}>
+              💬 Messages
+            </Link>
+            <Link to="/friends" className="link-btn" onClick={() => setOpen(false)}>
+              👥 Friends
+            </Link>
+          </div>
         </div>
       )}
     </>

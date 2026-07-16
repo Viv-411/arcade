@@ -206,7 +206,7 @@ export default function ImposterOnlinePage() {
         <h1 className="mm-title">🕵️ Imposter Online</h1>
       </header>
       {screen}
-      {state.voteResult && room && room.state !== "finished" && (
+      {state.voteResult && room && room.state !== "finished" && room.state !== "steal" && (
         <div className="overlay reveal-overlay">
           <div className="panel reveal-panel">
             <h2>Vote result</h2>

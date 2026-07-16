@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 import type { FriendPresence } from "@shared/social";
 import { GAME_NAMES } from "@shared/social";
@@ -17,7 +17,9 @@ export default function FriendsPage() {
     removeFriendship,
     refresh,
     fetchPresence,
+    openDm,
   } = useSocial();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [addInput, setAddInput] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -247,6 +249,17 @@ export default function FriendsPage() {
                   {f.displayName ? ` · ${f.displayName}` : ""}
                 </span>
                 <span className="invite-status">{statusOf(f.userId)}</span>
+                <button
+                  className="btn small"
+                  title="Message"
+                  onClick={() =>
+                    void openDm(f.userId).then((chatId) => {
+                      if (chatId) navigate(`/messages?chat=${chatId}`);
+                    })
+                  }
+                >
+                  💬
+                </button>
                 <button
                   className="btn small danger"
                   title="Remove friend"

@@ -47,6 +47,32 @@ export interface LobbyInvitePayload {
   link: string;
 }
 
+export interface ChatMemberInfo {
+  userId: string;
+  username: string;
+}
+
+export interface ChatMessageInfo {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  kind: "text" | "invite";
+  body: string;
+  invite: { game: GameKey; code: string } | null;
+  createdAt: string;
+}
+
+export interface ChatSummary {
+  id: string;
+  kind: "dm" | "group";
+  /** Group name; DMs display the other member's username. */
+  name: string | null;
+  members: ChatMemberInfo[];
+  lastMessage: ChatMessageInfo | null;
+  unread: boolean;
+}
+
 export interface SocialClientEvents {
   /** Accepted friends (server-authoritative from the DB) with live presence. */
   getFriends(ack: Ack<FriendPresence[]>): void;
@@ -54,9 +80,28 @@ export interface SocialClientEvents {
     payload: { friendUserId: string; game: GameKey; code: string },
     ack: Ack<{ sent: true }>,
   ): void;
+  // ----- chats (friend DMs + group chats; all validated server-side) -----
+  listChats(ack: Ack<ChatSummary[]>): void;
+  /** Get-or-create the DM with an ACCEPTED friend. */
+  openDm(payload: { friendUserId: string }, ack: Ack<{ chatId: string }>): void;
+  createGroup(
+    payload: { name: string; memberUserIds: string[] },
+    ack: Ack<{ chatId: string }>,
+  ): void;
+  fetchMessages(payload: { chatId: string }, ack: Ack<ChatMessageInfo[]>): void;
+  sendMessage(payload: { chatId: string; body: string }, ack: Ack<ChatMessageInfo>): void;
+  /** Post a lobby invite into a chat (capacity-checked for groups). */
+  sendChatInvite(
+    payload: { chatId: string; game: GameKey; code: string },
+    ack: Ack<ChatMessageInfo>,
+  ): void;
+  markRead(payload: { chatId: string }): void;
 }
 
 export interface SocialServerEvents {
   lobbyInvite(payload: LobbyInvitePayload): void;
+  chatMessage(payload: ChatMessageInfo): void;
+  /** Membership changed (e.g. you were added to a group) — refresh the list. */
+  chatsChanged(): void;
   errorMsg(payload: { message: string }): void;
 }

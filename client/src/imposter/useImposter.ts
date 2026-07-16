@@ -73,7 +73,8 @@ function gameReducer(state: ImposterGameState, action: GameAction): ImposterGame
     case "myVote":
       return { ...state, myVote: action.targetId };
     case "stealPrompt":
-      return { ...state, stealPrompt: action.payload };
+      // Clear the vote-result popup so it can't cover the guess input.
+      return { ...state, stealPrompt: action.payload, voteResult: null };
     case "gameEnd":
       return { ...state, end: action.payload, stealPrompt: null };
     case "reset":

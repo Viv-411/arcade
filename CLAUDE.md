@@ -161,6 +161,15 @@ anonymous play is a hard requirement and must never regress. Key facts:
   README (Google Cloud + Supabase dashboard steps) — login failing before that is
   expected. Trivia-set posting UI and solo play are LATER phases; only the schema
   exists now.
+- Messaging: chats/chat_members/chat_messages tables have DENY-ALL RLS —
+  server-only via service role. SocialManager validates everything (DMs need
+  accepted friendship; group members must be the creator's friends; reads and
+  posts need membership; chat invites need lobby membership + the capacity
+  rule: chat recipients <= open seats). Invite messages ALSO emit the legacy
+  lobbyInvite bell event to online members. Client: SocialContext chat state
+  + /messages page; lobby InviteFriends panel routes invites through chats
+  (presence display is informational). Unread = last message newer than the
+  member's last_read_at.
 - Friends/social layer: `friendships` table (one row per pair, unique
   least/greatest index; RLS = participants only, addressee-only accept) managed
   directly from the client via supabase-js; `/social` Socket.IO namespace
@@ -385,3 +394,13 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     changed; only takes effect once pushed to `origin` (GitHub runs the cron).
     Motivated by a Cowork monetization/cost review: running costs are near-zero,
     the free tier's cold start is the main UX cost, and this mitigates it.
+17. **Messages + fixes (2026-07-16)** — fixed the Imposter word-steal softlock
+    (vote-result overlay never cleared when entering the steal phase, covering
+    the guess input); added a Singleplayer section to Home (Imposter pass-and-
+    play + placeholders); added friend DMs + group chats (migration
+    20260715000000, deny-all RLS, server-mediated via SocialManager) with
+    chat-based lobby invites replacing direct invites (capacity-gated for
+    groups), a /messages page, bell unread badge, and 💬 buttons on the
+    friends page. Live-verified: friendship gating, realtime delivery, unread/
+    read, membership isolation, direct-table RLS denial, group rules, capacity
+    blocking, invite join flow.

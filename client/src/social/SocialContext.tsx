@@ -9,7 +9,13 @@ import {
   type ReactNode,
 } from "react";
 import { io, type Socket } from "socket.io-client";
-import type { FriendPresence, GameKey, LobbyInvitePayload } from "@shared/social";
+import type {
+  ChatMessageInfo,
+  ChatSummary,
+  FriendPresence,
+  GameKey,
+  LobbyInvitePayload,
+} from "@shared/social";
 import { supabase, getAccessToken } from "../auth/supabaseClient";
 import { useAuth } from "../auth/AuthContext";
 
@@ -44,6 +50,18 @@ interface SocialContextValue {
   dismissInvite: (id: number) => void;
   fetchPresence: () => Promise<FriendPresence[]>;
   inviteToLobby: (friendUserId: string, game: GameKey, code: string) => Promise<string | null>;
+  // ----- chats -----
+  chats: ChatSummary[];
+  unreadMessages: number;
+  refreshChats: () => Promise<void>;
+  openDm: (friendUserId: string) => Promise<string | null>; // chatId
+  createGroup: (name: string, memberUserIds: string[]) => Promise<string | null>; // chatId
+  fetchMessages: (chatId: string) => Promise<ChatMessageInfo[]>;
+  sendMessage: (chatId: string, body: string) => Promise<ChatMessageInfo | null>;
+  sendChatInvite: (chatId: string, game: GameKey, code: string) => Promise<string | null>; // error
+  markRead: (chatId: string) => void;
+  setActiveChat: (chatId: string | null) => void;
+  subscribeMessages: (cb: (msg: ChatMessageInfo) => void) => () => void;
 }
 
 const SocialContext = createContext<SocialContextValue>({
@@ -60,6 +78,17 @@ const SocialContext = createContext<SocialContextValue>({
   dismissInvite: () => {},
   fetchPresence: async () => [],
   inviteToLobby: async () => "Not available.",
+  chats: [],
+  unreadMessages: 0,
+  refreshChats: async () => {},
+  openDm: async () => null,
+  createGroup: async () => null,
+  fetchMessages: async () => [],
+  sendMessage: async () => null,
+  sendChatInvite: async () => "Not available.",
+  markRead: () => {},
+  setActiveChat: () => {},
+  subscribeMessages: () => () => {},
 });
 
 export function useSocial(): SocialContextValue {
@@ -76,9 +105,24 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const [incoming, setIncoming] = useState<RequestEntry[]>([]);
   const [outgoing, setOutgoing] = useState<RequestEntry[]>([]);
   const [invites, setInvites] = useState<LobbyInviteNotif[]>([]);
+  const [chats, setChats] = useState<ChatSummary[]>([]);
   const socketRef = useRef<Socket<any, any> | null>(null);
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
+  const activeChatRef = useRef<string | null>(null);
+  const messageSubs = useRef(new Set<(msg: ChatMessageInfo) => void>());
+
+  /** Promise wrapper for socket acks. */
+  const ackCall = useCallback(<T,>(event: string, payload?: unknown): Promise<{ ok: boolean; data?: T; error?: string }> => {
+    const socket = socketRef.current;
+    if (!socket) return Promise.resolve({ ok: false, error: "Not connected." });
+    return new Promise((resolve) => {
+      const cb = (err: unknown, res: any) =>
+        resolve(err ? { ok: false, error: "No response — try again." } : res);
+      if (payload === undefined) socket.timeout(8000).emit(event, cb);
+      else socket.timeout(8000).emit(event, payload, cb);
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
     const uid = userIdRef.current;
@@ -127,6 +171,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       setIncoming([]);
       setOutgoing([]);
       setInvites([]);
+      setChats([]);
       return;
     }
     const socket: Socket<any, any> = io("/social", {
@@ -140,6 +185,23 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         { ...p, id: ++inviteId, receivedAt: Date.now() },
       ]);
     });
+    socket.on("chatMessage", (msg: ChatMessageInfo) => {
+      const mine = msg.senderId === userIdRef.current;
+      const active = activeChatRef.current === msg.chatId;
+      setChats((prev) => {
+        const idx = prev.findIndex((c) => c.id === msg.chatId);
+        if (idx < 0) {
+          void refreshChatsRef.current(); // message in a chat we haven't loaded
+          return prev;
+        }
+        const updated = { ...prev[idx], lastMessage: msg, unread: !mine && !active };
+        return [updated, ...prev.filter((c) => c.id !== msg.chatId)];
+      });
+      if (active && !mine) socket.emit("markRead", { chatId: msg.chatId });
+      messageSubs.current.forEach((cb) => cb(msg));
+    });
+    socket.on("chatsChanged", () => void refreshChatsRef.current());
+    socket.on("connect", () => void refreshChatsRef.current());
     void refresh();
     const poll = setInterval(() => void refresh(), POLL_MS);
     return () => {
@@ -222,6 +284,77 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // ----- chats -----
+
+  const refreshChats = useCallback(async () => {
+    const res = await ackCall<ChatSummary[]>("listChats");
+    if (res.ok && res.data) setChats(res.data);
+  }, [ackCall]);
+  const refreshChatsRef = useRef(refreshChats);
+  refreshChatsRef.current = refreshChats;
+
+  const openDm = useCallback(
+    async (friendUserId: string): Promise<string | null> => {
+      const res = await ackCall<{ chatId: string }>("openDm", { friendUserId });
+      if (res.ok && res.data) {
+        void refreshChats();
+        return res.data.chatId;
+      }
+      return null;
+    },
+    [ackCall, refreshChats],
+  );
+
+  const createGroup = useCallback(
+    async (name: string, memberUserIds: string[]): Promise<string | null> => {
+      const res = await ackCall<{ chatId: string }>("createGroup", { name, memberUserIds });
+      if (res.ok && res.data) {
+        await refreshChats();
+        return res.data.chatId;
+      }
+      return null;
+    },
+    [ackCall, refreshChats],
+  );
+
+  const fetchMessages = useCallback(
+    async (chatId: string): Promise<ChatMessageInfo[]> => {
+      const res = await ackCall<ChatMessageInfo[]>("fetchMessages", { chatId });
+      return res.ok && res.data ? res.data : [];
+    },
+    [ackCall],
+  );
+
+  const sendMessage = useCallback(
+    async (chatId: string, body: string): Promise<ChatMessageInfo | null> => {
+      const res = await ackCall<ChatMessageInfo>("sendMessage", { chatId, body });
+      return res.ok && res.data ? res.data : null;
+    },
+    [ackCall],
+  );
+
+  const sendChatInvite = useCallback(
+    async (chatId: string, game: GameKey, code: string): Promise<string | null> => {
+      const res = await ackCall<ChatMessageInfo>("sendChatInvite", { chatId, game, code });
+      return res.ok ? null : res.error ?? "Could not send the invite.";
+    },
+    [ackCall],
+  );
+
+  const markRead = useCallback((chatId: string) => {
+    socketRef.current?.emit("markRead", { chatId });
+    setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, unread: false } : c)));
+  }, []);
+
+  const setActiveChat = useCallback((chatId: string | null) => {
+    activeChatRef.current = chatId;
+  }, []);
+
+  const subscribeMessages = useCallback((cb: (msg: ChatMessageInfo) => void) => {
+    messageSubs.current.add(cb);
+    return () => messageSubs.current.delete(cb);
+  }, []);
+
   const freshInvites = invites.filter((i) => Date.now() - i.receivedAt < INVITE_TTL_MS);
 
   return (
@@ -240,6 +373,17 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         dismissInvite,
         fetchPresence,
         inviteToLobby,
+        chats,
+        unreadMessages: chats.filter((c) => c.unread).length,
+        refreshChats,
+        openDm,
+        createGroup,
+        fetchMessages,
+        sendMessage,
+        sendChatInvite,
+        markRead,
+        setActiveChat,
+        subscribeMessages,
       }}
     >
       {children}

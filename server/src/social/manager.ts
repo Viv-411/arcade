@@ -2,11 +2,17 @@ import type { Namespace } from "socket.io";
 import type { Ack, SocketData } from "../../../shared/events.js";
 import {
   GAME_PATHS,
+  type ChatMessageInfo,
+  type ChatSummary,
   type FriendPresence,
   type GameKey,
   type SocialClientEvents,
   type SocialServerEvents,
 } from "../../../shared/social.js";
+import { MAX_PLAYERS } from "../../../shared/types.js";
+import { TRIVIA_MAX_PLAYERS } from "../../../shared/trivia.js";
+import { bidBattleModeSize } from "../../../shared/bidbattle.js";
+import { IMPOSTER_MAX_PLAYERS } from "../../../shared/imposter.js";
 import type { AnySocket } from "../core/roomManager.js";
 import { presence } from "../core/presence.js";
 import { getSupabaseAdmin } from "../supabaseAdmin.js";
@@ -56,6 +62,29 @@ export class SocialManager {
         (payload: { friendUserId: string; game: GameKey; code: string }, ack: Ack<{ sent: true }>) =>
           void this.inviteToLobby(socket as AnySocket, payload, ack),
       );
+      socket.on("listChats", (ack: Ack<ChatSummary[]>) =>
+        void this.listChats(socket as AnySocket, ack),
+      );
+      socket.on("openDm", (p: { friendUserId: string }, ack: Ack<{ chatId: string }>) =>
+        void this.openDm(socket as AnySocket, p, ack),
+      );
+      socket.on(
+        "createGroup",
+        (p: { name: string; memberUserIds: string[] }, ack: Ack<{ chatId: string }>) =>
+          void this.createGroup(socket as AnySocket, p, ack),
+      );
+      socket.on("fetchMessages", (p: { chatId: string }, ack: Ack<ChatMessageInfo[]>) =>
+        void this.fetchMessages(socket as AnySocket, p, ack),
+      );
+      socket.on("sendMessage", (p: { chatId: string; body: string }, ack: Ack<ChatMessageInfo>) =>
+        void this.sendMessage(socket as AnySocket, p, ack),
+      );
+      socket.on(
+        "sendChatInvite",
+        (p: { chatId: string; game: GameKey; code: string }, ack: Ack<ChatMessageInfo>) =>
+          void this.sendChatInvite(socket as AnySocket, p, ack),
+      );
+      socket.on("markRead", (p: { chatId: string }) => void this.markRead(socket as AnySocket, p));
     });
   }
 
@@ -179,5 +208,359 @@ export class SocialManager {
       });
     }
     ack({ ok: true, data: { sent: true } });
+  }
+
+  // ---------------- chats (friend DMs + group chats) ----------------
+  // All reads/writes go through the service role AFTER server-side validation
+  // (friendship for DMs, membership for messages, lobby capacity for invites);
+  // the chat tables have deny-all RLS so clients can't touch them directly.
+
+  private async isMember(chatId: string, userId: string): Promise<boolean> {
+    const admin = getSupabaseAdmin();
+    if (!admin) return false;
+    const { data } = await admin
+      .from("chat_members")
+      .select("user_id")
+      .eq("chat_id", chatId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    return Boolean(data);
+  }
+
+  private async memberIdsOf(chatId: string): Promise<string[]> {
+    const admin = getSupabaseAdmin();
+    if (!admin) return [];
+    const { data } = await admin.from("chat_members").select("user_id").eq("chat_id", chatId);
+    return (data ?? []).map((r) => r.user_id);
+  }
+
+  private toMessageInfo(
+    row: {
+      id: string;
+      chat_id: string;
+      sender_id: string;
+      kind: "text" | "invite";
+      body: string;
+      invite: unknown;
+      created_at: string;
+    },
+    senderName: string,
+  ): ChatMessageInfo {
+    const inv = row.invite as { game?: GameKey; code?: string } | null;
+    return {
+      id: row.id,
+      chatId: row.chat_id,
+      senderId: row.sender_id,
+      senderName,
+      kind: row.kind,
+      body: row.body,
+      invite: inv?.game && inv?.code ? { game: inv.game, code: inv.code } : null,
+      createdAt: row.created_at,
+    };
+  }
+
+  private async broadcastToChat(
+    chatId: string,
+    exceptUserId: string | null,
+    emit: (sid: string) => void,
+  ): Promise<string[]> {
+    const members = await this.memberIdsOf(chatId);
+    for (const uid of members) {
+      if (uid === exceptUserId) continue;
+      for (const sid of presence.socketsOf(uid)) emit(sid);
+    }
+    return members;
+  }
+
+  private async listChats(socket: AnySocket, ack: Ack<ChatSummary[]>): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const { data: mine } = await admin
+      .from("chat_members")
+      .select("chat_id, last_read_at")
+      .eq("user_id", userId);
+    if (!mine || mine.length === 0) return ack({ ok: true, data: [] });
+    const chatIds = mine.map((m) => m.chat_id);
+    const lastReadByChat = new Map(mine.map((m) => [m.chat_id, m.last_read_at]));
+    const [{ data: chats }, { data: members }] = await Promise.all([
+      admin.from("chats").select("id, kind, name").in("id", chatIds),
+      admin
+        .from("chat_members")
+        .select("chat_id, user_id, profile:profiles!chat_members_user_id_fkey(username)")
+        .in("chat_id", chatIds),
+    ]);
+    const summaries: ChatSummary[] = [];
+    for (const chat of chats ?? []) {
+      const { data: last } = await admin
+        .from("chat_messages")
+        .select("*, sender:profiles!chat_messages_sender_id_fkey(username)")
+        .eq("chat_id", chat.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const lastMessage = last
+        ? this.toMessageInfo(last, (last.sender as { username?: string })?.username ?? "?")
+        : null;
+      const lastRead = lastReadByChat.get(chat.id) ?? "";
+      summaries.push({
+        id: chat.id,
+        kind: chat.kind,
+        name: chat.name,
+        members: (members ?? [])
+          .filter((m) => m.chat_id === chat.id)
+          .map((m) => ({
+            userId: m.user_id,
+            username: (m.profile as { username?: string })?.username ?? "?",
+          })),
+        lastMessage,
+        unread: Boolean(
+          lastMessage && lastMessage.senderId !== userId && lastMessage.createdAt > lastRead,
+        ),
+      });
+    }
+    summaries.sort((a, b) =>
+      (b.lastMessage?.createdAt ?? "").localeCompare(a.lastMessage?.createdAt ?? ""),
+    );
+    ack({ ok: true, data: summaries });
+  }
+
+  private async openDm(
+    socket: AnySocket,
+    payload: { friendUserId: string },
+    ack: Ack<{ chatId: string }>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const friendUserId = String(payload?.friendUserId ?? "");
+    // DMs exist only between ACCEPTED friends.
+    const friends = await this.friendsOf(userId);
+    if (!friends?.some((f) => f.userId === friendUserId)) {
+      return ack({ ok: false, error: "You can only message accepted friends." });
+    }
+    const dmKey = [userId, friendUserId].sort().join(":");
+    const { data: existing } = await admin
+      .from("chats")
+      .select("id")
+      .eq("dm_key", dmKey)
+      .maybeSingle();
+    if (existing) return ack({ ok: true, data: { chatId: existing.id } });
+    const { data: chat, error } = await admin
+      .from("chats")
+      .insert({ kind: "dm", created_by: userId, dm_key: dmKey })
+      .select("id")
+      .single();
+    if (error || !chat) {
+      // 23505 = a concurrent open created it first — re-read.
+      const { data: raced } = await admin.from("chats").select("id").eq("dm_key", dmKey).maybeSingle();
+      if (raced) return ack({ ok: true, data: { chatId: raced.id } });
+      return ack({ ok: false, error: "Could not open the conversation." });
+    }
+    await admin.from("chat_members").insert([
+      { chat_id: chat.id, user_id: userId },
+      { chat_id: chat.id, user_id: friendUserId },
+    ]);
+    for (const sid of presence.socketsOf(friendUserId)) this.nsp.to(sid).emit("chatsChanged");
+    ack({ ok: true, data: { chatId: chat.id } });
+  }
+
+  private async createGroup(
+    socket: AnySocket,
+    payload: { name: string; memberUserIds: string[] },
+    ack: Ack<{ chatId: string }>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const name = String(payload?.name ?? "").trim().slice(0, 40);
+    if (name.length < 1) return ack({ ok: false, error: "Give the group a name." });
+    const memberIds = [...new Set((payload?.memberUserIds ?? []).map(String))].filter(
+      (id) => id !== userId,
+    );
+    if (memberIds.length < 1 || memberIds.length > 9) {
+      return ack({ ok: false, error: "Groups need 1-9 friends besides you." });
+    }
+    // Every member must be YOUR accepted friend.
+    const friends = await this.friendsOf(userId);
+    if (!friends || !memberIds.every((id) => friends.some((f) => f.userId === id))) {
+      return ack({ ok: false, error: "You can only add accepted friends." });
+    }
+    const { data: chat, error } = await admin
+      .from("chats")
+      .insert({ kind: "group", name, created_by: userId })
+      .select("id")
+      .single();
+    if (error || !chat) return ack({ ok: false, error: "Could not create the group." });
+    await admin
+      .from("chat_members")
+      .insert([userId, ...memberIds].map((uid) => ({ chat_id: chat.id, user_id: uid })));
+    for (const uid of memberIds) {
+      for (const sid of presence.socketsOf(uid)) this.nsp.to(sid).emit("chatsChanged");
+    }
+    ack({ ok: true, data: { chatId: chat.id } });
+  }
+
+  private async fetchMessages(
+    socket: AnySocket,
+    payload: { chatId: string },
+    ack: Ack<ChatMessageInfo[]>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    const chatId = String(payload?.chatId ?? "");
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    if (!(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "Not your conversation." });
+    }
+    const { data } = await admin
+      .from("chat_messages")
+      .select("*, sender:profiles!chat_messages_sender_id_fkey(username)")
+      .eq("chat_id", chatId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    ack({
+      ok: true,
+      data: (data ?? [])
+        .reverse()
+        .map((row) =>
+          this.toMessageInfo(row, (row.sender as { username?: string })?.username ?? "?"),
+        ),
+    });
+  }
+
+  private async persistAndDeliver(
+    userId: string,
+    chatId: string,
+    kind: "text" | "invite",
+    body: string,
+    invite: { game: GameKey; code: string } | null,
+    ack: Ack<ChatMessageInfo>,
+  ): Promise<ChatMessageInfo | null> {
+    const admin = getSupabaseAdmin()!;
+    const { data: row, error } = await admin
+      .from("chat_messages")
+      .insert({ chat_id: chatId, sender_id: userId, kind, body, invite })
+      .select("*")
+      .single();
+    if (error || !row) {
+      ack({ ok: false, error: "Could not send the message." });
+      return null;
+    }
+    const { data: me } = await admin
+      .from("profiles")
+      .select("username")
+      .eq("id", userId)
+      .maybeSingle();
+    const msg = this.toMessageInfo(row, me?.username ?? "?");
+    await this.broadcastToChat(chatId, null, (sid) => this.nsp.to(sid).emit("chatMessage", msg));
+    ack({ ok: true, data: msg });
+    return msg;
+  }
+
+  private async sendMessage(
+    socket: AnySocket,
+    payload: { chatId: string; body: string },
+    ack: Ack<ChatMessageInfo>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const chatId = String(payload?.chatId ?? "");
+    const body = String(payload?.body ?? "").trim().slice(0, 500);
+    if (!userId || !getSupabaseAdmin()) return ack({ ok: false, error: "Sign in to use messages." });
+    if (!body) return ack({ ok: false, error: "Say something first." });
+    if (!(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "Not your conversation." });
+    }
+    await this.persistAndDeliver(userId, chatId, "text", body, null, ack);
+  }
+
+  /** Seats a game's room still has open, given its per-game capacity rules. */
+  private openSeatsOf(game: GameKey, room: RoomLike): number {
+    const max =
+      game === "mindmeld"
+        ? MAX_PLAYERS
+        : game === "trivia"
+          ? TRIVIA_MAX_PLAYERS
+          : game === "imposter"
+            ? IMPOSTER_MAX_PLAYERS
+            : bidBattleModeSize(
+                ((room as { settings?: { mode?: "1v1" | "2v2" } }).settings?.mode ?? "1v1"),
+              );
+    return Math.max(0, max - room.players.size);
+  }
+
+  private async sendChatInvite(
+    socket: AnySocket,
+    payload: { chatId: string; game: GameKey; code: string },
+    ack: Ack<ChatMessageInfo>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const chatId = String(payload?.chatId ?? "");
+    const game = payload?.game;
+    const code = String(payload?.code ?? "").toUpperCase();
+    const store = game ? this.stores[game] : undefined;
+    const admin = getSupabaseAdmin();
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    if (!store) return ack({ ok: false, error: "Invalid invite." });
+    if (!(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "Not your conversation." });
+    }
+    const room = store.get(code);
+    if (!room || room.state !== "lobby") {
+      return ack({ ok: false, error: "That lobby is no longer joinable." });
+    }
+    if (![...room.players.values()].some((p) => p.userId === userId)) {
+      return ack({ ok: false, error: "You are not in that lobby." });
+    }
+    // Capacity rule: the chat's other members must all be able to fit.
+    const members = await this.memberIdsOf(chatId);
+    const recipients = members.filter((m) => m !== userId).length;
+    const seats = this.openSeatsOf(game, room);
+    if (recipients > seats) {
+      return ack({
+        ok: false,
+        error: `This chat has ${recipients} people but the lobby only has ${seats} open seat${seats === 1 ? "" : "s"}.`,
+      });
+    }
+    const rlKey = `${userId}:${chatId}:${code}`;
+    const last = this.inviteTimestamps.get(rlKey) ?? 0;
+    if (Date.now() - last < INVITE_COOLDOWN_MS) {
+      return ack({ ok: false, error: "Invite already sent — give them a second." });
+    }
+    this.inviteTimestamps.set(rlKey, Date.now());
+    const gameName = game.charAt(0).toUpperCase() + game.slice(1);
+    const msg = await this.persistAndDeliver(
+      userId,
+      chatId,
+      "invite",
+      `Join my ${gameName} lobby — code ${code}`,
+      { game, code },
+      ack,
+    );
+    if (msg) {
+      // Also surface as a live bell notification for online members.
+      for (const uid of members) {
+        if (uid === userId) continue;
+        for (const sid of presence.socketsOf(uid)) {
+          this.nsp.to(sid).emit("lobbyInvite", {
+            from: { userId, username: msg.senderName },
+            game,
+            code,
+            link: `${GAME_PATHS[game]}?room=${code}`,
+          });
+        }
+      }
+    }
+  }
+
+  private async markRead(socket: AnySocket, payload: { chatId: string }): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    if (!userId || !admin) return;
+    await admin
+      .from("chat_members")
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("chat_id", String(payload?.chatId ?? ""))
+      .eq("user_id", userId);
   }
 }

@@ -77,7 +77,11 @@ export default function BidBattleLobby({
 
       {autoStartIn !== null && <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>}
 
-      <InviteFriends game="bidbattle" code={room.code} />
+      <InviteFriends
+        game="bidbattle"
+        code={room.code}
+        openSeats={Math.max(0, bidBattleModeSize(room.settings.mode) - room.players.length)}
+      />
 
       <div className="team-panels">
         {teams.map((t) => {
