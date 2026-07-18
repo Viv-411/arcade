@@ -237,38 +237,60 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 
 ## Current state (update before every commit)
 
-- All three games fully working; end-to-end tests committed in `tests/`
-  (`npm test`), GitHub Actions CI on push/PR, and a `render.yaml` blueprint.
-  DEPLOYED by the owner to Render: https://arcade-1628.onrender.com (free tier;
-  sleeps when idle). Render deploys are owner-managed — no Render credentials
-  in this environment.
-- Supabase project EXISTS, is connected, and the schema is APPLIED: local
-  `.env` (gitignored) holds the owner's project URL + publishable/secret keys
-  (new sb_* format, ES256 tokens). Migrations pushed to the hosted DB via the
-  IPv4 pooler (`aws-1-us-west-2.pooler.supabase.com` — the direct db host is
-  IPv6-only from this network; the DB password is NOT stored in the repo, ask
-  the owner if needed). Live-verified end to end: admin API, password sign-in,
-  server-side JWKS verification of /api/me, signup trigger creating profiles,
-  and the full RLS checklist (private-set isolation, anon-key restrictions,
-  public/removed visibility, profile write protection). Google OAuth is
-  configured by the owner and verified as far as automation can go
-  (provider enabled in /auth/v1/settings; /auth/v1/authorize 302s to
-  accounts.google.com with a real client id) — the interactive consent hop is
-  human-only. Google round-trip confirmed working by the owner on localhost.
-  STILL PENDING (owner, dashboards): set the five env vars on the Render
-  service and redeploy (VITE_* vars are BUILD-time — missing them shows
-  "accounts not configured" on the deployed site), set VITE_APP_BASE_URL to
-  https://arcade-1628.onrender.com, and add that URL to Supabase's redirect
-  allow-list.
-- git: single `main` branch, remote `origin` = https://github.com/Viv-411/arcade.
-- Owner: Vivek (github Viv-411). Games tested locally in two browser tabs.
-- Keep-alive: `.github/workflows/keepalive.yml` pings the deployed `/healthz`
-  every 5 min (cron + manual dispatch) to stop the Render free-tier 15-min
-  spin-down. Best-effort (GitHub cron jitter; auto-disables after 60 days with
-  no commits). Update `PING_URL` in that file if the deploy URL changes. This
-  is a stopgap for the free tier — the real fix is the ~$8/mo Render Starter
-  instance (no sleep).
+- FOUR games live and deployed at https://arcade-1628.onrender.com (Render free
+  tier; owner-managed; a keep-alive GitHub workflow pings it). Local `.env`
+  (gitignored) holds the owner's real Supabase keys — client env is baked at
+  build time, server env read at runtime; Render has the same five vars set.
+- Supabase schema fully applied (profiles+trigger, trivia_sets/questions,
+  player_stats+record_game_result, friendships, chats/chat_members/
+  chat_messages). Migrations go to the hosted DB via
+  `npx supabase db push --db-url "postgresql://postgres.lpfjrayitzwbdowgpdfj:<DB_PASSWORD>@aws-1-us-west-2.pooler.supabase.com:5432/postgres"`
+  (direct db host is IPv6-only from this network; ask the owner for the DB
+  password — NEVER commit it; it is not in the repo or .env).
+- Accounts: email/password + Google both work end to end (identities
+  auto-link on matching verified email). Owner's account: @iamfunny411.
+  Features shipped: account page + durable stats, friends (requests via
+  username/link/QR), presence, messages (friend DMs + group chats, deny-all
+  RLS, server-mediated), chat-based lobby invites with group capacity gating,
+  notification bell (requests + invites + unread chats).
+- Auto-start policy (2026-07-17): public lobbies auto-start ONLY when
+  completely full, via a 15s countdown; otherwise host-start with all ready.
+- git: single `main`, remote origin = https://github.com/Viv-411/arcade, CI
+  green. The owner also maintains PROJECT_CONTEXT.md (their doc — keep in sync
+  when convenient but CLAUDE.md is the contributor source of truth).
+- Owner preferences (standing): no AI attribution in commits; ask before push
+  unless told; secrets shared in chat (Supabase keys, DB password) should be
+  rotated by the owner someday — remind occasionally, don't nag.
 
+## Live verification scripts (recreate as needed)
+
+The deep e2e checks (auth pipeline, RLS, stats, friends, chats, 50-account
+stress) live only in session scratchpads — recreate on demand. The recipe:
+
+- Node ESM script; import deps from THIS repo:
+  `createRequire("/path/to/repo/package.json")` then `require("@supabase/supabase-js")`
+  and `require("socket.io-client")`.
+- Load env: run with `set -a && source .env && set +a` in the repo dir; build
+  first and run `PORT=4189 node dist/server/src/index.js` (kill stale
+  listeners on the port first — a stale server once caused phantom failures).
+- Create disposable users via `admin.auth.admin.createUser({ email:
+  "arcade-<x>-<ts>@example.com", password, email_confirm: true,
+  user_metadata: { username } })`, sign in with the anon client for tokens,
+  pass tokens to sockets via `auth: { token }`. ALWAYS delete the users in a
+  finally block (cascades clean profiles/friendships/chats/stats).
+- Test-listener rules: register waitFor BEFORE the triggering action; for
+  back-to-back events (clueTurn etc.) use the queueing-collector pattern from
+  tests/imposter.test.mjs.
+- Sign-in bursts can hit Supabase auth rate limits — retry with backoff.
+
+## Backlog (agreed future work, not started)
+
+- Singleplayer section on Home has two placeholder cards: Solo Trivia
+  (client-side scoring — must never feed competitive leaderboards) and Daily
+  Challenge. Solo trivia should reuse the trivia question card as shared
+  PRESENTATIONAL components (see README note), driven by a local controller.
+- Trivia-set posting UI (schema already live: trivia_sets/questions + RLS).
+- User-uploaded Imposter category packs could reuse the accounts DB.
 ## Session history
 
 1. **Initial build (commit `fed24fb`)** — monorepo scaffolded from scratch: shared
