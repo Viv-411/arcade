@@ -2,7 +2,7 @@
 // delivery, review) and a 2v2 quick play match (mode pools, teams, forfeit).
 import { connect, emit, waitFor, assert, sleep, globalTimeout } from "./helpers.mjs";
 
-const timer = globalTimeout(110000, "bidbattle test");
+const timer = globalTimeout(170000, "bidbattle test");
 const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10, reviewSec: 4 };
 
 // =========================== 1v1 private match ===========================
@@ -157,7 +157,8 @@ const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10,
   solo.emit("leaveRoom");
   solo.close();
 
-  const started = waitFor(p1, "categoryReveal", () => true, 15000);
+  // full public lobbies auto-start after a 15s countdown
+  const started = waitFor(p1, "categoryReveal", () => true, 30000);
   const acks = [q1];
   for (const [i, p] of [p2, p3, p4].entries()) {
     const res = await emit(p, "quickPlay", { name: `Q${i + 2}`, mode: "2v2" });
@@ -216,7 +217,7 @@ const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10,
   assert(over.winnerTeam === end.deliveringTeam, "2v2 match ends at 1 point");
 
   // Full public rooms restart instantly on playAgain; then a leaver forfeits.
-  const restarted = waitFor(p1, "categoryReveal", () => true, 15000);
+  const restarted = waitFor(p1, "categoryReveal", () => true, 30000); // 15s full-lobby countdown
   p1.emit("playAgain");
   await restarted;
   const forfeit = waitFor(p1, "gameOver", (p) => /forfeit/i.test(p.reason ?? ""), 10000);

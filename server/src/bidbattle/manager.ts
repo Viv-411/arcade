@@ -198,10 +198,6 @@ export class BidBattleManager extends BaseRoomManager<
     return bidBattleModeSize(room.settings.mode);
   }
 
-  protected canAutoStartPartial(): boolean {
-    return false; // exact team sizes only — start when the room is full
-  }
-
   protected canStartExtra(room: BidBattleRoom): string | null {
     const half = bidBattleModeSize(room.settings.mode) / 2;
     const a = this.teamMembers(room, "A").length;

@@ -63,12 +63,6 @@ export default function Home() {
 
       <h2 className="section-title">🎮 Singleplayer</h2>
       <div className="game-grid">
-        <Link to="/imposter/local" className="game-card active">
-          <div className="game-emoji">📱</div>
-          <h2>Imposter: Pass &amp; Play</h2>
-          <p>One device, no internet — deal secret cards around the room and play out loud.</p>
-          <span className="badge play-badge">▶ Play now</span>
-        </Link>
         {SOLO_COMING_SOON.map((g) => (
           <div key={g.name} className="game-card disabled">
             <div className="game-emoji">{g.emoji}</div>

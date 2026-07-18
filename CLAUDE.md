@@ -48,13 +48,13 @@ build`, start `npm start`, `PORT` env respected.
                             detection and the no-repeat rule — must stay identical).
 /server/src/core/           roomManager.ts — game-agnostic BaseRoomManager: room codes
                             (4 letters, no I/O), join, Quick Play, ready toggles, host
-                            start validation, public auto-start (20s at 2+, instant at
-                            max), rejoin/reconnect, lobby disconnect grace (30s),
+                            start validation, public auto-start (ONLY when the
+                            lobby is full, after a 15s countdown), rejoin/reconnect, lobby disconnect grace (30s),
                             host reassignment, empty-room GC (5 min), playAgain.
                             Subclasses implement abstract hooks for game state, plus
                             optional overrides: roomMin/MaxPlayers(room) for per-room
                             capacity, quickPlayEligible/quickPlayCreateSettings for
-                            mode-filtered matchmaking pools, canAutoStartPartial,
+                            mode-filtered matchmaking pools,
                             canStartExtra (extra host-start validation), and
                             onPlayerJoined/onRejoin (e.g. team socket rooms).
 /server/src/store.ts        RoomStore interface (in-memory Map impl) — ALL room state
@@ -111,7 +111,7 @@ scoring). Clients render optimistically but never decide results.
   pass-and-play mode (/imposter/local) is PURE React state — no server, no
   accounts; keep it that way.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
-  play pools; no partial-lobby countdown. **Leaving mid-match forfeits for the
+  play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
   bid turn counts as declining). Bid timeout = decline-to-raise, except an unopened
   auction: opener timeout passes the opening once, and a second timeout redraws the
@@ -404,3 +404,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
     friends page. Live-verified: friendship gating, realtime delivery, unread/
     read, membership isolation, direct-table RLS denial, group rules, capacity
     blocking, invite join flow.
+
+18. **Auto-start rework + home tweak (2026-07-17)** — public lobbies no longer
+    countdown-start when partially full. Games start ONLY via host start
+    (everyone ready) or, in public lobbies, a 15s countdown once the lobby is
+    COMPLETELY full (cancelled if someone leaves; requires all connected at
+    fire; re-armed on rejoin). canAutoStartPartial hook removed. Bid Battle's
+    full-room auto-start and playAgain restart now go through the same 15s
+    countdown (test timeouts bumped accordingly). Imposter card removed from
+    the home Singleplayer section (placeholders remain).

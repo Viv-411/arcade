@@ -63,8 +63,9 @@ no-op — the game itself never touches the database.
 - **Create private room** → 4-letter code (no ambiguous I/O) + shareable link
   (`/mindmeld?room=CODE`).
 - **Join with code**, or **Quick Play**: joins the oldest public lobby with space, or
-  creates a new public room. Public rooms auto-start at 4 players, or 20s after 2+
-  players are present (countdown resets when someone joins).
+  creates a new public room. Public rooms auto-start ONLY once they are completely
+  full, after a 15s countdown (cancelled if someone leaves); otherwise the host
+  starts manually when everyone is ready.
 - Refreshing the page **does not** end your game: your player id is kept per-tab and
   the client silently rejoins on reconnect. Disconnected players are marked in the UI;
   their missed rounds still count toward AFK removal.
@@ -492,8 +493,9 @@ in-memory games and SQLite win stats don't survive restarts/deploys.
 - **`sessionStorage` instead of `localStorage` for the player session** (the spec's
   intent — surviving refresh — is preserved) so that two tabs in one browser are two
   distinct players, which makes local multiplayer testing possible.
-- Public rooms auto-start without requiring ready toggles; ready checks apply to the
-  host's manual start.
+- Public rooms auto-start (full lobby + 15s countdown) without requiring ready
+  toggles; ready checks apply to the host's manual start. Partially filled
+  lobbies never auto-start.
 - On the all-locked fast path, "all" means all **connected** players, per spec — so a
   disconnected player can be skipped and takes an AFK strike for the round.
 - Lobby disconnects get a 30s grace period before removal (so refreshes don't kick
@@ -512,7 +514,7 @@ in-memory games and SQLite win stats don't survive restarts/deploys.
   (including public auto-start) via the shared base modules; Mind Meld's behavior
   was preserved unchanged through the refactor.
 - Player limits are per-game: Mind Meld stays 2–4, Speed Trivia allows **2–10**
-  (public trivia rooms auto-start immediately at 10 or 20s after 2+ join).
+  (public trivia rooms auto-start only when full — 10 players — after a 15s countdown).
 - Trivia has **no AFK removal** by design (see rules above) — the shared AFK
   machinery is Mind Meld-specific and lives only in its manager.
 - A mid-question disconnect never ends the game on the spot; the "fewer than 2
@@ -532,14 +534,14 @@ in-memory games and SQLite win stats don't survive restarts/deploys.
 
 - The team layer is Bid Battle-only: the shared room core gained optional,
   backwards-compatible hooks (per-room player capacity, mode-filtered Quick Play,
-  partial-auto-start opt-out, extra start validation, join/rejoin callbacks) and
+  extra start validation, join/rejoin callbacks) and
   the game keeps `team` on its own player type. Mind Meld and Trivia are untouched.
 - Players are auto-assigned to the smaller team on join (so lobbies default to
   balanced); private lobbies can swap freely before start; the host can flip
   1v1/2v2 in the lobby, which re-balances everyone in join order.
-- Quick play rooms auto-start the moment they're full (2 or 4) — there is no
-  partial-lobby countdown since team sizes are exact. Public full rooms also
-  restart immediately on Play Again.
+- Quick play rooms auto-start once full (2 or 4) after the standard 15s
+  full-lobby countdown; team sizes are exact so there is never a partial start.
+  Public full rooms re-enter the same countdown on Play Again.
 - **Leaving mid-match forfeits it for the leaver's team** (in 2v2 the whole team
   loses). Disconnects do NOT forfeit — timers keep the match moving (a silent
   bidding turn declines, missing delivery time just yields fewer items), and a

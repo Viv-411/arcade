@@ -52,7 +52,7 @@ export interface BaseRoom<TSettings, TPlayer extends BasePlayer> {
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const LOBBY_DISCONNECT_REMOVE_MS = 30_000;
 const EMPTY_ROOM_CLOSE_MS = 5 * 60_000;
-const PUBLIC_AUTO_START_MS = 20_000;
+const FULL_LOBBY_AUTO_START_MS = 15_000;
 
 export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(n)));
@@ -121,10 +121,6 @@ export abstract class BaseRoomManager<
   }
   protected roomMaxPlayers(_room: TRoom): number {
     return this.maxPlayers;
-  }
-  /** Whether a public lobby may countdown-start before it is full. */
-  protected canAutoStartPartial(_room: TRoom): boolean {
-    return true;
   }
   /** Extra host-start validation; return an error message to block the start. */
   protected canStartExtra(_room: TRoom): string | null {
@@ -344,8 +340,10 @@ export abstract class BaseRoomManager<
   }
 
   /**
-   * Public-room auto-start: start immediately at maxPlayers; with 2+ players
-   * run a 20s countdown that resets whenever someone joins.
+   * Public-room auto-start: ONLY when the lobby is completely full, and even
+   * then after a short countdown (so everyone sees it coming). Partially
+   * filled lobbies never auto-start — the host starts manually once everyone
+   * is ready. Someone leaving mid-countdown cancels it.
    */
   protected updateLobbyCountdown(room: TRoom): void {
     if (!room.isPublic || room.state !== "lobby") return;
@@ -354,23 +352,21 @@ export abstract class BaseRoomManager<
       room.lobbyCountdownTimer = null;
       room.lobbyCountdownEndsAt = null;
     }
-    const connected = [...room.players.values()].filter((p) => p.connected);
-    if (room.players.size >= this.roomMaxPlayers(room)) {
-      this.launchGame(room);
-      return;
-    }
-    if (connected.length >= this.roomMinPlayers(room) && this.canAutoStartPartial(room)) {
-      room.lobbyCountdownEndsAt = Date.now() + PUBLIC_AUTO_START_MS;
-      room.lobbyCountdownTimer = setTimeout(() => {
-        room.lobbyCountdownTimer = null;
-        room.lobbyCountdownEndsAt = null;
-        if (room.state === "lobby" && room.players.size >= this.roomMinPlayers(room)) {
-          this.launchGame(room);
-        } else {
-          this.broadcastRoom(room);
-        }
-      }, PUBLIC_AUTO_START_MS);
-    }
+    if (room.players.size < this.roomMaxPlayers(room)) return;
+    room.lobbyCountdownEndsAt = Date.now() + FULL_LOBBY_AUTO_START_MS;
+    room.lobbyCountdownTimer = setTimeout(() => {
+      room.lobbyCountdownTimer = null;
+      room.lobbyCountdownEndsAt = null;
+      const full = room.players.size >= this.roomMaxPlayers(room);
+      const allConnected = [...room.players.values()].every((p) => p.connected);
+      if (room.state === "lobby" && full && allConnected) {
+        this.launchGame(room);
+      } else {
+        // Not ready to launch (someone left or dropped) — countdown restarts
+        // via the membership hooks when the room fills back up.
+        this.broadcastRoom(room);
+      }
+    }, FULL_LOBBY_AUTO_START_MS);
   }
 
   /**
@@ -571,6 +567,8 @@ export abstract class BaseRoomManager<
     socket.data.roomCode = room.code;
     socket.join(room.code);
     if (player.userId) presence.setRoom(player.userId, this.gameKey, room.code);
+    // A reconnect can make a full lobby all-connected again — re-arm auto-start.
+    if (room.state === "lobby") this.updateLobbyCountdown(room);
     this.onRejoin(room, player, socket);
     ack({
       ok: true,
