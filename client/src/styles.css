@@ -2,6 +2,7 @@
   --bg: #0d0d1f;
   --panel: #1a1a33;
   --panel-edge: #2e2e55;
+  --well: #0f0f26;
   --text: #f2f2ff;
   --muted: #9a9ac4;
   --pink: #ff2e88;
@@ -11,6 +12,8 @@
   --red: #ff5964;
   --radius: 14px;
   --font-arcade: "Press Start 2P", monospace;
+  --font-body: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -28,11 +31,40 @@ body {
   background-image:
     radial-gradient(circle at 20% 0%, rgba(255, 46, 136, 0.12), transparent 40%),
     radial-gradient(circle at 80% 100%, rgba(34, 230, 230, 0.1), transparent 40%);
+  background-attachment: fixed;
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: var(--font-body);
   min-height: 100vh;
   line-height: 1.5;
+}
+
+/* CRT glass: faint scanlines + a soft vignette over the whole app — the one
+   piece of atmosphere everything else sits under. Both are pointer-inert and
+   cheap; delete these two rules to turn the effect off. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.024) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 998;
+  background: radial-gradient(
+    ellipse 120% 90% at 50% 35%,
+    transparent 55%,
+    rgba(4, 4, 12, 0.4) 100%
+  );
 }
 
 .page {
@@ -49,11 +81,20 @@ h3 {
 }
 
 .panel {
-  background: var(--panel);
-  border: 2px solid var(--panel-edge);
+  background: linear-gradient(180deg, #1e1e3c 0%, #171730 100%);
+  border: 1px solid #32325c;
   border-radius: var(--radius);
   padding: 16px;
   margin-top: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 560px) {
+  .panel {
+    padding: 20px;
+  }
 }
 
 /* ---------- buttons & fields ---------- */
@@ -62,9 +103,10 @@ h3 {
   font-family: inherit;
   font-weight: 700;
   font-size: 1rem;
+  letter-spacing: 0.01em;
   color: var(--text);
-  background: var(--panel-edge);
-  border: 2px solid transparent;
+  background: linear-gradient(180deg, #343465 0%, #28284f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 10px;
   padding: 12px 18px;
   cursor: pointer;
@@ -73,15 +115,20 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 0.06s ease, filter 0.1s ease;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  filter: brightness(1.15);
+  filter: brightness(1.12);
+  transform: translateY(-1px);
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: translateY(0) scale(0.97);
 }
 
 .btn:disabled {
@@ -90,15 +137,29 @@ h3 {
 }
 
 .btn.primary {
-  background: var(--pink);
+  background: linear-gradient(180deg, #ff4d9b 0%, #ef1d77 100%);
   color: #fff;
-  box-shadow: 0 0 18px rgba(255, 46, 136, 0.45);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 16px rgba(255, 46, 136, 0.35);
+}
+
+.btn.primary:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 26px rgba(255, 46, 136, 0.55);
 }
 
 .btn.danger {
   background: transparent;
   border-color: var(--red);
   color: var(--red);
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: rgba(255, 89, 100, 0.12);
+  filter: none;
 }
 
 .btn.small {
@@ -139,11 +200,16 @@ input,
 select {
   font: inherit;
   color: var(--text);
-  background: #0f0f26;
-  border: 2px solid var(--panel-edge);
+  background: var(--well);
+  border: 1px solid #3a3a68;
   border-radius: 10px;
   padding: 12px 14px;
   width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder {
+  color: #6e6e9c;
 }
 
 input:focus,
@@ -182,6 +248,32 @@ select:focus {
   font-size: clamp(2rem, 9vw, 3.5rem);
   margin: 0;
   letter-spacing: 0.06em;
+  /* CRT power-on: a few hard flickers, then steady. */
+  animation: crt-on 1.1s steps(1, end) 1;
+}
+
+@keyframes crt-on {
+  0% {
+    opacity: 0;
+  }
+  7% {
+    opacity: 1;
+  }
+  11% {
+    opacity: 0.3;
+  }
+  16% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 0.55;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .neon-pink {
@@ -201,6 +293,8 @@ select:focus {
 
 .tagline {
   color: var(--muted);
+  max-width: 44ch;
+  margin: 10px auto 0;
 }
 
 .game-grid {
@@ -217,8 +311,8 @@ select:focus {
 }
 
 .game-card {
-  background: var(--panel);
-  border: 2px solid var(--panel-edge);
+  background: linear-gradient(180deg, #1e1e3c 0%, #171730 100%);
+  border: 1px solid #32325c;
   border-radius: var(--radius);
   padding: 20px;
   color: var(--text);
@@ -226,6 +320,7 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .game-card h2 {
@@ -241,14 +336,55 @@ select:focus {
   flex: 1;
 }
 
+/* Each game owns one neon; cards rest quiet and light up in it on hover. */
+.accent-pink {
+  --accent: var(--pink);
+  --accent-glow: rgba(255, 46, 136, 0.28);
+}
+
+.accent-cyan {
+  --accent: var(--cyan);
+  --accent-glow: rgba(34, 230, 230, 0.25);
+}
+
+.accent-yellow {
+  --accent: var(--yellow);
+  --accent-glow: rgba(255, 210, 63, 0.25);
+}
+
+.accent-green {
+  --accent: var(--green);
+  --accent-glow: rgba(61, 252, 142, 0.25);
+}
+
+.accent-red {
+  --accent: var(--red);
+  --accent-glow: rgba(255, 89, 100, 0.28);
+}
+
 .game-card.active {
-  border-color: var(--pink);
-  box-shadow: 0 0 24px rgba(255, 46, 136, 0.25);
-  transition: transform 0.1s ease;
+  border-color: color-mix(in srgb, var(--accent, var(--pink)) 40%, #32325c);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .game-card.active:hover {
   transform: translateY(-3px);
+  border-color: var(--accent, var(--pink));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.4),
+    0 0 24px var(--accent-glow, rgba(255, 46, 136, 0.25));
+}
+
+.game-card .game-emoji {
+  transition: transform 0.18s ease;
+}
+
+.game-card.active:hover .game-emoji {
+  transform: translateY(-2px) scale(1.08);
 }
 
 .game-card.disabled {
@@ -270,8 +406,9 @@ select:focus {
 }
 
 .play-badge {
-  background: var(--pink);
-  color: #fff;
+  background: var(--accent, var(--pink));
+  color: #10102a;
+  font-weight: 800;
 }
 
 .soon-badge {
@@ -295,7 +432,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding-top: 8px;
+  padding: 8px 0 4px;
 }
 
 .mm-title {
@@ -308,6 +445,15 @@ select:focus {
   color: var(--muted);
   text-decoration: none;
   white-space: nowrap;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-left: -10px;
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.back-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .entry-blurb {
@@ -350,12 +496,18 @@ select:focus {
 
 /* ---------- lobby ---------- */
 
+/* The room code reads like an arcade ticket stub — the thing you shout
+   across the room, so it gets the biggest glow in the lobby. */
 .room-code-box {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   text-align: center;
+  background: var(--well);
+  border: 1px dashed #3f3f74;
+  border-radius: 12px;
+  padding: 14px 14px 16px;
 }
 
 .room-code-label {
@@ -392,7 +544,8 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #0f0f26;
+  background: var(--well);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   padding: 10px 14px;
 }
@@ -632,12 +785,21 @@ select:focus {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(6, 6, 16, 0.82);
+  background: rgba(6, 6, 16, 0.78);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   z-index: 50;
+  animation: overlay-in 0.18s ease;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .reveal-panel {
@@ -751,12 +913,13 @@ select:focus {
 }
 
 .toast {
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 16px;
   font-weight: 700;
   cursor: pointer;
-  animation: slide-up 0.2s ease;
-  border: 2px solid;
+  animation: slide-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  border: 1px solid;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .toast.error {
@@ -1303,7 +1466,7 @@ select:focus {
 }
 
 .auth-corner {
-  background: var(--panel);
+  background: rgba(26, 26, 51, 0.72);
   border-color: var(--panel-edge);
 }
 
@@ -1677,8 +1840,19 @@ select:focus {
 .section-title {
   font-family: var(--font-arcade);
   font-size: 0.95rem;
-  margin: 28px 0 0;
+  margin: 32px 0 0;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The rule after a section title fades out like a marquee light strip. */
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #32325c, transparent);
 }
 
 /* ---------- messages ---------- */
@@ -2286,4 +2460,77 @@ select:focus {
 /* The shared board wants more width than a phone-first page. */
 .cw-board-page {
   max-width: 980px;
+}
+
+/* ---------- polish layer (cross-cutting) ---------- */
+
+/* Keyboard focus is always visible, in the house cyan. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Sticky in-game bars sit on frosted glass so play stays readable under them. */
+.round-bar {
+  background: rgba(20, 20, 42, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #32325c;
+}
+
+/* Corner buttons (bell + account) float on glass too. */
+.corner-buttons .btn {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Codewords cards ease between states and pop when they flip. */
+.cw-card {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.2s ease,
+    color 0.25s ease,
+    transform 0.12s ease,
+    box-shadow 0.15s ease;
+}
+
+.cw-card.cw-revealed {
+  animation: cw-flip 0.3s ease;
+}
+
+@keyframes cw-flip {
+  40% {
+    transform: scale(1.08);
+  }
+}
+
+/* Desktop scrollbars in house colors. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2e2e55;
+  border-radius: 999px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f74;
+}
+
+/* Motion is flavor, never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

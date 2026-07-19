@@ -11,7 +11,7 @@ export default function ImposterChoicePage() {
         <h1 className="mm-title">🕵️ Imposter</h1>
       </header>
       <div className="game-grid">
-        <Link to="/imposter/local" className="game-card active">
+        <Link to="/imposter/local" className="game-card active accent-green">
           <div className="game-emoji">📱</div>
           <h2>On this device</h2>
           <p>
@@ -20,7 +20,7 @@ export default function ImposterChoicePage() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/imposter-online" className="game-card active">
+        <Link to="/imposter-online" className="game-card active accent-green">
           <div className="game-emoji">🌐</div>
           <h2>Online</h2>
           <p>

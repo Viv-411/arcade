@@ -23,7 +23,7 @@ export default function Home() {
       </header>
 
       <div className="game-grid">
-        <Link to="/mindmeld" className="game-card active">
+        <Link to="/mindmeld" className="game-card active accent-pink">
           <div className="game-emoji">🧠</div>
           <h2>Mind Meld</h2>
           <p>
@@ -32,7 +32,7 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/trivia" className="game-card active">
+        <Link to="/trivia" className="game-card active accent-yellow">
           <div className="game-emoji">⚡</div>
           <h2>Speed Trivia</h2>
           <p>
@@ -41,7 +41,7 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/imposter" className="game-card active">
+        <Link to="/imposter" className="game-card active accent-green">
           <div className="game-emoji">🕵️</div>
           <h2>Imposter</h2>
           <p>
@@ -50,7 +50,7 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/bidbattle" className="game-card active">
+        <Link to="/bidbattle" className="game-card active accent-cyan">
           <div className="game-emoji">💰</div>
           <h2>Bid Battle</h2>
           <p>
@@ -59,7 +59,7 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/codewords" className="game-card active">
+        <Link to="/codewords" className="game-card active accent-red">
           <div className="game-emoji">🗝️</div>
           <h2>Codewords</h2>
           <p>

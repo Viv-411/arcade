@@ -11,7 +11,7 @@ export default function CodewordsChoicePage() {
         <h1 className="mm-title">🗝️ Codewords</h1>
       </header>
       <div className="game-grid">
-        <Link to="/codewords/remote" className="game-card active">
+        <Link to="/codewords/remote" className="game-card active accent-red">
           <div className="game-emoji">🌐</div>
           <h2>Remote</h2>
           <p>
@@ -20,7 +20,7 @@ export default function CodewordsChoicePage() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
-        <Link to="/codewords/board" className="game-card active">
+        <Link to="/codewords/board" className="game-card active accent-red">
           <div className="game-emoji">📺</div>
           <h2>Shared Board</h2>
           <p>

@@ -506,3 +506,21 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     (flex-column cards; the "copy link instead" link used to float inline
     beside the QR image), stacking on narrow screens; guess-action row
     centered.
+
+22. **Site-wide UI polish pass (2026-07-19)** — system-level restyle, no
+    markup restructuring (all screens lift through the shared classes).
+    Design system decisions to PRESERVE in future work: body face is now
+    "Space Grotesk" (Google Fonts, loaded in client/index.html next to Press
+    Start 2P — display stays arcade-only and used sparingly); a fixed CRT
+    overlay (body::before scanlines + body::after vignette, pointer-inert,
+    ~2.4% alpha — delete those two rules to kill the effect) is the site
+    signature, plus a one-time crt-on flicker on the home title; GLOW IS A
+    BUDGET — reserved for the title, the room-code "ticket" box, .btn.primary,
+    and per-game card hovers; panels/buttons use subtle gradients + 1px
+    borders instead. Per-game accent classes (.accent-pink mindmeld /
+    -yellow trivia / -green imposter / -cyan bidbattle / -red codewords) set
+    --accent/--accent-glow consumed by .game-card.active and .play-badge —
+    new games should claim an accent. Cross-cutting "polish layer" section at
+    the end of styles.css: :focus-visible cyan rings, frosted sticky
+    .round-bar, cw-card flip animation, styled scrollbars, and a
+    prefers-reduced-motion kill-switch for ALL animation.
