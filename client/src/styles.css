@@ -2137,8 +2137,11 @@ select:focus {
   align-items: stretch;
 }
 
+/* The global `input, select { width: 100% }` rule breaks this flex row (the
+   select hogs the row and crushes the input) — pin explicit widths here. */
 .cw-clue-row input {
-  flex: 1;
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
   font: inherit;
   color: var(--text);
@@ -2149,6 +2152,9 @@ select:focus {
 }
 
 .cw-clue-row select {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 64px;
   font: inherit;
   color: var(--text);
   background: #0f0f26;

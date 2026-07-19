@@ -36,7 +36,7 @@ type GameAction =
   | { type: "turnChange" }
   | { type: "gameStart" }
   | { type: "gameOver"; winner: NonNullable<CwGameState["winner"]> }
-  | { type: "reset"; init?: Partial<CwGameState> };
+  | { type: "reset"; init?: Partial<CwGameState>; keepTokens?: boolean };
 
 const initialGame: CwGameState = {
   cardKey: null,
@@ -67,7 +67,14 @@ function gameReducer(state: CwGameState, action: GameAction): CwGameState {
     case "gameOver":
       return { ...state, winner: action.winner, tally: null, myVote: null };
     case "reset":
-      return { ...initialGame, ...action.init };
+      // keepTokens: the board's QR tokens arrive via a boardTokens event
+      // BEFORE the createRoom ack, and the ack's session reset must not
+      // wipe them (that hid the QR codes entirely).
+      return {
+        ...initialGame,
+        ...(action.keepTokens ? { boardTokens: state.boardTokens } : {}),
+        ...action.init,
+      };
     default:
       return state;
   }
@@ -102,7 +109,7 @@ export function useCodewords(gameKey: "codewords" | "codewords-board" | "codewor
         },
       });
     } else {
-      dispatchGame({ type: "reset" });
+      dispatchGame({ type: "reset", keepTokens: kind === "joined" });
     }
   }, []);
 

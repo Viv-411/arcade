@@ -103,7 +103,7 @@ export default function CodewordsLobby({
                         title={`Make ${p.name} the ${cwTeamLabel(t)} spymaster`}
                         onClick={() => onSetSpymaster(p.id)}
                       >
-                        🕵️
+                        Spymaster
                       </button>
                     )}
                     <span className={`badge ${p.ready ? "ready-badge" : "waiting-badge"}`}>
@@ -124,8 +124,8 @@ export default function CodewordsLobby({
       </div>
 
       <p className="hint">
-        Each team needs a 🕵️ spymaster (tap the button on your row to claim it) and at least
-        one operative.
+        Each team needs a 🕵️ spymaster — tap the "Spymaster" button on your row to claim
+        the role — and at least one operative.
       </p>
 
       <div className="lobby-buttons">

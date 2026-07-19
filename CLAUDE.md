@@ -486,3 +486,14 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     per-surface sessionStorage gameKeys so one browser can host board + both
     phones in three tabs. tests/codewords.test.mjs covers both modes incl.
     secrecy sweeps. Board-mode games record no stats; remote does.
+
+20. **Codewords UI fixes (2026-07-19, owner playtest feedback)** — (a) the
+    shared board's QR codes never rendered: boardTokens arrives on the wire
+    BEFORE the createRoom ack, and the ack's session reset wiped it from the
+    reducer (the e2e test read the socket event directly, so it missed the
+    client-state bug) — reset now keeps boardTokens on "joined"; (b) the clue
+    row was mangled by the GLOBAL `input, select { width: 100% }` rule (the
+    number select hogged the row, crushing the text input to an invisible
+    sliver) — .cw-clue-row now pins explicit widths; remember this global
+    rule when putting inputs in flex rows; (c) the lobby's unexplained 🕵️
+    icon button is now a labeled "Spymaster" button.
