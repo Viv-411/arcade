@@ -126,6 +126,10 @@ export abstract class BaseRoomManager<
   protected canStartExtra(_room: TRoom): string | null {
     return null;
   }
+  /** Block joinRoom with a message (e.g. rooms that only admit special joins). */
+  protected joinBlocked(_room: TRoom): string | null {
+    return null;
+  }
   /** Whether a public lobby matches this quickPlay request (e.g. same mode). */
   protected quickPlayEligible(_room: TRoom, _payload: unknown): boolean {
     return true;
@@ -205,7 +209,7 @@ export abstract class BaseRoomManager<
     return `${this.linkPath}?room=${code}`;
   }
 
-  private addPlayerToRoom(socket: AnySocket, room: TRoom, name: string): TPlayer {
+  protected addPlayerToRoom(socket: AnySocket, room: TRoom, name: string): TPlayer {
     const player = this.makePlayer({
       id: randomUUID(),
       name,
@@ -237,7 +241,7 @@ export abstract class BaseRoomManager<
   }
 
   /** If a socket is already bound to a room, detach it first (e.g. a second tab). */
-  private detachFromCurrentRoom(socket: AnySocket): void {
+  protected detachFromCurrentRoom(socket: AnySocket): void {
     if (socket.data.roomCode) this.leaveRoom(socket);
   }
 
@@ -290,6 +294,8 @@ export abstract class BaseRoomManager<
     if (room.state !== "lobby") {
       return ack({ ok: false, error: "That game has already started." });
     }
+    const blocked = this.joinBlocked(room);
+    if (blocked) return ack({ ok: false, error: blocked });
     if (room.players.size >= this.roomMaxPlayers(room)) {
       return ack({
         ok: false,

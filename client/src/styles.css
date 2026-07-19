@@ -1948,3 +1948,305 @@ select:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- codewords ---------- */
+
+.team-panel.team-red {
+  border-color: var(--red);
+}
+
+.team-panel.team-red h3 {
+  color: var(--red);
+}
+
+.team-panel.team-blue {
+  border-color: var(--cyan);
+}
+
+.team-panel.team-blue h3 {
+  color: var(--cyan);
+}
+
+.cw-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.cw-card {
+  position: relative;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: #23234a;
+  border: 2px solid var(--panel-edge);
+  border-radius: 8px;
+  padding: 12px 2px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-wrap: anywhere;
+  cursor: default;
+}
+
+.cw-board.cw-big .cw-card {
+  font-size: clamp(0.8rem, 2.2vw, 1.15rem);
+  min-height: 72px;
+  padding: 16px 4px;
+}
+
+.cw-card.cw-tappable {
+  cursor: pointer;
+}
+
+.cw-card.cw-tappable:hover:not(:disabled) {
+  border-color: var(--yellow);
+  transform: translateY(-1px);
+}
+
+.cw-card:disabled {
+  opacity: 1;
+}
+
+/* Spymaster key tints (unrevealed cards, private views only). */
+.cw-card.cw-key-red {
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red);
+}
+
+.cw-card.cw-key-blue {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 1px var(--cyan);
+}
+
+.cw-card.cw-key-bystander {
+  border-color: #8a8a5e;
+  border-style: dashed;
+}
+
+.cw-card.cw-key-assassin {
+  border-color: var(--text);
+  background: #000;
+}
+
+/* Revealed cards. */
+.cw-card.cw-revealed {
+  cursor: default;
+}
+
+.cw-card.cw-revealed.cw-red {
+  background: #5c1622;
+  border-color: var(--red);
+  color: #ffb9be;
+}
+
+.cw-card.cw-revealed.cw-blue {
+  background: #0e3d4d;
+  border-color: var(--cyan);
+  color: #b3f4f4;
+}
+
+.cw-card.cw-revealed.cw-bystander {
+  background: #3d3d2c;
+  border-color: #8a8a5e;
+  color: #d8d8b0;
+}
+
+.cw-card.cw-revealed.cw-assassin {
+  background: #000;
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.cw-card.cw-selected {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px var(--yellow);
+}
+
+.cw-card.cw-my-vote {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px var(--green);
+}
+
+.cw-votes {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  background: var(--green);
+  color: #08240f;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 4px;
+}
+
+.cw-mark {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 0.8rem;
+}
+
+.cw-cluebar {
+  text-align: center;
+  padding: 12px;
+}
+
+.cw-score {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.cw-score-chip {
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 12px;
+  background: #0f0f26;
+}
+
+.cw-chip-red {
+  color: var(--red);
+}
+
+.cw-chip-blue {
+  color: var(--cyan);
+}
+
+.cw-turn {
+  margin: 4px 0;
+}
+
+.cw-guesses {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.cw-clue-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.cw-clue-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: #0f0f26;
+  border: 2px solid var(--panel-edge);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.cw-clue-row select {
+  font: inherit;
+  color: var(--text);
+  background: #0f0f26;
+  border: 2px solid var(--panel-edge);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.cw-clue-input h3,
+.cw-history h3 {
+  margin: 0 0 8px;
+}
+
+.cw-guess-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.cw-claim {
+  text-align: center;
+}
+
+.cw-history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.cw-history-row:first-of-type {
+  border-top: none;
+}
+
+.cw-history-clue {
+  font-weight: 700;
+}
+
+.cw-text-red {
+  color: var(--red);
+}
+
+.cw-text-blue {
+  color: var(--cyan);
+}
+
+.cw-history-guesses {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cw-winner {
+  text-align: center;
+}
+
+.cw-reason {
+  color: var(--muted);
+}
+
+.cw-qr-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 14px 0;
+  text-align: center;
+}
+
+.cw-qr img {
+  width: 100%;
+  max-width: 220px;
+  border-radius: 10px;
+}
+
+.cw-qr-small .cw-qr img {
+  max-width: 140px;
+}
+
+.cw-qr h3 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.cw-qr-red h3 {
+  color: var(--red);
+}
+
+.cw-qr-blue h3 {
+  color: var(--cyan);
+}
+
+.cw-manual-clue p {
+  margin-top: 0;
+}
+
+/* The shared board wants more width than a phone-first page. */
+.cw-board-page {
+  max-width: 980px;
+}

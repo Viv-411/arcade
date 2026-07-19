@@ -1,7 +1,7 @@
 # 🕹 Arcade
 
 A real-time multiplayer web arcade for party games: **Mind Meld** 🧠,
-**Speed Trivia** ⚡, **Bid Battle** 💰, and **Imposter** 🕵️.
+**Speed Trivia** ⚡, **Bid Battle** 💰, **Imposter** 🕵️, and **Codewords** 🗝️.
 
 ## How it works
 
@@ -156,6 +156,78 @@ Each round:
 > uphold flags on perfectly valid items. It's designed for private lobbies with
 > people you trust; quick play uses the same honor review — play nice.
 
+## Codewords — the rules
+
+A two-team word-association deduction game (route `/codewords`, namespace
+`/codewords`). 25 word cards in a 5×5 grid; a hidden key marks each card as a
+**red agent**, **blue agent**, **innocent bystander** (7 of them), or the single
+**assassin** 💀. The randomly-chosen starting team has **9** agents, the other **8**,
+and gives the first clue.
+
+- **Roles.** Each team has exactly one **spymaster**; everyone else on the team is
+  a **field operative**. There is **ONE shared key per game**: both spymasters see
+  the SAME complete key (all reds, blues, bystanders, and the one assassin). The
+  only secrecy boundary is **spymasters vs. operatives** — the server never sends
+  operatives a card's identity until it is revealed, and the full key is only
+  broadcast once the game ends.
+- **A turn.** The active team's spymaster gives a **one-word clue + a number**
+  (0–9 or ∞). The clue is validated server-side: one single token that isn't equal
+  to, doesn't contain, and isn't contained by any unrevealed word on the board.
+  The team then gets **number + 1** guesses (0 and ∞ = unlimited guesses, but any
+  wrong flip still ends the turn) and must guess at least once before passing.
+- **Flip outcomes** (decided by the server from the key): your own agent → keep
+  guessing; a bystander → turn ends; the *other* team's agent → it's revealed in
+  their color (advancing them) and your turn ends; the assassin → **your team
+  loses instantly**.
+- **Winning.** First team with all its agents revealed wins — or you win because
+  the other team hit the assassin.
+
+Two ways to play (mode picker on the Codewords page):
+
+- **Remote** (`/codewords/remote`) — everyone on their own device, 4–10 players,
+  with the usual lobby/quick-play/invite/reconnect infrastructure. Both teams need
+  a spymaster + at least one operative to start. Spymasters privately see the key
+  overlaid on their grid; operatives **guess by voting** — tap a card to vote
+  (tap again to take it back), and the server flips the card once a **majority of
+  the team's currently-connected operatives** agree on it (passing needs a
+  majority too). Votes are cleared whenever a card flips or the turn changes. If
+  a spymaster leaves mid-game, the game pauses that seat and a teammate can claim
+  it (the key is re-delivered to the new spymaster); a team that can no longer
+  field a spymaster + operative forfeits.
+- **Shared Board** (`/codewords/board`) — one screen for the room (laptop/TV)
+  plus the two spymasters on their phones. The board shows the grid, clue, guess
+  counter and **two QR codes (Red / Blue)**; each spymaster scans theirs, which
+  opens `/codewords/key` with a per-team secret token. The server validates the
+  token before delivering the key to that phone. The two QRs are a **convenience
+  to identify which phone belongs to which team** — both phones display the same
+  full key; the team in the token only controls whose turn may type a clue.
+  Everyone else plays in person: spymasters speak clues aloud (a spymaster can
+  optionally type the clue on their phone so it shows on the board; otherwise the
+  board has a manual "clue given: N" control so the guess counter still works),
+  and operatives reveal guesses by tapping cards **on the shared board**
+  (tap to select, tap again to confirm). The shared board itself never receives
+  the key. Reloading a phone (or re-scanning the QR after a drop) restores the
+  private key view.
+
+Implementation notes / decisions:
+
+- **No in-app voice** — players talk out loud in the same room or use their own
+  call. In-app voice is a planned separate project.
+- **Original word bank.** The ~380-word bank (`server/src/codewords/wordBank.ts`)
+  is self-authored for this arcade — common, concrete, family-friendly single
+  English words — and is **not copied from or modeled on any published word
+  game's card list**. It's structured as data packs so user-authored packs can
+  plug into the accounts DB later. The game tile is named **"Codewords"** and does
+  not use the "Codenames" trademark anywhere in the UI.
+- Both spymaster surfaces receive the key via the same private `yourKey` socket
+  event (one event rather than a separate Mode-B `spymasterKeyGranted` — the
+  payload is identical by design since there is only one shared key).
+- Board-mode games are in-person around one screen, so they don't record account
+  win stats (remote games do). Quick play matches only remote-mode lobbies;
+  shared boards are created directly and reject normal code joins (QR tokens
+  only). Public remote lobbies follow the arcade-wide rule: auto-start only when
+  completely full (teams and spymasters self-heal at launch if unset).
+
 ## Running it
 
 ```bash
@@ -193,6 +265,15 @@ and pull request.
 
 (Player identity is stored per-tab in `sessionStorage`, so two tabs are two players
 while a refresh of either tab still reconnects to the same game.)
+
+Codewords needs a few more tabs: **Remote** takes four (two per team; use the 🕵️
+button in the lobby to pick each team's spymaster — spymaster tabs see the key
+tint, operative tabs don't). **Shared Board** takes three: open
+`/codewords/board`, create a board, then open each QR's link (the "copy link
+instead" button under each QR, or scan with a phone) in its own tab as the two
+spymasters. Each
+Codewords surface (remote player / board / spymaster phone) uses its own per-tab
+session key, so the three kinds of tab don't clobber each other.
 
 ### Env vars
 

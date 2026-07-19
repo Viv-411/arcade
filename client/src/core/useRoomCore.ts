@@ -285,6 +285,12 @@ export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptio
     [joinAction],
   );
   const quickPlay = useCallback((name: string) => joinAction("quickPlay", { name }), [joinAction]);
+  /** Game-specific join flows (e.g. Codewords' QR-token spymaster join) that
+   *  should still get the standard session persistence + rejoin behavior. */
+  const joinWith = useCallback(
+    (event: string, payload: Record<string, unknown>) => joinAction(event, payload),
+    [joinAction],
+  );
 
   /**
    * Guarded fire-and-forget emit: while disconnected, socket.io would buffer
@@ -342,6 +348,7 @@ export function useRoomCore<TSnap extends BaseSnapshotShape>(opts: RoomCoreOptio
       createRoom,
       joinRoom,
       quickPlay,
+      joinWith,
       toggleReady,
       startGame,
       playAgain,

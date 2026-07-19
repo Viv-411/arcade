@@ -59,6 +59,16 @@ export default function Home() {
           </p>
           <span className="badge play-badge">▶ Play now</span>
         </Link>
+        <Link to="/codewords" className="game-card active">
+          <div className="game-emoji">🗝️</div>
+          <h2>Codewords</h2>
+          <p>
+            Red vs Blue word deduction: spymasters give one-word clues to steer their team
+            to the right cards — and away from the assassin. Remote, or one shared screen
+            with QR spymaster phones.
+          </p>
+          <span className="badge play-badge">▶ Play now</span>
+        </Link>
       </div>
 
       <h2 className="section-title">🎮 Singleplayer</h2>

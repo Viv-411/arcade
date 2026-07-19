@@ -25,13 +25,15 @@ before making changes.
 
 ## What this project is
 
-A real-time multiplayer web arcade for party games, playable in the browser. Four
+A real-time multiplayer web arcade for party games, playable in the browser. Five
 games are live: **Mind Meld** 🧠 (2–4 players converge on the same word),
 **Speed Trivia** ⚡ (2–10 players race through multiple-choice questions),
-**Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2), and
+**Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2),
 **Imposter** 🕵️ (social deduction, 3–10 players online PLUS a fully client-side
-pass-and-play mode). The README.md holds the full player-facing rules; this file
-holds contributor context.
+pass-and-play mode), and **Codewords** 🗝️ (two-team word-association deduction on
+a 5×5 grid, with a Remote mode and a Shared Board + QR-spymaster-phones mode).
+The README.md holds the full player-facing rules; this file holds contributor
+context.
 
 ## Architecture (the important mental model)
 
@@ -71,14 +73,24 @@ build`, start `npm start`, `PORT` env respected.
                             Teams live on the game's own player type; per-team
                             visibility uses socket.io rooms `${code}#A`/`#B`.
                             categories.ts — curated category deck.
+/server/src/codewords/      manager.ts — Codewords state machine (untimed clue ↔
+                            guess turns; remote majority-vote reveals; board-mode
+                            tap reveals + QR-token spymaster joins). wordBank.ts —
+                            ORIGINAL self-authored ~380-word bank structured as
+                            data packs (never copy a published word list).
 /client/src/core/           useRoomCore.ts — client half of shared infra (per-tab
                             session, silent rejoin on connect, lobby actions, toasts,
-                            patchRoom). hooks.ts — countdown/progress hooks.
+                            patchRoom, generic joinWith for special join flows).
+                            hooks.ts — countdown/progress hooks.
 /client/src/components/     GameEntry.tsx, GameLobby.tsx (shared screens), Toasts.tsx.
 /client/src/mindmeld/       useMindMeld.ts + GameBoard/EndScreen.
 /client/src/trivia/         useTrivia.ts + VoteScreen/QuestionScreen/TriviaFinal.
+/client/src/codewords/      useCodewords.ts (shared by three surfaces via distinct
+                            gameKeys) + BoardGrid/CluePanel/ClueInput/CodewordsLobby.
 /client/src/pages/          Home (game grid), MindMeldPage, TriviaPage — each game
                             page shows its own "How to play" on the entry screen.
+                            Codewords has FOUR pages: choice, remote, board
+                            (shared screen + QRs), key (spymaster phone).
 ```
 
 **Adding a game:** new namespace manager on the server (subclass `BaseRoomManager`,
@@ -110,6 +122,24 @@ scoring). Clients render optimistically but never decide results.
   elimination cycle; forced-final-vote deadlock = imposters win. The
   pass-and-play mode (/imposter/local) is PURE React state — no server, no
   accounts; keep it that way.
+- Codewords: ONE shared key per game — BOTH spymasters see the SAME complete
+  key (there is no per-team key). KEY SECRECY boundary is spymasters-vs-
+  operatives only: the key travels via the private `yourKey` event and
+  `rejoinExtra`; snapshots carry identities ONLY on revealed cards and
+  `fullKey` ONLY when state === "finished" (the codewords test sweeps
+  operative AND shared-board roomUpdates — keep it passing). Two modes in one
+  namespace via `settings.mode`: "remote" (4–10 players, guesses are
+  majority votes of the team's CONNECTED operatives; pass needs a majority
+  too and ≥1 guess made) and "board" (exactly board device + 2 spymaster
+  phones; phones join via per-team QR tokens — the token identifies the
+  phone's TEAM, both phones get the same key; normal joinRoom is blocked via
+  the joinBlocked hook; the board device taps reveals and can log spoken
+  clues as number-only). Untimed by design — no turn timers anywhere.
+  Clue validation: single token, no substring overlap either direction with
+  any unrevealed board word; number 0–9 or "unlimited" (0/∞ = uncapped);
+  guesses = number + 1. Board-mode games record NO account stats (remote
+  does). Word bank is ORIGINAL (wordBank.ts) — never import or imitate a
+  published Codenames list, and never use the "Codenames" trademark in UI.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -206,11 +236,15 @@ Coverage: full Mind Meld win flow (normalization, no-repeat rejection at lock-in
 unlock/re-lock, playAgain reset), full trivia flow (host-only difficulty, vote +
 early resolve, decoded questions, hidden correct answer, duplicate/late answer
 rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain),
-a 10-player trivia game (11th join rejected; Mind Meld still capped at 4), and
+a 10-player trivia game (11th join rejected; Mind Meld still capped at 4),
 Bid Battle 1v1 + 2v2 (ballot with custom approval, opener-timeout pass +
 double-timeout redraw, raise/challenge validation, dedup, team-only item
 visibility, full flag/defend/accept/uphold review math, forfeit on leave,
-per-mode quick play pools).
+per-mode quick play pools), and Codewords (remote: identical spymaster keys,
+9/8/7/1 split, clue validation, majority votes + toggle + pass, opponent/
+assassin outcomes, playAgain keeps seats, operative secrecy sweep; board:
+QR-token joins, join/start gating, spoken + typed clues, tap reveals, phone
+rejoin restores the key, board secrecy sweep).
 
 Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new tests:
 
@@ -237,7 +271,7 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 
 ## Current state (update before every commit)
 
-- FOUR games live and deployed at https://arcade-1628.onrender.com (Render free
+- FIVE games live; deployed at https://arcade-1628.onrender.com (Render free
   tier; owner-managed; a keep-alive GitHub workflow pings it). Local `.env`
   (gitignored) holds the owner's real Supabase keys — client env is baked at
   build time, server env read at runtime; Render has the same five vars set.
@@ -435,3 +469,20 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     full-room auto-start and playAgain restart now go through the same 15s
     countdown (test timeouts bumped accordingly). Imposter card removed from
     the home Singleplayer section (placeholders remain).
+
+19. **Codewords (fifth game, 2026-07-18)** — two-team word deduction on the
+    shared room core + Bid Battle-style team layer (`${code}#red`/`#blue`
+    socket rooms). One namespace (/codewords) hosts BOTH modes via
+    settings.mode: Remote (own devices, majority-vote guessing) and Shared
+    Board (board device + QR-token spymaster phones; board rooms reject
+    joinRoom). Correction learned mid-spec: there is ONE shared key — both
+    spymasters see the identical complete key; the only secrecy boundary is
+    spymasters-vs-operatives. Core gained two additive hooks (joinBlocked;
+    addPlayerToRoom/detachFromCurrentRoom made protected) and the client core
+    a generic joinWith action — existing games untouched (full suite still
+    green). Original ~380-word bank in server/src/codewords/wordBank.ts (packs
+    as data; IP note: never copy a published list, tile named "Codewords").
+    Four client pages (choice/remote/board/key) sharing useCodewords with
+    per-surface sessionStorage gameKeys so one browser can host board + both
+    phones in three tabs. tests/codewords.test.mjs covers both modes incl.
+    secrecy sweeps. Board-mode games record no stats; remote does.
