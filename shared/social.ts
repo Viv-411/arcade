@@ -70,6 +70,8 @@ export interface ChatSummary {
   kind: "dm" | "group";
   /** Group name; DMs display the other member's username. */
   name: string | null;
+  /** Group creator — the only member who can add people or delete the group. */
+  createdBy: string | null;
   members: ChatMemberInfo[];
   lastMessage: ChatMessageInfo | null;
   unread: boolean;
@@ -98,6 +100,15 @@ export interface SocialClientEvents {
     ack: Ack<ChatMessageInfo>,
   ): void;
   markRead(payload: { chatId: string }): void;
+  /** Creator only: add accepted friends to a group (10 members max). */
+  addToGroup(
+    payload: { chatId: string; memberUserIds: string[] },
+    ack: Ack<{ added: number }>,
+  ): void;
+  /** Any member: leave a group (the last member out deletes it). */
+  leaveGroup(payload: { chatId: string }, ack: Ack<{ left: true }>): void;
+  /** Creator only: delete a group for everyone. */
+  deleteGroup(payload: { chatId: string }, ack: Ack<{ deleted: true }>): void;
 }
 
 export interface SocialServerEvents {

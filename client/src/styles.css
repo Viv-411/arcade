@@ -2592,3 +2592,11 @@ select:focus {
 .cw-history-guess {
   white-space: nowrap;
 }
+
+/* Group chat membership actions (add / leave / delete). */
+.chat-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}

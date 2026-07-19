@@ -399,7 +399,13 @@ What exists (accounts phase 4 — messages):
   can't chat). One conversation per friendship, created on first message from
   the friends page (💬) or a lobby invite.
 - **Group chats**: name a group and add 1–9 of your accepted friends; everyone
-  in it can chat and post game invites.
+  in it can chat and post game invites. The **creator manages the roster**:
+  they can add more of their accepted friends later (10 people max) and delete
+  the group for everyone. **Any member can leave** at any time; if the creator
+  leaves, the group lives on for the others (nobody can add or delete anymore),
+  and the last member out deletes it automatically. All of it lives behind the
+  group chat's header buttons on the Messages page, with the same server-side
+  validation as creation.
 - **Chat-based lobby invites**: the lobby "Invite friends" panel still shows
   who's online (presence can be glitchy, so it's informational) — but invites
   now go through Messages: one tap posts an invite card (with a Join button)

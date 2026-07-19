@@ -86,6 +86,17 @@ export class SocialManager {
           void this.sendChatInvite(socket as AnySocket, p, ack),
       );
       socket.on("markRead", (p: { chatId: string }) => void this.markRead(socket as AnySocket, p));
+      socket.on(
+        "addToGroup",
+        (p: { chatId: string; memberUserIds: string[] }, ack: Ack<{ added: number }>) =>
+          void this.addToGroup(socket as AnySocket, p, ack),
+      );
+      socket.on("leaveGroup", (p: { chatId: string }, ack: Ack<{ left: true }>) =>
+        void this.leaveGroup(socket as AnySocket, p, ack),
+      );
+      socket.on("deleteGroup", (p: { chatId: string }, ack: Ack<{ deleted: true }>) =>
+        void this.deleteGroup(socket as AnySocket, p, ack),
+      );
     });
   }
 
@@ -285,7 +296,7 @@ export class SocialManager {
     const chatIds = mine.map((m) => m.chat_id);
     const lastReadByChat = new Map(mine.map((m) => [m.chat_id, m.last_read_at]));
     const [{ data: chats }, { data: members }] = await Promise.all([
-      admin.from("chats").select("id, kind, name").in("id", chatIds),
+      admin.from("chats").select("id, kind, name, created_by").in("id", chatIds),
       admin
         .from("chat_members")
         .select("chat_id, user_id, profile:profiles!chat_members_user_id_fkey(username)")
@@ -308,6 +319,7 @@ export class SocialManager {
         id: chat.id,
         kind: chat.kind,
         name: chat.name,
+        createdBy: chat.kind === "group" ? chat.created_by : null,
         members: (members ?? [])
           .filter((m) => m.chat_id === chat.id)
           .map((m) => ({
@@ -400,6 +412,118 @@ export class SocialManager {
       for (const sid of presence.socketsOf(uid)) this.nsp.to(sid).emit("chatsChanged");
     }
     ack({ ok: true, data: { chatId: chat.id } });
+  }
+
+  // ----- group membership management -----
+  // Rules mirror creation: the CREATOR manages the roster (adds must be the
+  // creator's accepted friends, 10 members max) and only the creator can
+  // delete the group; any member may leave, and the last one out deletes it.
+
+  private async groupOf(
+    chatId: string,
+  ): Promise<{ id: string; createdBy: string } | null> {
+    const admin = getSupabaseAdmin();
+    if (!admin) return null;
+    const { data } = await admin
+      .from("chats")
+      .select("id, kind, created_by")
+      .eq("id", chatId)
+      .maybeSingle();
+    if (!data || data.kind !== "group") return null;
+    return { id: data.id, createdBy: data.created_by };
+  }
+
+  private emitChatsChanged(userIds: string[]): void {
+    for (const uid of userIds) {
+      for (const sid of presence.socketsOf(uid)) this.nsp.to(sid).emit("chatsChanged");
+    }
+  }
+
+  private async addToGroup(
+    socket: AnySocket,
+    payload: { chatId: string; memberUserIds: string[] },
+    ack: Ack<{ added: number }>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    const chatId = String(payload?.chatId ?? "");
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const group = await this.groupOf(chatId);
+    if (!group) return ack({ ok: false, error: "Only group chats have a member list." });
+    if (group.createdBy !== userId || !(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "Only the group's creator can add people." });
+    }
+    const existing = await this.memberIdsOf(chatId);
+    const newIds = [...new Set((payload?.memberUserIds ?? []).map(String))].filter(
+      (id) => id && id !== userId && !existing.includes(id),
+    );
+    if (newIds.length === 0) {
+      return ack({ ok: false, error: "Pick someone who isn't in the group yet." });
+    }
+    if (existing.length + newIds.length > 10) {
+      return ack({ ok: false, error: "Groups max out at 10 people." });
+    }
+    // Additions follow the creation rule: the creator's accepted friends only.
+    const friends = await this.friendsOf(userId);
+    if (!friends || !newIds.every((id) => friends.some((f) => f.userId === id))) {
+      return ack({ ok: false, error: "You can only add accepted friends." });
+    }
+    const { error } = await admin
+      .from("chat_members")
+      .insert(newIds.map((uid) => ({ chat_id: chatId, user_id: uid })));
+    if (error) return ack({ ok: false, error: "Could not add them — try again." });
+    this.emitChatsChanged([...existing, ...newIds]);
+    ack({ ok: true, data: { added: newIds.length } });
+  }
+
+  private async leaveGroup(
+    socket: AnySocket,
+    payload: { chatId: string },
+    ack: Ack<{ left: true }>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    const chatId = String(payload?.chatId ?? "");
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const group = await this.groupOf(chatId);
+    if (!group) return ack({ ok: false, error: "You can't leave a direct message." });
+    if (!(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "You're not in that group." });
+    }
+    const { error } = await admin
+      .from("chat_members")
+      .delete()
+      .eq("chat_id", chatId)
+      .eq("user_id", userId);
+    if (error) return ack({ ok: false, error: "Could not leave — try again." });
+    const remaining = await this.memberIdsOf(chatId);
+    if (remaining.length === 0) {
+      // Last one out turns off the lights (cascade cleans messages).
+      await admin.from("chats").delete().eq("id", chatId);
+    }
+    this.emitChatsChanged(remaining);
+    ack({ ok: true, data: { left: true } });
+  }
+
+  private async deleteGroup(
+    socket: AnySocket,
+    payload: { chatId: string },
+    ack: Ack<{ deleted: true }>,
+  ): Promise<void> {
+    const userId = socket.data.userId;
+    const admin = getSupabaseAdmin();
+    const chatId = String(payload?.chatId ?? "");
+    if (!userId || !admin) return ack({ ok: false, error: "Sign in to use messages." });
+    const group = await this.groupOf(chatId);
+    if (!group) return ack({ ok: false, error: "Only group chats can be deleted." });
+    if (group.createdBy !== userId || !(await this.isMember(chatId, userId))) {
+      return ack({ ok: false, error: "Only the group's creator can delete it." });
+    }
+    const members = await this.memberIdsOf(chatId);
+    const { error } = await admin.from("chats").delete().eq("id", chatId);
+    if (error) return ack({ ok: false, error: "Could not delete the group — try again." });
+    this.emitChatsChanged(members.filter((id) => id !== userId));
+    ack({ ok: true, data: { deleted: true } });
   }
 
   private async fetchMessages(

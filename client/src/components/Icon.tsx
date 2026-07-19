@@ -25,6 +25,7 @@ import grid3x3 from "pixelarticons/svg/grid-3x3.svg?raw";
 import hand from "pixelarticons/svg/hand.svg?raw";
 import human from "pixelarticons/svg/human.svg?raw";
 import lightbulb from "pixelarticons/svg/lightbulb.svg?raw";
+import logout from "pixelarticons/svg/logout.svg?raw";
 import lock from "pixelarticons/svg/lock.svg?raw";
 import login from "pixelarticons/svg/login.svg?raw";
 import mail from "pixelarticons/svg/mail.svg?raw";
@@ -52,10 +53,12 @@ import star from "pixelarticons/svg/star.svg?raw";
 import sunglasses from "pixelarticons/svg/sunglasses.svg?raw";
 import sword from "pixelarticons/svg/sword.svg?raw";
 import target from "pixelarticons/svg/target.svg?raw";
+import trash from "pixelarticons/svg/trash.svg?raw";
 import trophy from "pixelarticons/svg/trophy.svg?raw";
 import tv from "pixelarticons/svg/tv.svg?raw";
 import unlock from "pixelarticons/svg/unlock.svg?raw";
 import user from "pixelarticons/svg/user.svg?raw";
+import userPlus from "pixelarticons/svg/user-plus.svg?raw";
 import users from "pixelarticons/svg/users.svg?raw";
 import warning from "pixelarticons/svg/warning-diamond.svg?raw";
 import zap from "pixelarticons/svg/zap.svg?raw";
@@ -85,6 +88,7 @@ const ICONS = {
   human,
   lightbulb,
   lock,
+  logout,
   login,
   mail,
   megaphone,
@@ -111,10 +115,12 @@ const ICONS = {
   sunglasses,
   sword,
   target,
+  trash,
   trophy,
   tv,
   unlock,
   user,
+  "user-plus": userPlus,
   users,
   warning,
   zap,

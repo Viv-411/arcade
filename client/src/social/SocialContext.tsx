@@ -59,6 +59,9 @@ interface SocialContextValue {
   fetchMessages: (chatId: string) => Promise<ChatMessageInfo[]>;
   sendMessage: (chatId: string, body: string) => Promise<ChatMessageInfo | null>;
   sendChatInvite: (chatId: string, game: GameKey, code: string) => Promise<string | null>; // error
+  addToGroup: (chatId: string, memberUserIds: string[]) => Promise<string | null>; // error
+  leaveGroup: (chatId: string) => Promise<string | null>; // error
+  deleteGroup: (chatId: string) => Promise<string | null>; // error
   markRead: (chatId: string) => void;
   setActiveChat: (chatId: string | null) => void;
   subscribeMessages: (cb: (msg: ChatMessageInfo) => void) => () => void;
@@ -86,6 +89,9 @@ const SocialContext = createContext<SocialContextValue>({
   fetchMessages: async () => [],
   sendMessage: async () => null,
   sendChatInvite: async () => "Not available.",
+  addToGroup: async () => "Not available.",
+  leaveGroup: async () => "Not available.",
+  deleteGroup: async () => "Not available.",
   markRead: () => {},
   setActiveChat: () => {},
   subscribeMessages: () => () => {},
@@ -341,6 +347,42 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     [ackCall],
   );
 
+  const addToGroup = useCallback(
+    async (chatId: string, memberUserIds: string[]): Promise<string | null> => {
+      const res = await ackCall<{ added: number }>("addToGroup", { chatId, memberUserIds });
+      if (res.ok) {
+        await refreshChats();
+        return null;
+      }
+      return res.error ?? "Could not add them.";
+    },
+    [ackCall, refreshChats],
+  );
+
+  const leaveGroup = useCallback(
+    async (chatId: string): Promise<string | null> => {
+      const res = await ackCall<{ left: true }>("leaveGroup", { chatId });
+      if (res.ok) {
+        await refreshChats();
+        return null;
+      }
+      return res.error ?? "Could not leave the group.";
+    },
+    [ackCall, refreshChats],
+  );
+
+  const deleteGroup = useCallback(
+    async (chatId: string): Promise<string | null> => {
+      const res = await ackCall<{ deleted: true }>("deleteGroup", { chatId });
+      if (res.ok) {
+        await refreshChats();
+        return null;
+      }
+      return res.error ?? "Could not delete the group.";
+    },
+    [ackCall, refreshChats],
+  );
+
   const markRead = useCallback((chatId: string) => {
     socketRef.current?.emit("markRead", { chatId });
     setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, unread: false } : c)));
@@ -381,6 +423,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         fetchMessages,
         sendMessage,
         sendChatInvite,
+        addToGroup,
+        leaveGroup,
+        deleteGroup,
         markRead,
         setActiveChat,
         subscribeMessages,

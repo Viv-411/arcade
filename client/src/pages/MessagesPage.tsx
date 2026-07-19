@@ -24,6 +24,9 @@ export default function MessagesPage() {
     setActiveChat,
     subscribeMessages,
     createGroup,
+    addToGroup,
+    leaveGroup,
+    deleteGroup,
   } = useSocial();
   const [params, setParams] = useSearchParams();
   const activeId = params.get("chat");
@@ -33,6 +36,10 @@ export default function MessagesPage() {
   const [groupName, setGroupName] = useState("");
   const [groupMembers, setGroupMembers] = useState<Set<string>>(new Set());
   const [groupError, setGroupError] = useState<string | null>(null);
+  const [manageAdd, setManageAdd] = useState(false);
+  const [addSel, setAddSel] = useState<Set<string>>(new Set());
+  const [confirmAction, setConfirmAction] = useState<"leave" | "delete" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -66,6 +73,14 @@ export default function MessagesPage() {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length]);
 
+  // Switching chats resets any half-done membership action.
+  useEffect(() => {
+    setManageAdd(false);
+    setAddSel(new Set());
+    setConfirmAction(null);
+    setActionError(null);
+  }, [activeId]);
+
   const send = async () => {
     const body = draft.trim();
     if (!body || !activeId) return;
@@ -84,6 +99,52 @@ export default function MessagesPage() {
     setGroupName("");
     setGroupMembers(new Set());
     setParams({ chat: chatId });
+  };
+
+  const isCreator = Boolean(active && active.kind === "group" && active.createdBy === user?.id);
+  const addable = active
+    ? friends.filter((f) => !active.members.some((m) => m.userId === f.userId))
+    : [];
+
+  const submitAdd = async () => {
+    if (!active) return;
+    setActionError(null);
+    const err = await addToGroup(active.id, [...addSel]);
+    if (err) setActionError(err);
+    else {
+      setManageAdd(false);
+      setAddSel(new Set());
+    }
+  };
+
+  const doLeave = async () => {
+    if (!active) return;
+    if (confirmAction !== "leave") {
+      setConfirmAction("leave");
+      return;
+    }
+    const err = await leaveGroup(active.id);
+    if (err) {
+      setActionError(err);
+      setConfirmAction(null);
+    } else {
+      setParams({});
+    }
+  };
+
+  const doDelete = async () => {
+    if (!active) return;
+    if (confirmAction !== "delete") {
+      setConfirmAction("delete");
+      return;
+    }
+    const err = await deleteGroup(active.id);
+    if (err) {
+      setActionError(err);
+      setConfirmAction(null);
+    } else {
+      setParams({});
+    }
   };
 
   let body: JSX.Element;
@@ -189,6 +250,72 @@ export default function MessagesPage() {
               : ""}
           </span>
         </div>
+        {active.kind === "group" && (
+          <div className="chat-manage">
+            {isCreator && (
+              <button
+                className="btn small"
+                onClick={() => {
+                  setManageAdd((v) => !v);
+                  setConfirmAction(null);
+                  setActionError(null);
+                }}
+              >
+                {manageAdd ? <><Icon name="close" /> Cancel</> : <><Icon name="user-plus" /> Add people</>}
+              </button>
+            )}
+            <button className="btn small danger" onClick={() => void doLeave()}>
+              {confirmAction === "leave" ? "Really leave?" : <><Icon name="logout" /> Leave group</>}
+            </button>
+            {isCreator && (
+              <button className="btn small danger" onClick={() => void doDelete()}>
+                {confirmAction === "delete" ? (
+                  "Really delete for everyone?"
+                ) : (
+                  <><Icon name="trash" /> Delete group</>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+        {active.kind === "group" && manageAdd && (
+          <div className="new-group">
+            <p className="hint">Add friends who aren't in the group yet:</p>
+            <div className="players-bar">
+              {addable.map((f) => (
+                <button
+                  key={f.userId}
+                  className={`player-chip chip-btn ${addSel.has(f.userId) ? "locked" : ""}`}
+                  onClick={() =>
+                    setAddSel((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(f.userId)) next.delete(f.userId);
+                      else next.add(f.userId);
+                      return next;
+                    })
+                  }
+                >
+                  {addSel.has(f.userId) ? <><Icon name="check" />{" "}</> : ""}@{f.username}
+                </button>
+              ))}
+              {addable.length === 0 && (
+                <p className="hint">All your friends are already in this group.</p>
+              )}
+            </div>
+            <div className="lobby-buttons">
+              <button
+                className="btn primary"
+                disabled={addSel.size === 0}
+                onClick={() => void submitAdd()}
+              >
+                Add to group
+              </button>
+            </div>
+          </div>
+        )}
+        {actionError && (
+          <p className="used-warning"><Icon name="warning" /> {actionError}</p>
+        )}
         <div className="chat-messages">
           {messages.map((m) => (
             <div key={m.id} className={`chat-msg ${m.senderId === user.id ? "mine" : ""}`}>

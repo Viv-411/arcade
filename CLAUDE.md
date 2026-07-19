@@ -200,7 +200,13 @@ anonymous play is a hard requirement and must never regress. Key facts:
   lobbyInvite bell event to online members. Client: SocialContext chat state
   + /messages page; lobby InviteFriends panel routes invites through chats
   (presence display is informational). Unread = last message newer than the
-  member's last_read_at.
+  member's last_read_at. Group roster management (2026-07-19): addToGroup
+  (creator only, adds must be the CREATOR's accepted friends, 10 members max),
+  leaveGroup (any member, groups only — never DMs; last member out deletes
+  the chat row), deleteGroup (creator only, must still be a member — a
+  creator who left can't add or delete, the group is orphaned by design).
+  ChatSummary.createdBy exposes the creator for the UI gating; the server
+  re-validates everything.
 - Friends/social layer: `friendships` table (one row per pair, unique
   least/greatest index; RLS = participants only, addressee-only accept) managed
   directly from the client via supabase-js; `/social` Socket.IO namespace
@@ -540,3 +546,14 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     (settingsLine, statusOf, chat previews) were de-emojied rather than
     converted to ReactNode; multi-line `import {` blocks broke a naive
     "insert after last import line" script once.
+
+24. **Group chat management (2026-07-19)** — leave / delete / add-people for
+    group chats (see the Messaging bullet above for the exact rules). New
+    /social events addToGroup/leaveGroup/deleteGroup + ChatSummary.createdBy;
+    SocialContext gained matching functions; MessagesPage group header grew
+    Add people (creator), Leave (all, two-tap inline confirm), Delete
+    (creator, two-tap confirm) with a friend-chip picker reusing the
+    new-group UI. No migration needed (chats.created_by + cascades already
+    existed). Live-verified with the scratch harness (27 checks: permission
+    denials, non-friend adds, dupes, DM immunity, cascade cleanup,
+    orphaned-group semantics, last-member auto-delete, chatsChanged fanout).
