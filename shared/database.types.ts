@@ -88,6 +88,7 @@ export interface Database {
           question_text: string;
           options: Json;
           correct_index: number;
+          source_set_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -97,6 +98,7 @@ export interface Database {
           question_text: string;
           options?: Json;
           correct_index?: number;
+          source_set_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -106,6 +108,7 @@ export interface Database {
           question_text?: string;
           options?: Json;
           correct_index?: number;
+          source_set_id?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -113,6 +116,55 @@ export interface Database {
             foreignKeyName: "questions_set_id_fkey";
             columns: ["set_id"];
             referencedRelation: "trivia_sets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "questions_source_set_id_fkey";
+            columns: ["source_set_id"];
+            referencedRelation: "trivia_sets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      trivia_set_shares: {
+        Row: {
+          id: string;
+          set_id: string;
+          shared_with: string;
+          shared_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          set_id: string;
+          shared_with: string;
+          shared_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          set_id?: string;
+          shared_with?: string;
+          shared_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trivia_set_shares_set_id_fkey";
+            columns: ["set_id"];
+            referencedRelation: "trivia_sets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trivia_set_shares_shared_with_fkey";
+            columns: ["shared_with"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trivia_set_shares_shared_by_fkey";
+            columns: ["shared_by"];
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];

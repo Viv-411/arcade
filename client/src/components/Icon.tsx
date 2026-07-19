@@ -3,6 +3,9 @@ import { memo } from "react";
 // glyph in the arcade, replacing the mixed-style emoji. Icons are inlined as
 // raw SVG (fill: currentColor) so they inherit text color and size (1em).
 import alien from "pixelarticons/svg/alien.svg?raw";
+import arrowDown from "pixelarticons/svg/arrow-down.svg?raw";
+import arrowUp from "pixelarticons/svg/arrow-up.svg?raw";
+import article from "pixelarticons/svg/article.svg?raw";
 import bell from "pixelarticons/svg/bell.svg?raw";
 import bellRing from "pixelarticons/svg/bell-ring.svg?raw";
 import calendar from "pixelarticons/svg/calendar.svg?raw";
@@ -14,6 +17,7 @@ import circle from "pixelarticons/svg/circle.svg?raw";
 import clock from "pixelarticons/svg/clock.svg?raw";
 import close from "pixelarticons/svg/close.svg?raw";
 import coins from "pixelarticons/svg/coins.svg?raw";
+import copy from "pixelarticons/svg/copy.svg?raw";
 import crown from "pixelarticons/svg/crown.svg?raw";
 import eye from "pixelarticons/svg/eye.svg?raw";
 import eyeOff from "pixelarticons/svg/eye-off.svg?raw";
@@ -42,6 +46,7 @@ import repeat from "pixelarticons/svg/repeat.svg?raw";
 import search from "pixelarticons/svg/search.svg?raw";
 import send from "pixelarticons/svg/send.svg?raw";
 import settings from "pixelarticons/svg/settings-2.svg?raw";
+import share from "pixelarticons/svg/share.svg?raw";
 import shield from "pixelarticons/svg/shield.svg?raw";
 import shuffle from "pixelarticons/svg/shuffle.svg?raw";
 import skull from "pixelarticons/svg/skull.svg?raw";
@@ -65,6 +70,9 @@ import zap from "pixelarticons/svg/zap.svg?raw";
 
 const ICONS = {
   alien,
+  "arrow-down": arrowDown,
+  "arrow-up": arrowUp,
+  article,
   bell,
   "bell-ring": bellRing,
   calendar,
@@ -76,6 +84,7 @@ const ICONS = {
   clock,
   close,
   coins,
+  copy,
   crown,
   eye,
   "eye-off": eyeOff,
@@ -104,6 +113,7 @@ const ICONS = {
   search,
   send,
   settings,
+  share,
   shield,
   shuffle,
   skull,

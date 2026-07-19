@@ -228,6 +228,9 @@ export default function AccountPage() {
           <Link to="/friends" className="btn">
             <Icon name="users" /> Friends
           </Link>
+          <Link to="/sets" className="btn">
+            <Icon name="article" /> My trivia sets
+          </Link>
           <button className="btn danger" onClick={() => void signOut()}>
             Sign out
           </button>

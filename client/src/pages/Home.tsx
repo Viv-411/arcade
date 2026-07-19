@@ -20,6 +20,9 @@ export default function Home() {
           <Link to="/friends" className="btn small home-link-btn" title="Friends">
             <Icon name="users" /> Friends
           </Link>
+          <Link to="/sets" className="btn small home-link-btn" title="My trivia sets">
+            <Icon name="article" /> My Sets
+          </Link>
         </nav>
       </header>
 

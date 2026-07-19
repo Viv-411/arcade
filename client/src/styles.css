@@ -2600,3 +2600,136 @@ select:focus {
   gap: 8px;
   margin: 10px 0 4px;
 }
+
+/* ---------- trivia sets ---------- */
+
+.q-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.q-card {
+  background: var(--well);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.q-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.q-num {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.q-text {
+  flex: 1;
+  font-weight: 700;
+}
+
+.q-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.q-options {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.q-options .q-correct {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.q-editing .field {
+  margin-top: 0;
+}
+
+.q-opt-hint {
+  text-align: left;
+  margin: 8px 0 4px;
+}
+
+.q-opt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.q-opt-row input[type="radio"] {
+  width: auto;
+  accent-color: var(--green);
+}
+
+.q-form-buttons {
+  margin-top: 10px;
+}
+
+.set-list .chat-row {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 0;
+}
+
+.compose-panel h3 {
+  margin-top: 0;
+}
+
+.compose-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.compose-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.compose-row input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--cyan);
+}
+
+.compose-actions {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin: 10px 0;
+}
+
+.compose-actions select {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}

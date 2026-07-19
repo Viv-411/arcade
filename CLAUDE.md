@@ -284,7 +284,11 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   build time, server env read at runtime; Render has the same five vars set.
 - Supabase schema fully applied (profiles+trigger, trivia_sets/questions,
   player_stats+record_game_result, friendships, chats/chat_members/
-  chat_messages). Migrations go to the hosted DB via
+  chat_messages) EXCEPT migration 20260719000000_trivia_set_shares.sql
+  (set sharing + question provenance + share-aware RLS) which is written
+  and committed but NOT yet pushed to the hosted DB — the /sets page
+  errors on share/provenance queries until the owner runs db push.
+  Migrations go to the hosted DB via
   `npx supabase db push --db-url "postgresql://postgres.lpfjrayitzwbdowgpdfj:<DB_PASSWORD>@aws-1-us-west-2.pooler.supabase.com:5432/postgres"`
   (direct db host is IPv6-only from this network; ask the owner for the DB
   password — NEVER commit it; it is not in the repo or .env).
@@ -330,7 +334,9 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
   (client-side scoring — must never feed competitive leaderboards) and Daily
   Challenge. Solo trivia should reuse the trivia question card as shared
   PRESENTATIONAL components (see README note), driven by a local controller.
-- Trivia-set posting UI (schema already live: trivia_sets/questions + RLS).
+- Trivia-set CONTENT layer is DONE (see /sets); the remaining piece is
+  GAMEPLAY WIRING: playing a custom set in Speed Trivia (a QuestionSource
+  that reads a set server-side, set picker in the lobby, etc.).
 - User-uploaded Imposter category packs could reuse the accounts DB.
 ## Session history
 
@@ -557,3 +563,20 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     existed). Live-verified with the scratch harness (27 checks: permission
     denials, non-friend adds, dupes, DM immunity, cascade cleanup,
     orphaned-group semantics, last-member auto-delete, chatsChanged fanout).
+
+25. **Custom trivia sets — content layer (2026-07-19)** — /sets page (behind
+    login; home-header pill + account-page link): My Sets + Shared with me,
+    set editor (title/description/category, per-question CRUD with 2-4
+    options + exactly-one-correct validation, up/down reorder that renumbers
+    positions 0..n-1), friend sharing with revoke (+ recipient-side remove),
+    and copy-based composition (copy selected questions into an own set, or
+    duplicate a whole readable set; source_set_id = provenance only).
+    Architecture: client-direct supabase-js with RLS as the server-side
+    authority (mirrors friendships; NO service-role path). Migration
+    20260719000000: trivia_set_shares table + share-aware select policies on
+    trivia_sets/questions + questions.source_set_id + a NOT VALID shape
+    check. The questions table already matched the Speed Trivia engine shape
+    — no data migration. database.types.ts updated by hand (as required).
+    MIGRATION NOT YET APPLIED to the hosted DB (needs the owner's db push);
+    README carries the manual RLS checklist. Gameplay wiring is the next
+    phase (backlog).

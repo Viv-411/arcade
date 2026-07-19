@@ -420,6 +420,66 @@ What exists (accounts phase 4 — messages):
   for reads/posts, and lobby membership + capacity for invites. Delivery is
   realtime over the `/social` socket; unread state is tracked per member.
 
+What exists (accounts phase 5 — custom trivia sets, CONTENT LAYER only):
+
+- **My Sets** (`/sets`, behind login — reachable from the home header and the
+  account page): create/edit/delete your own question sets, plus a separate
+  read-only **"Shared with me"** list. Anonymous play of the built-in games is
+  completely unaffected — this page is the only gated surface.
+- **Set editor**: title, description, free-text category, and an ordered
+  question list. Each question is text + 2–4 answer options with exactly one
+  marked correct, validated before save (and re-checked by a DB constraint).
+  Questions reorder with up/down (positions renumber 0..n-1). The stored shape
+  (`question_text`, `options` jsonb array, `correct_index`, `position`)
+  **matches what the Speed Trivia engine consumes** — no translation layer
+  will be needed when gameplay wiring lands. Text questions only for now;
+  image/media questions would need Supabase Storage and are a future add.
+- **Sharing**: from a set you own, pick friends (from your existing friends
+  list) to share with — each grant is a `trivia_set_shares` row. The editor
+  shows who a set is shared with and can revoke each grant; recipients can
+  also remove a share from their own list. Sharing never changes the set's
+  `visibility` (stays `private`); recipients get **read-only** access.
+- **Composition is COPY, not reference**: from any set you can read (yours or
+  shared with you) you can copy selected questions into a set you own, or
+  duplicate the entire set. Copies are new rows with new ids
+  (`source_set_id` records where a copy came from, for attribution only) —
+  editing or deleting the source never affects the copies.
+- **Authorization model**: every query runs through the signed-in user's own
+  Supabase session, so **Postgres RLS is the server-side authority** — the
+  same pattern as the friendships table. No service-role endpoint exists for
+  this feature, so there is no RLS bypass to guard. New/changed policies
+  (migration `20260719000000_trivia_set_shares.sql` — apply with
+  `npx supabase db push` like the others):
+  - `trivia_sets` select: owner, OR (not removed AND (non-private visibility
+    OR a `trivia_set_shares` row for `auth.uid()`)). Insert/update/delete:
+    owner only (unchanged).
+  - `questions` select: inherits the set's read access (including shares);
+    writes: set owner only (unchanged). New NOT VALID check constraint
+    enforces the 2–4 options / valid `correct_index` shape on new writes.
+  - `trivia_set_shares`: readable by `shared_by` or `shared_with`; insert only
+    by the SET'S OWNER (as themselves, not to themselves); delete by the
+    set's owner (revoke) or by `shared_with` (remove from my list).
+  - Note: the DB allows an owner to share with any profile id, not just
+    friends — the UI offers friends; granting read access to your own content
+    is the owner's call either way.
+
+Manual RLS test checklist (two accounts A and B that are friends, plus the
+anon key):
+
+1. A creates a private set with questions. B's "Shared with me" is empty; B
+   opening the set's URL directly gets "not shared with you" (RLS returns no
+   row).
+2. A shares the set with B. B now sees it under "Shared with me" and can read
+   every question — but has no edit UI, and a hand-written
+   `update trivia_sets/questions` from B's session fails (0 rows affected).
+3. B copies questions into B's own set (and/or duplicates the set). A then
+   deletes the original — B's copies are untouched (only `source_set_id`
+   nulls out via `on delete set null`).
+4. A revokes the share (or B removes it): the set disappears from B's list
+   and B can no longer read it or its questions.
+5. With the raw anon key (no session): every select/insert on `trivia_sets`,
+   `questions`, and `trivia_set_shares` returns nothing/fails.
+
 What existed from phase 1:
 
 - **Login button** in the top-right corner on every page → modal with email/password
