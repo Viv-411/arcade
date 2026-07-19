@@ -582,7 +582,9 @@ export class CodewordsManager extends BaseRoomManager<
 
     g.clue = { team: g.activeTeam, word, number };
     g.clueHistory.push({ ...g.clue, guesses: [] });
-    g.guessesRemaining = number === "unlimited" || number === 0 ? null : number + 1;
+    // Exactly the clue's number of guesses (owner rule — no bonus guess);
+    // 0 and "unlimited" mean uncapped.
+    g.guessesRemaining = number === "unlimited" || number === 0 ? null : number;
     g.guessesMade = 0;
     g.phase = "guess";
     g.votes.clear();

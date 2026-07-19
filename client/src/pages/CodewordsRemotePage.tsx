@@ -42,8 +42,8 @@ export default function CodewordsRemotePage() {
             <li>On your team's turn the spymaster types a one-word clue + number; operatives
               tap cards to vote — a majority of your team's connected operatives flips the
               card.</li>
-            <li>Your agent: keep guessing (number + 1 max). Anything else ends the turn — and
-              the assassin ends the game.</li>
+            <li>Your agent: keep guessing (up to the clue's number). Anything else ends the
+              turn — and the assassin ends the game.</li>
             <li>Find all your agents first to win. Talk out loud or on your own call!</li>
           </ol>
         </section>

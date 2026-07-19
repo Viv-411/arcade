@@ -39,8 +39,8 @@ export default function CodewordsChoicePage() {
           <li>Spymasters take turns giving a one-word clue plus a number ("OCEAN 3").</li>
           <li>Their team guesses cards: your agent = keep going, bystander or enemy agent =
             turn over, the assassin = you lose instantly.</li>
-          <li>You get number + 1 guesses; pass whenever you've guessed at least once. First
-            team to find all its agents wins.</li>
+          <li>You get exactly that many guesses (0 or ∞ = unlimited); pass whenever you've
+            guessed at least once. First team to find all its agents wins.</li>
         </ol>
         <p className="hint">
           No in-app voice — talk out loud or hop on your own call while you play.

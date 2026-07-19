@@ -142,7 +142,7 @@ function sweep(snapshots, label) {
   const clueOk = await emit(spy, "submitClue", { word: "xq", number: 2 });
   assert(clueOk.ok, "valid clue accepted");
   const g1 = await guessPhase;
-  assert(g1.guessesRemaining === 3, "clue 2 grants number + 1 = 3 guesses");
+  assert(g1.guessesRemaining === 2, "clue 2 grants exactly 2 guesses (no bonus)");
   assert(g1.clue.word === "xq" && g1.clue.team === first, "clue broadcast to everyone");
 
   // --- spymasters can't vote ---
@@ -168,7 +168,7 @@ function sweep(snapshots, label) {
     "own agent revealed on majority",
   );
   const snap1 = await afterReveal1;
-  assert(snap1.guessesRemaining === 2 && snap1.phase === "guess", "guess spent, turn continues");
+  assert(snap1.guessesRemaining === 1 && snap1.phase === "guess", "guess spent, turn continues");
   assert(snap1.remaining[first] === 8, "agent count ticked down");
 
   // --- vote toggle: same target clears it ---
@@ -331,7 +331,7 @@ function sweep(snapshots, label) {
   const manual = await emit(board, "submitClue", { word: null, number: 2 });
   assert(manual.ok && manual.data.word === null, "board logged a spoken clue");
   const g1 = await guess1P;
-  assert(g1.clue.word === null && g1.guessesRemaining === 3, "spoken clue drives the guess counter");
+  assert(g1.clue.word === null && g1.guessesRemaining === 2, "spoken clue drives the guess counter");
 
   const lateClue = await emit(phoneOf(first), "submitClue", { word: "xq", number: 1 });
   assert(!lateClue.ok, "second clue in the same turn rejected");

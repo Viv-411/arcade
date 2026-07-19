@@ -137,7 +137,8 @@ scoring). Clients render optimistically but never decide results.
   clues as number-only). Untimed by design — no turn timers anywhere.
   Clue validation: single token, no substring overlap either direction with
   any unrevealed board word; number 0–9 or "unlimited" (0/∞ = uncapped);
-  guesses = number + 1. Board-mode games record NO account stats (remote
+  guesses = EXACTLY the number, no +1 bonus (owner rule, 2026-07-19).
+  Board-mode games record NO account stats (remote
   does). Word bank is ORIGINAL (wordBank.ts) — never import or imitate a
   published Codenames list, and never use the "Codenames" trademark in UI.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
@@ -497,3 +498,11 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     sliver) — .cw-clue-row now pins explicit widths; remember this global
     rule when putting inputs in flex rows; (c) the lobby's unexplained 🕵️
     icon button is now a labeled "Spymaster" button.
+
+21. **Codewords rule + layout polish (2026-07-19, owner playtest round 2)** —
+    RULE CHANGE: the guess cap is now EXACTLY the clue's number (no +1 bonus;
+    0/∞ still uncapped) — owner request, reflected in server, UI copy, README,
+    and test assertions. Shared-board QR pair restyled as centered tiles
+    (flex-column cards; the "copy link instead" link used to float inline
+    beside the QR image), stacking on narrow screens; guess-action row
+    centered.

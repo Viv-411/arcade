@@ -173,8 +173,9 @@ and gives the first clue.
 - **A turn.** The active team's spymaster gives a **one-word clue + a number**
   (0–9 or ∞). The clue is validated server-side: one single token that isn't equal
   to, doesn't contain, and isn't contained by any unrevealed word on the board.
-  The team then gets **number + 1** guesses (0 and ∞ = unlimited guesses, but any
-  wrong flip still ends the turn) and must guess at least once before passing.
+  The team then gets **exactly that many** guesses (0 and ∞ = unlimited guesses,
+  but any wrong flip still ends the turn) and must guess at least once before
+  passing. (House rule: no "+1 bonus guess" — the number is the cap.)
 - **Flip outcomes** (decided by the server from the key): your own agent → keep
   guessing; a bystander → turn ends; the *other* team's agent → it's revealed in
   their color (advancing them) and your turn ends; the assassin → **your team

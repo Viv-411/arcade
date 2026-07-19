@@ -2172,8 +2172,10 @@ select:focus {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 10px;
-  margin: 8px 0;
+  margin: 12px 0;
 }
 
 .cw-claim {
@@ -2220,15 +2222,38 @@ select:focus {
 .cw-qr-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 14px 0;
+  gap: 14px;
+  margin: 16px 0;
   text-align: center;
 }
 
+@media (max-width: 480px) {
+  .cw-qr-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Each QR renders as a centered tile: heading, code, copy link stacked. */
+.cw-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #0f0f26;
+  border: 2px solid var(--panel-edge);
+  border-radius: var(--radius);
+  padding: 14px 12px;
+}
+
 .cw-qr img {
+  display: block;
   width: 100%;
-  max-width: 220px;
+  max-width: 200px;
   border-radius: 10px;
+}
+
+.cw-qr-small .cw-qr {
+  padding: 10px;
 }
 
 .cw-qr-small .cw-qr img {
@@ -2236,8 +2261,14 @@ select:focus {
 }
 
 .cw-qr h3 {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 0.9rem;
+}
+
+.cw-qr .link-btn {
+  margin: 0;
+  padding: 2px 0;
+  text-align: center;
 }
 
 .cw-qr-red h3 {

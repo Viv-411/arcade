@@ -49,7 +49,7 @@ export default function ClueInput({ onSubmit, disabled }: Props) {
       </div>
       <p className="hint">
         One single word that isn't (part of) a word on the board, plus how many cards it
-        points to. Your team gets that many guesses + 1 bonus.
+        points to. Your team gets exactly that many guesses (0 or ∞ = no limit).
       </p>
     </div>
   );
