@@ -4,6 +4,7 @@ import type { ChatMessageInfo, ChatSummary } from "@shared/social";
 import { GAME_NAMES, GAME_PATHS } from "@shared/social";
 import { useAuth } from "../auth/AuthContext";
 import { useSocial } from "../social/SocialContext";
+import Icon from "../components/Icon";
 
 function chatTitle(chat: ChatSummary, myUserId: string | null): string {
   if (chat.kind === "group") return chat.name ?? "Group";
@@ -94,7 +95,7 @@ export default function MessagesPage() {
     body = (
       <div className="panel account-signin">
         <p>Sign in to message your friends and share game invites.</p>
-        <button className="btn primary" onClick={openAuthModal}>👤 Sign in</button>
+        <button className="btn primary" onClick={openAuthModal}><Icon name="user" /> Sign in</button>
       </div>
     );
   } else if (!active) {
@@ -103,7 +104,7 @@ export default function MessagesPage() {
         <div className="chat-list-head">
           <h3>Conversations</h3>
           <button className="btn small" onClick={() => setNewGroup((v) => !v)}>
-            {newGroup ? "✕ Cancel" : "➕ New group"}
+            {newGroup ? <><Icon name="close" /> Cancel</> : <><Icon name="plus" /> New group</>}
           </button>
         </div>
         {newGroup && (
@@ -132,12 +133,12 @@ export default function MessagesPage() {
                     })
                   }
                 >
-                  {groupMembers.has(f.userId) ? "✓ " : ""}@{f.username}
+                  {groupMembers.has(f.userId) ? <><Icon name="check" />{" "}</> : ""}@{f.username}
                 </button>
               ))}
               {friends.length === 0 && <p className="hint">No friends yet — add some first!</p>}
             </div>
-            {groupError && <p className="used-warning">⚠ {groupError}</p>}
+            {groupError && <p className="used-warning"><Icon name="warning" /> {groupError}</p>}
             <div className="lobby-buttons">
               <button
                 className="btn primary"
@@ -153,7 +154,7 @@ export default function MessagesPage() {
           {chats.map((c) => (
             <li key={c.id}>
               <button className="chat-row" onClick={() => setParams({ chat: c.id })}>
-                <span className="chat-avatar">{c.kind === "group" ? "👥" : "💬"}</span>
+                <span className="chat-avatar">{c.kind === "group" ? <Icon name="users" /> : <Icon name="message" />}</span>
                 <span className="chat-info">
                   <span className="chat-title">
                     {chatTitle(c, user.id)}
@@ -161,7 +162,7 @@ export default function MessagesPage() {
                   </span>
                   <span className="chat-preview">
                     {c.lastMessage
-                      ? `${c.lastMessage.senderName}: ${c.lastMessage.kind === "invite" ? "🎮 game invite" : c.lastMessage.body}`
+                      ? `${c.lastMessage.senderName}: ${c.lastMessage.kind === "invite" ? "game invite" : c.lastMessage.body}`
                       : "No messages yet"}
                   </span>
                 </span>
@@ -194,7 +195,7 @@ export default function MessagesPage() {
               <span className="chat-msg-sender">{m.senderId === user.id ? "you" : m.senderName}</span>
               {m.kind === "invite" && m.invite ? (
                 <span className="chat-bubble invite-bubble">
-                  🎮 {m.body}
+                  <Icon name="gamepad" /> {m.body}
                   <button
                     className="btn small primary"
                     onClick={() => navigate(`${GAME_PATHS[m.invite!.game]}?room=${m.invite!.code}`)}
@@ -207,7 +208,7 @@ export default function MessagesPage() {
               )}
             </div>
           ))}
-          {messages.length === 0 && <p className="hint">Say hi 👋</p>}
+          {messages.length === 0 && <p className="hint">Say hi <Icon name="hand" /></p>}
           <div ref={bottomRef} />
         </div>
         <div className="word-row">
@@ -232,7 +233,7 @@ export default function MessagesPage() {
     <div className="page messages">
       <header className="mm-header">
         <Link to="/" className="back-link">← Arcade</Link>
-        <h1 className="mm-title">💬 Messages</h1>
+        <h1 className="mm-title"><Icon name="message" /> Messages</h1>
       </header>
       {body}
     </div>

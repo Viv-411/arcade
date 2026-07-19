@@ -37,6 +37,11 @@ Per-player win stats are persisted to a local SQLite file (`data/stats.db`) via
 better-sqlite3. If the native module fails to install, stats silently degrade to a
 no-op — the game itself never touches the database.
 
+UI iconography is the [pixelarticons](https://pixelarticons.com) set (MIT),
+inlined through `client/src/components/Icon.tsx` so every glyph shares one
+pixel-art language and inherits the app's colors; display type is Press Start 2P
+with Space Grotesk for body text (both via Google Fonts).
+
 ## Mind Meld — the rules
 
 - **2–4 players.** Everyone secretly submits one word per round, simultaneously.

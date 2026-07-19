@@ -5,6 +5,7 @@ import type { FriendPresence } from "@shared/social";
 import { GAME_NAMES } from "@shared/social";
 import { useAuth } from "../auth/AuthContext";
 import { useSocial } from "../social/SocialContext";
+import Icon from "../components/Icon";
 
 export default function FriendsPage() {
   const { configured, user, username, loading, openAuthModal, requireAuth } = useAuth();
@@ -86,10 +87,10 @@ export default function FriendsPage() {
   const statusOf = (userId: string): string => {
     const p = presence[userId];
     if (!p || !p.online) return "offline";
-    if (!p.activity) return "🟢 online";
+    if (!p.activity) return "online";
     return p.activity.state === "lobby"
-      ? `🟢 in a ${GAME_NAMES[p.activity.game]} lobby`
-      : `🎮 playing ${GAME_NAMES[p.activity.game]}`;
+      ? `in a ${GAME_NAMES[p.activity.game]} lobby`
+      : `playing ${GAME_NAMES[p.activity.game]}`;
   };
 
   let body: JSX.Element;
@@ -114,7 +115,7 @@ export default function FriendsPage() {
             : "Sign in to add friends and see who's online."}
         </p>
         <button className="btn primary" onClick={openAuthModal}>
-          👤 Sign in
+          <Icon name="user" /> Sign in
         </button>
       </div>
     );
@@ -167,7 +168,7 @@ export default function FriendsPage() {
           </div>
           {message && (
             <p className={message.kind === "ok" ? "auth-notice" : "used-warning"}>
-              {message.kind === "ok" ? "✓ " : "⚠ "}
+              {message.kind === "ok" ? <Icon name="check" /> : <Icon name="warning" />}{" "}
               {message.text}
             </p>
           )}
@@ -188,7 +189,7 @@ export default function FriendsPage() {
                 <div className="share-friend-actions">
                   <code className="friend-link">{myLink}</code>
                   <button className="btn small" onClick={copyLink}>
-                    {copied ? "✓ Copied!" : "Copy link"}
+                    {copied ? <><Icon name="check" /> Copied!</> : "Copy link"}
                   </button>
                 </div>
               </div>
@@ -258,14 +259,14 @@ export default function FriendsPage() {
                     })
                   }
                 >
-                  💬
+                  <Icon name="message" label="Message" />
                 </button>
                 <button
                   className="btn small danger"
                   title="Remove friend"
                   onClick={() => void removeFriendship(f.rowId)}
                 >
-                  ✕
+                  <Icon name="close" label="Remove friend" />
                 </button>
               </li>
             ))}
@@ -281,7 +282,7 @@ export default function FriendsPage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">👥 Friends</h1>
+        <h1 className="mm-title"><Icon name="users" /> Friends</h1>
       </header>
       {body}
       {qrExpanded && qrUrl && (

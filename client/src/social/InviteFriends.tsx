@@ -4,6 +4,7 @@ import type { FriendPresence, GameKey } from "@shared/social";
 import { GAME_NAMES } from "@shared/social";
 import { useAuth } from "../auth/AuthContext";
 import { useSocial } from "./SocialContext";
+import Icon from "../components/Icon";
 
 interface Props {
   game: GameKey;
@@ -46,10 +47,10 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
 
   const statusOf = (f: FriendPresence): string => {
     if (!f.online) return "offline";
-    if (!f.activity) return "🟢 online";
+    if (!f.activity) return "online";
     return f.activity.state === "lobby"
-      ? `🟢 in a ${GAME_NAMES[f.activity.game]} lobby`
-      : `🎮 playing ${GAME_NAMES[f.activity.game]}`;
+      ? `in a ${GAME_NAMES[f.activity.game]} lobby`
+      : `playing ${GAME_NAMES[f.activity.game]}`;
   };
 
   const inviteFriend = async (f: FriendPresence) => {
@@ -60,13 +61,13 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
       return;
     }
     const error = await sendChatInvite(chatId, game, code);
-    setSent((s) => ({ ...s, [f.userId]: error ?? "✓ sent to your DM" }));
+    setSent((s) => ({ ...s, [f.userId]: error ?? "sent to your DM" }));
   };
 
   const inviteChat = async (chatId: string) => {
     setSent((s) => ({ ...s, [chatId]: "…" }));
     const error = await sendChatInvite(chatId, game, code);
-    setSent((s) => ({ ...s, [chatId]: error ?? "✓ invite posted" }));
+    setSent((s) => ({ ...s, [chatId]: error ?? "invite posted" }));
   };
 
   const groups = chats.filter((c) => c.kind === "group");
@@ -74,14 +75,14 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
   return (
     <div className="invite-friends">
       <button className="btn small" onClick={() => setOpen((o) => !o)}>
-        {open ? "▾" : "📨"} Invite friends
+        {open ? "▾" : <Icon name="send" />} Invite friends
       </button>
       {open && (
         <div className="invite-list">
           {list === null && <div className="spinner" />}
           {list !== null && list.length === 0 && (
             <p className="hint">
-              No friends yet — add some from the 🔔 menu or your account page.
+              No friends yet — add some from the <Icon name="bell" /> menu or your account page.
             </p>
           )}
           {list?.map((f) => (
@@ -93,7 +94,7 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
                 <span className="invite-sent">{sent[f.userId]}</span>
               ) : (
                 <button className="btn small primary" onClick={() => void inviteFriend(f)}>
-                  📨 Invite
+                  <Icon name="send" /> Invite
                 </button>
               )}
             </div>
@@ -106,7 +107,7 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
                 const fits = recipients <= openSeats;
                 return (
                   <div key={c.id} className="invite-row">
-                    <span className="chat-avatar">👥</span>
+                    <span className="chat-avatar"><Icon name="users" /></span>
                     <span className="player-name">{c.name ?? "Group"}</span>
                     <span className="invite-status">
                       {fits
@@ -121,7 +122,7 @@ export default function InviteFriends({ game, code, openSeats }: Props) {
                         disabled={!fits}
                         onClick={() => void inviteChat(c.id)}
                       >
-                        📨 Post
+                        <Icon name="send" /> Post
                       </button>
                     )}
                   </div>

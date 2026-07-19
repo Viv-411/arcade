@@ -6,6 +6,7 @@ import BoardGrid from "../codewords/BoardGrid";
 import ClueInput from "../codewords/ClueInput";
 import { ClueBar, ClueHistory, WinnerBanner } from "../codewords/CluePanel";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 /**
  * The spymaster phone view (board mode): opened by scanning a team's QR code.
@@ -54,7 +55,7 @@ export default function CodewordsKeyPage() {
           ← Arcade
         </Link>
         <h1 className="mm-title">
-          {myTeam === "red" ? "🔴" : myTeam === "blue" ? "🔵" : "🗝️"}{" "}
+          {myTeam === "red" ? <Icon name="circle" className="ic-red" /> : myTeam === "blue" ? <Icon name="circle" className="ic-blue" /> : <Icon name="grid-3x3" />}{" "}
           {myTeam ? `${cwTeamLabel(myTeam)} Spymaster` : "Spymaster"}
         </h1>
       </header>
@@ -108,7 +109,7 @@ export default function CodewordsKeyPage() {
               />
               {!finished && (
                 <p className="hint">
-                  🤫 This is the full secret key — both spymasters see the same one. Don't
+                  <Icon name="eye-off" /> This is the full secret key — both spymasters see the same one. Don't
                   show the guessers!
                 </p>
               )}

@@ -524,3 +524,19 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     the end of styles.css: :focus-visible cyan rings, frosted sticky
     .round-bar, cw-card flip animation, styled scrollbars, and a
     prefers-reduced-motion kill-switch for ALL animation.
+
+23. **Custom pixel icons replace ALL emojis (2026-07-19)** — every emoji in
+    the client (~230 sites, 37 files) swapped for the `pixelarticons` set
+    (npm dep, MIT) rendered through `client/src/components/Icon.tsx`
+    (raw-SVG inlined via Vite `?raw`, 1em, fill: currentColor, `label` prop
+    for standalone a11y; tint utilities .ic-red/.ic-blue/.ic-green/
+    .ic-yellow/.ic-pink/.ic-muted). RULE GOING FORWARD: no emojis in UI —
+    add names to Icon.tsx instead. Brand icons per game: mindmeld=lightbulb,
+    trivia=zap, imposter=sunglasses, bidbattle=coins, codewords=grid-3x3;
+    codewords spymaster=eye, assassin=skull, bystander=human, host=crown
+    (ic-yellow). `.game-emoji` now colors card art with the game's --accent.
+    Gotchas hit: `<option>` elements can't hold JSX (those emojis were
+    dropped to plain text); strings that flow into string-typed props
+    (settingsLine, statusOf, chat previews) were de-emojied rather than
+    converted to ReactNode; multi-line `import {` blocks broke a naive
+    "insert after last import line" script once.

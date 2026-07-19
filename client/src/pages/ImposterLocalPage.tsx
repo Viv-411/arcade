@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { IMPOSTER_CATEGORIES, drawImposterWord } from "@shared/imposterWords";
 import { RoleCard } from "../imposter/OnlinePhases";
 import type { YourRolePayload } from "@shared/imposter";
+import Icon from "../components/Icon";
 
 interface Assignment {
   roles: ("imposter" | "crew")[];
@@ -95,14 +96,14 @@ export default function ImposterLocalPage() {
         </label>
         {unwinnable && (
           <p className="used-warning">
-            ⚠ {clampedImposters} imposter{clampedImposters === 1 ? "" : "s"} among {count} players
+            <Icon name="warning" /> {clampedImposters} imposter{clampedImposters === 1 ? "" : "s"} among {count} players
             is very hard for the crew to win.
           </p>
         )}
         <label className="field">
           <span>Category</span>
           <select value={category ?? ""} onChange={(e) => setCategory(e.target.value || null)}>
-            <option value="">🎲 Random</option>
+            <option value="">Random</option>
             {IMPOSTER_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -137,7 +138,7 @@ export default function ImposterLocalPage() {
         </details>
         <div className="lobby-buttons">
           <button className="btn primary" onClick={start}>
-            ▶ Start
+            <Icon name="play" /> Start
           </button>
         </div>
       </div>
@@ -147,7 +148,7 @@ export default function ImposterLocalPage() {
     body = (
       <div className="panel">
         <p className="starting-player">
-          🎤 <strong>{nameOf(game.starterIdx)}</strong> gives the first clue
+          <Icon name="mic" /> <strong>{nameOf(game.starterIdx)}</strong> gives the first clue
         </p>
         <p className="hint">
           Tap your name to see your card — make sure nobody else is looking, then pass the
@@ -161,7 +162,7 @@ export default function ImposterLocalPage() {
               disabled={viewed.has(i)}
               onClick={() => setCard({ idx: i, shown: false })}
             >
-              {viewed.has(i) ? "✓ " : ""}
+              {viewed.has(i) ? <><Icon name="check" />{" "}</> : ""}
               {nameOf(i)}
             </button>
           ))}
@@ -174,7 +175,7 @@ export default function ImposterLocalPage() {
             </p>
             <div className="lobby-buttons">
               <button className="btn primary" onClick={() => setPhase("results")}>
-                🔍 Reveal results
+                <Icon name="search" /> Reveal results
               </button>
             </div>
           </>
@@ -199,17 +200,17 @@ export default function ImposterLocalPage() {
             <li key={i}>
               <span className="player-name">{nameOf(i)}</span>
               <span className={`badge ${role === "imposter" ? "waiting-badge" : "ready-badge"}`}>
-                {role === "imposter" ? "🕵️ imposter" : "😇 crew"}
+                {role === "imposter" ? <><Icon name="sunglasses" /> imposter</> : <><Icon name="smile" /> crew</>}
               </span>
             </li>
           ))}
         </ul>
         <div className="lobby-buttons">
           <button className="btn primary" onClick={start}>
-            🔁 New round
+            <Icon name="repeat" /> New round
           </button>
           <button className="btn" onClick={() => setPhase("setup")}>
-            ⚙️ Back to setup
+            <Icon name="settings" /> Back to setup
           </button>
         </div>
       </div>
@@ -222,7 +223,7 @@ export default function ImposterLocalPage() {
         <Link to="/imposter" className="back-link">
           ← Imposter
         </Link>
-        <h1 className="mm-title">🕵️ On this device</h1>
+        <h1 className="mm-title"><Icon name="sunglasses" /> On this device</h1>
       </header>
       {body}
       {card !== null && game && (
@@ -231,7 +232,7 @@ export default function ImposterLocalPage() {
             {!card.shown ? (
               <>
                 <h2>Pass to {nameOf(card.idx)}</h2>
-                <p className="hint">Make sure nobody else can see the screen. 🤫</p>
+                <p className="hint">Make sure nobody else can see the screen.</p>
                 <div className="lobby-buttons">
                   <button
                     className="btn primary"
@@ -255,7 +256,7 @@ export default function ImposterLocalPage() {
                       setCard(null);
                     }}
                   >
-                    🙈 Hide — pass to next
+                    <Icon name="eye-off" /> Hide — pass to next
                   </button>
                 </div>
               </>

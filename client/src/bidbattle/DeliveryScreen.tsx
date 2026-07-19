@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { BidBattleSnapshot, TeamId } from "@shared/bidbattle";
 import { normalizeWord } from "@shared/normalize";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -62,7 +63,7 @@ export default function DeliveryScreen({ room, myTeam, liveItems, onSubmitItem, 
               Add
             </button>
           </div>
-          {alreadySaid && <p className="used-warning">⚠ already said — doesn't count</p>}
+          {alreadySaid && <p className="used-warning"><Icon name="warning" /> already said — doesn't count</p>}
           <p className="hint">
             Name at least {delivery.target}. Extras build a buffer for the review. Your whole team
             shares this list — and the other team is watching it live.
@@ -76,7 +77,7 @@ export default function DeliveryScreen({ room, myTeam, liveItems, onSubmitItem, 
           </div>
           <div className="lobby-buttons">
             <button className="btn" onClick={onDone}>
-              ✅ Done — send to review
+              <Icon name="check" /> Done — send to review
             </button>
           </div>
         </>

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Icon from "../components/Icon";
 
 /** Mode choice: everyone on their own device vs. one shared screen + QR phones. */
 export default function CodewordsChoicePage() {
@@ -8,33 +9,33 @@ export default function CodewordsChoicePage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">🗝️ Codewords</h1>
+        <h1 className="mm-title"><Icon name="grid-3x3" /> Codewords</h1>
       </header>
       <div className="game-grid">
         <Link to="/codewords/remote" className="game-card active accent-red">
-          <div className="game-emoji">🌐</div>
+          <div className="game-emoji"><Icon name="globe" /></div>
           <h2>Remote</h2>
           <p>
             Everyone on their own device: private spymaster keys, typed clues, and operatives
             guess by voting on cards together.
           </p>
-          <span className="badge play-badge">▶ Play now</span>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
         <Link to="/codewords/board" className="game-card active accent-red">
-          <div className="game-emoji">📺</div>
+          <div className="game-emoji"><Icon name="tv" /></div>
           <h2>Shared Board</h2>
           <p>
             One big screen for the room. The two spymasters scan a QR code to get the secret
             key on their phones; everyone else taps guesses on the shared board.
           </p>
-          <span className="badge play-badge">▶ Play now</span>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
       </div>
       <section className="howto panel">
         <h3>How to play</h3>
         <ol>
           <li>25 words in a 5x5 grid. A hidden key marks each one: red agent, blue agent,
-            innocent bystander — or the one 💀 assassin.</li>
+            innocent bystander — or the one <Icon name="skull" /> assassin.</li>
           <li>Both spymasters see the SAME full key. Everyone else sees only the words.</li>
           <li>Spymasters take turns giving a one-word clue plus a number ("OCEAN 3").</li>
           <li>Their team guesses cards: your agent = keep going, bystander or enemy agent =

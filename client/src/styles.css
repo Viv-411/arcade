@@ -2534,3 +2534,61 @@ select:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- icons ---------- */
+
+/* Pixel icons flow like text: 1em, baseline-aligned, currentColor. */
+.icon {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Tint utilities for standalone icons (team dots, status marks). */
+.ic-red {
+  color: var(--red);
+}
+
+.ic-blue {
+  color: var(--cyan);
+}
+
+.ic-green {
+  color: var(--green);
+}
+
+.ic-yellow {
+  color: var(--yellow);
+}
+
+.ic-pink {
+  color: var(--pink);
+}
+
+.ic-muted {
+  color: var(--muted);
+}
+
+/* Game-card art picks up the game's accent neon. */
+.game-emoji {
+  color: var(--accent, var(--text));
+  line-height: 1;
+}
+
+.cw-history-guesses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.cw-history-guess {
+  white-space: nowrap;
+}

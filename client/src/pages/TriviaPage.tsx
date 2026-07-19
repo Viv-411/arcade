@@ -13,6 +13,7 @@ import VoteScreen from "../trivia/VoteScreen";
 import QuestionScreen from "../trivia/QuestionScreen";
 import TriviaFinal from "../trivia/TriviaFinal";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 export default function TriviaPage() {
   const { state, actions } = useTrivia();
@@ -77,7 +78,7 @@ export default function TriviaPage() {
               Correct answers earn up to 1000 points — the faster you answer, the more
               you score.
             </li>
-            <li>Highest total after the last question wins. ⚡</li>
+            <li>Highest total after the last question wins.</li>
           </ol>
         </section>
       </>
@@ -89,7 +90,7 @@ export default function TriviaPage() {
         room={room}
         playerId={state.playerId}
         joinPath="/trivia"
-        settingsLine={`❓ ${room.settings.questionsPerGame} questions · ⏱ ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty} · up to ${TRIVIA_MAX_PLAYERS} players`}
+        settingsLine={`${room.settings.questionsPerGame} questions · ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty} · up to ${TRIVIA_MAX_PLAYERS} players`}
         minPlayers={TRIVIA_MIN_PLAYERS}
         maxPlayers={TRIVIA_MAX_PLAYERS}
         extras={
@@ -152,7 +153,7 @@ export default function TriviaPage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">⚡ Speed Trivia</h1>
+        <h1 className="mm-title"><Icon name="zap" /> Speed Trivia</h1>
       </header>
       {screen}
       {state.status === "reconnecting" && (

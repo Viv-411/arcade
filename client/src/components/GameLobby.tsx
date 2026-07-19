@@ -4,6 +4,7 @@ import type { GameKey } from "@shared/social";
 import type { BaseSnapshotShape } from "../core/useRoomCore";
 import { useSecondsLeft } from "../core/hooks";
 import InviteFriends from "../social/InviteFriends";
+import Icon from "./Icon";
 
 interface Props {
   room: BaseSnapshotShape;
@@ -70,12 +71,12 @@ export default function GameLobby({
         </span>
         <span className="room-code">{room.code}</span>
         <button className="btn small" onClick={copyLink}>
-          {copied ? "✓ Copied!" : "Copy invite link"}
+          {copied ? <><Icon name="check" /> Copied!</> : "Copy invite link"}
         </button>
       </div>
 
       {autoStartIn !== null && (
-        <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>
+        <p className="auto-start"><Icon name="clock" /> Auto-starting in {autoStartIn}s…</p>
       )}
 
       <InviteFriends
@@ -90,7 +91,7 @@ export default function GameLobby({
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             <span className="player-name">
               {p.name}
-              {p.id === room.hostId && " 👑"}
+              {p.id === room.hostId && <> <Icon name="crown" className="ic-yellow" label="Host" /></>}
               {p.id === playerId && " (you)"}
             </span>
             <span className={`badge ${p.ready ? "ready-badge" : "waiting-badge"}`}>
@@ -116,7 +117,7 @@ export default function GameLobby({
         </button>
         {isHost && (
           <button className="btn primary" disabled={!canStart} onClick={onStart}>
-            ▶ Start game
+            <Icon name="play" /> Start game
           </button>
         )}
         <button className="btn danger" onClick={onLeave}>

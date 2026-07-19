@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { PublicPlayer, RoomSnapshot } from "@shared/types";
+import Icon from "../components/Icon";
 
 interface Props {
   room: RoomSnapshot;
@@ -16,7 +17,7 @@ export default function EndScreen({ room, playerId, win, onPlayAgain, onLeave }:
     <div className="panel end-screen">
       {winner ? (
         <>
-          <h2 className="win-title">🧠⚡ MIND MELD!</h2>
+          <h2 className="win-title"><Icon name="lightbulb" /><Icon name="zap" /> MIND MELD!</h2>
           <p className="win-word">{winner.word}</p>
           <p className="win-rounds">
             Melded in <strong>{winner.rounds}</strong> round{winner.rounds === 1 ? "" : "s"}
@@ -38,7 +39,7 @@ export default function EndScreen({ room, playerId, win, onPlayAgain, onLeave }:
                   {p.id === playerId && " (you)"}
                 </span>
                 {typeof p.wins === "number" && (
-                  <span className="badge ready-badge">🏆 {p.wins} win{p.wins === 1 ? "" : "s"}</span>
+                  <span className="badge ready-badge"><Icon name="trophy" /> {p.wins} win{p.wins === 1 ? "" : "s"}</span>
                 )}
               </li>
             ))
@@ -54,10 +55,10 @@ export default function EndScreen({ room, playerId, win, onPlayAgain, onLeave }:
 
       <div className="lobby-buttons">
         <button className="btn primary" onClick={onPlayAgain}>
-          🔁 Play again
+          <Icon name="repeat" /> Play again
         </button>
         <Link to="/" className="btn" onClick={onLeave}>
-          🕹 Back to arcade
+          <Icon name="gamepad" /> Back to arcade
         </Link>
       </div>
     </div>

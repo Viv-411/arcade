@@ -8,6 +8,7 @@ import {
 } from "@shared/codewords";
 import { useSecondsLeft } from "../core/hooks";
 import InviteFriends from "../social/InviteFriends";
+import Icon from "../components/Icon";
 
 interface Props {
   room: CodewordsSnapshot;
@@ -69,11 +70,11 @@ export default function CodewordsLobby({
         </span>
         <span className="room-code">{room.code}</span>
         <button className="btn small" onClick={copyLink}>
-          {copied ? "✓ Copied!" : "Copy invite link"}
+          {copied ? <><Icon name="check" /> Copied!</> : "Copy invite link"}
         </button>
       </div>
 
-      {autoStartIn !== null && <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>}
+      {autoStartIn !== null && <p className="auto-start"><Icon name="clock" /> Auto-starting in {autoStartIn}s…</p>}
 
       <InviteFriends
         game="codewords"
@@ -86,15 +87,15 @@ export default function CodewordsLobby({
           const members = room.players.filter((p) => p.team === t);
           return (
             <div key={t} className={`team-panel team-${t}`}>
-              <h3>{t === "red" ? "🔴 Red" : "🔵 Blue"}</h3>
+              <h3>{t === "red" ? <><Icon name="circle" className="ic-red" /> Red</> : <><Icon name="circle" className="ic-blue" /> Blue</>}</h3>
               <ul className="player-list">
                 {members.map((p) => (
                   <li key={p.id} className={p.connected ? "" : "disconnected"}>
                     <span className={`dot ${p.connected ? "on" : "off"}`} />
                     <span className="player-name">
-                      {p.role === "spymaster" && "🕵️ "}
+                      {p.role === "spymaster" && <><Icon name="eye" label="Spymaster" />{" "}</>}
                       {p.name}
-                      {p.id === room.hostId && " 👑"}
+                      {p.id === room.hostId && <> <Icon name="crown" className="ic-yellow" label="Host" /></>}
                       {p.id === playerId && " (you)"}
                     </span>
                     {p.role !== "spymaster" && (isHost || p.id === playerId) && (
@@ -124,7 +125,7 @@ export default function CodewordsLobby({
       </div>
 
       <p className="hint">
-        Each team needs a 🕵️ spymaster — tap the "Spymaster" button on your row to claim
+        Each team needs a <Icon name="eye" /> spymaster — tap the "Spymaster" button on your row to claim
         the role — and at least one operative.
       </p>
 
@@ -134,7 +135,7 @@ export default function CodewordsLobby({
         </button>
         {isHost && (
           <button className="btn primary" disabled={!canStart} onClick={onStart}>
-            ▶ Start game
+            <Icon name="play" /> Start game
           </button>
         )}
         <button className="btn danger" onClick={onLeave}>
@@ -154,7 +155,7 @@ export default function CodewordsLobby({
         </p>
       )}
 
-      <p className="settings-line">🟥🟦 5x5 board · 9 vs 8 agents · beware the 💀</p>
+      <p className="settings-line"><Icon name="square" className="ic-red" /><Icon name="square" className="ic-blue" /> 5x5 board · 9 vs 8 agents · beware the <Icon name="skull" /></p>
     </div>
   );
 }

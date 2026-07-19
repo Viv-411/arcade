@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { RevealEntry, RoomSnapshot } from "@shared/types";
 import { normalizeWord } from "@shared/normalize";
+import Icon from "../components/Icon";
 
 interface Props {
   room: RoomSnapshot;
@@ -84,7 +85,7 @@ export default function GameBoard({
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             {p.name}
             {p.id === playerId && " (you)"}
-            <span className="lock-icon">{p.lockedIn ? "🔒" : "…"}</span>
+            <span className="lock-icon">{p.lockedIn ? <Icon name="lock" /> : "…"}</span>
           </div>
         ))}
       </div>
@@ -99,7 +100,7 @@ export default function GameBoard({
               Locked in: <strong className="my-word">{myWord.normalized}</strong>
             </p>
             <button className="btn" onClick={onUnlock} disabled={!!reveal}>
-              🔓 Unlock &amp; edit
+              <Icon name="unlock" /> Unlock &amp; edit
             </button>
           </div>
         ) : (
@@ -125,7 +126,7 @@ export default function GameBoard({
               </p>
             )}
             {alreadyUsed && (
-              <p className="used-warning">⚠ “{normalized}” already said — try another</p>
+              <p className="used-warning"><Icon name="warning" /> “{normalized}” already said — try another</p>
             )}
           </>
         )}
@@ -133,7 +134,7 @@ export default function GameBoard({
 
       {room.usedWords.length > 0 && (
         <div className="panel used-words">
-          <h3>☠ Dead words ({room.usedWords.length})</h3>
+          <h3><Icon name="skull" /> Dead words ({room.usedWords.length})</h3>
           <div className="word-chips">
             {room.usedWords.map((w) => (
               <span key={w} className="word-chip dead">
@@ -157,7 +158,7 @@ export default function GameBoard({
                     <strong>{e.normalized}</strong>
                   </span>
                 ))}
-                {h.entries.length === 0 && <em>nobody locked in 😴</em>}
+                {h.entries.length === 0 && <em>nobody locked in <Icon name="moon" /></em>}
               </div>
             </div>
           ))}
@@ -167,7 +168,7 @@ export default function GameBoard({
       {reveal && (
         <div className="overlay reveal-overlay">
           <div className="panel reveal-panel">
-            <h2>{reveal.isWin ? "🧠⚡ MIND MELD!" : `Round ${reveal.round} reveal`}</h2>
+            <h2>{reveal.isWin ? <><Icon name="lightbulb" /><Icon name="zap" /> MIND MELD!</> : `Round ${reveal.round} reveal`}</h2>
             <ul className="reveal-list">
               {reveal.entries.map((e) => (
                 <li key={e.playerId}>
@@ -175,7 +176,7 @@ export default function GameBoard({
                   <strong className="reveal-word">{e.normalized}</strong>
                 </li>
               ))}
-              {reveal.entries.length === 0 && <li>Nobody locked in this round 😴</li>}
+              {reveal.entries.length === 0 && <li>Nobody locked in this round <Icon name="moon" /></li>}
             </ul>
             {!reveal.isWin && revealSecondsLeft !== null && (
               <p className="next-round">Next round in {revealSecondsLeft}…</p>

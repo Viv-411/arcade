@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../auth/supabaseClient";
 import { useAuth } from "../auth/AuthContext";
+import Icon, { type IconName } from "../components/Icon";
 
 interface ProfileRow {
   username: string;
@@ -16,9 +17,19 @@ interface StatsRow {
 }
 
 const GAME_LABELS: Record<string, string> = {
-  mindmeld: "🧠 Mind Meld",
-  trivia: "⚡ Speed Trivia",
-  bidbattle: "💰 Bid Battle",
+  mindmeld: "Mind Meld",
+  trivia: "Speed Trivia",
+  bidbattle: "Bid Battle",
+  imposter: "Imposter",
+  codewords: "Codewords",
+};
+
+const GAME_ICONS: Record<string, IconName> = {
+  mindmeld: "lightbulb",
+  trivia: "zap",
+  bidbattle: "coins",
+  imposter: "sunglasses",
+  codewords: "grid-3x3",
 };
 
 const USERNAME_RE = /^[a-z0-9_]{3,24}$/;
@@ -119,7 +130,7 @@ export default function AccountPage() {
         <p>Sign in to see your account and stats. Accounts are optional — every game is
           fully playable without one.</p>
         <button className="btn primary" onClick={openAuthModal}>
-          👤 Sign in
+          <Icon name="user" /> Sign in
         </button>
       </div>
     );
@@ -172,7 +183,7 @@ export default function AccountPage() {
           </label>
           {message && (
             <p className={message.kind === "ok" ? "auth-notice" : "used-warning"}>
-              {message.kind === "ok" ? "✓ " : "⚠ "}
+              {message.kind === "ok" ? <Icon name="check" /> : <Icon name="warning" />}{" "}
               {message.text}
             </p>
           )}
@@ -199,7 +210,7 @@ export default function AccountPage() {
             <ul className="player-list summary">
               {Object.entries(perGame).map(([key, g]) => (
                 <li key={key}>
-                  <span className="player-name">{GAME_LABELS[key] ?? key}</span>
+                  <span className="player-name"><Icon name={GAME_ICONS[key] ?? "gamepad"} /> {GAME_LABELS[key] ?? key}</span>
                   <span className="badge ready-badge">
                     {g.wins ?? 0} win{(g.wins ?? 0) === 1 ? "" : "s"} / {g.played ?? 0} played
                   </span>
@@ -215,7 +226,7 @@ export default function AccountPage() {
 
         <div className="lobby-buttons">
           <Link to="/friends" className="btn">
-            👥 Friends
+            <Icon name="users" /> Friends
           </Link>
           <button className="btn danger" onClick={() => void signOut()}>
             Sign out
@@ -231,7 +242,7 @@ export default function AccountPage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">👤 {profile ? `@${profile.username}` : "Account"}</h1>
+        <h1 className="mm-title"><Icon name="user" /> {profile ? `@${profile.username}` : "Account"}</h1>
       </header>
       {body}
     </div>

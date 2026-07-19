@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { ScoreboardEntry, TriviaSnapshot } from "@shared/trivia";
+import Icon from "../components/Icon";
 
 interface Props {
   room: TriviaSnapshot;
@@ -16,7 +17,7 @@ export default function TriviaFinal({ room, playerId, final, onPlayAgain, onLeav
 
   return (
     <div className="panel end-screen">
-      <h2 className="win-title">🏆 {winners.length > 1 ? "It's a tie!" : "Winner!"}</h2>
+      <h2 className="win-title"><Icon name="trophy" /> {winners.length > 1 ? "It's a tie!" : "Winner!"}</h2>
       <p className="win-word trivia-winner">
         {winners.length > 0 ? winners.map((w) => w.name).join(" & ") : "Nobody"}
       </p>
@@ -31,7 +32,7 @@ export default function TriviaFinal({ room, playerId, final, onPlayAgain, onLeav
         {scoreboard.map((e, rank) => (
           <li key={e.playerId} className={e.playerId === playerId ? "me" : ""}>
             <span className="rank">
-              {rank === 0 ? "🥇" : rank === 1 ? "🥈" : rank === 2 ? "🥉" : `#${rank + 1}`}
+              {rank === 0 ? <Icon name="trophy" className="ic-yellow" label="1st" /> : rank === 1 ? <Icon name="star" label="2nd" /> : rank === 2 ? <Icon name="sparkle" label="3rd" /> : `#${rank + 1}`}
             </span>
             <span className="player-name">
               {e.name}
@@ -44,10 +45,10 @@ export default function TriviaFinal({ room, playerId, final, onPlayAgain, onLeav
 
       <div className="lobby-buttons">
         <button className="btn primary" onClick={onPlayAgain}>
-          🔁 Play again
+          <Icon name="repeat" /> Play again
         </button>
         <Link to="/" className="btn" onClick={onLeave}>
-          🕹 Back to arcade
+          <Icon name="gamepad" /> Back to arcade
         </Link>
       </div>
     </div>

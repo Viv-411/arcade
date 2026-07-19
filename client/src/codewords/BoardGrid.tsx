@@ -1,4 +1,5 @@
 import type { CwIdentity, CwPublicCard } from "@shared/codewords";
+import Icon from "../components/Icon";
 
 interface Props {
   board: CwPublicCard[];
@@ -51,8 +52,8 @@ export default function BoardGrid({
             onClick={() => onCard?.(i)}
           >
             <span className="cw-word">{card.word}</span>
-            {card.revealed && identity === "assassin" && <span className="cw-mark">💀</span>}
-            {card.revealed && identity === "bystander" && <span className="cw-mark">🚶</span>}
+            {card.revealed && identity === "assassin" && <span className="cw-mark"><Icon name="skull" label="assassin" /></span>}
+            {card.revealed && identity === "bystander" && <span className="cw-mark"><Icon name="human" label="bystander" /></span>}
             {votes > 0 && !card.revealed && <span className="cw-votes">{votes}</span>}
           </button>
         );

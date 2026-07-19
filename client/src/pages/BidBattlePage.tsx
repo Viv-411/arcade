@@ -12,6 +12,7 @@ import DeliveryScreen from "../bidbattle/DeliveryScreen";
 import ReviewScreen from "../bidbattle/ReviewScreen";
 import WinnerScreen from "../bidbattle/WinnerScreen";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 export default function BidBattlePage() {
   const { state, actions } = useBidBattle();
@@ -44,7 +45,7 @@ export default function BidBattlePage() {
                     className={`btn small ${mode === m ? "primary" : ""}`}
                     onClick={() => setMode(m)}
                   >
-                    {m === "1v1" ? "⚔️ 1v1" : "👥 2v2"}
+                    {m === "1v1" ? <><Icon name="sword" /> 1v1</> : <><Icon name="users" /> 2v2</>}
                   </button>
                 ))}
               </div>
@@ -81,7 +82,7 @@ export default function BidBattlePage() {
               The other team reviews the list — flag junk, the namers defend or concede, the
               challengers make the final call. Hit your bid and you score; fall short and they do.
             </li>
-            <li>First team to 3 points wins. Honor system — play with people you trust! 😄</li>
+            <li>First team to 3 points wins. Honor system — play with people you trust!</li>
           </ol>
         </section>
       </>
@@ -157,7 +158,7 @@ export default function BidBattlePage() {
           <div className="overlay reveal-overlay">
             <div className="panel reveal-panel">
               <h2>
-                {state.result.winnerTeam === myTeam ? "🎉 Point for your team!" : "😤 Point lost!"}
+                {state.result.winnerTeam === myTeam ? <><Icon name="party-popper" /> Point for your team!</> : <><Icon name="frown" /> Point lost!</>}
               </h2>
               <p>
                 <strong>{state.result.category}</strong>: Team {state.result.deliveringTeam} named{" "}
@@ -181,7 +182,7 @@ export default function BidBattlePage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">💰 Bid Battle</h1>
+        <h1 className="mm-title"><Icon name="coins" /> Bid Battle</h1>
       </header>
       {screen}
       {state.status === "reconnecting" && (

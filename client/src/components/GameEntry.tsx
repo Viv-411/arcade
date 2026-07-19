@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { NAME_KEY } from "../core/useRoomCore";
+import Icon from "./Icon";
 
 interface Props {
   busy: boolean;
@@ -71,7 +72,7 @@ export default function GameEntry({
             onQuickPlay(trimmed);
           }}
         >
-          ⚡ Quick Play
+          <Icon name="zap" /> Quick Play
         </button>
         <button
           className="btn"
@@ -81,10 +82,10 @@ export default function GameEntry({
             onCreate(trimmed);
           }}
         >
-          🔒 Create private room
+          <Icon name="lock" /> Create private room
         </button>
         <button className="btn" disabled={busy} onClick={() => setShowJoin((s) => !s)}>
-          🔑 Join with code
+          <Icon name="login" /> Join with code
         </button>
       </div>
 

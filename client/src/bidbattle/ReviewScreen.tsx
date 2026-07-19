@@ -1,5 +1,6 @@
 import type { BidBattleSnapshot, ReviewItemStatus, TeamId } from "@shared/bidbattle";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -11,11 +12,11 @@ interface Props {
 
 const STATUS_LABEL: Record<ReviewItemStatus, string> = {
   ok: "counts",
-  flagged: "flagged 🚩",
-  conceded: "conceded ✗",
-  defended: "defended 🛡",
-  accepted: "accepted ✓",
-  upheld: "rejected ✗",
+  flagged: "flagged",
+  conceded: "conceded",
+  defended: "defended",
+  accepted: "accepted",
+  upheld: "rejected",
 };
 
 export default function ReviewScreen({ room, myTeam, onFlag, onRespond, onFinalize }: Props) {
@@ -44,9 +45,14 @@ export default function ReviewScreen({ room, myTeam, onFlag, onRespond, onFinali
         </div>
       </div>
       <p className="hint">
-        {delivering
-          ? "Defend or concede anything the other team flags."
-          : "Tap 🚩 on anything that isn't in the category or is a duplicate. Unflagged items count."}
+        {delivering ? (
+          "Defend or concede anything the other team flags."
+        ) : (
+          <>
+            Tap <Icon name="flag" /> on anything that isn't in the category or is a
+            duplicate. Unflagged items count.
+          </>
+        )}
       </p>
 
       <ul className="review-list">
@@ -56,13 +62,13 @@ export default function ReviewScreen({ room, myTeam, onFlag, onRespond, onFinali
             <span className="review-status">{STATUS_LABEL[item.status]}</span>
             {!delivering && item.status === "ok" && (
               <button className="btn small" onClick={() => onFlag(i)}>
-                🚩 Flag
+                <Icon name="flag" /> Flag
               </button>
             )}
             {delivering && item.status === "flagged" && (
               <span className="review-actions">
                 <button className="btn small" onClick={() => onRespond(i, "defend")}>
-                  🛡 Defend
+                  <Icon name="shield" /> Defend
                 </button>
                 <button className="btn small danger" onClick={() => onRespond(i, "concede")}>
                   Concede
@@ -72,16 +78,16 @@ export default function ReviewScreen({ room, myTeam, onFlag, onRespond, onFinali
             {!delivering && item.status === "defended" && (
               <span className="review-actions">
                 <button className="btn small" onClick={() => onFinalize(i, "accept")}>
-                  ✓ Accept
+                  <Icon name="check" /> Accept
                 </button>
                 <button className="btn small danger" onClick={() => onFinalize(i, "uphold")}>
-                  ✗ Uphold
+                  <Icon name="close" /> Uphold
                 </button>
               </span>
             )}
           </li>
         ))}
-        {review.items.length === 0 && <li className="empty-slot">No items were named 😬</li>}
+        {review.items.length === 0 && <li className="empty-slot">No items were named</li>}
       </ul>
 
       {delivering && anyFlagged && (

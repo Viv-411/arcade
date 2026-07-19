@@ -8,6 +8,7 @@ import GameLobby from "../components/GameLobby";
 import GameBoard from "../mindmeld/GameBoard";
 import EndScreen from "../mindmeld/EndScreen";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 export default function MindMeldPage() {
   const { state, actions } = useMindMeld();
@@ -71,7 +72,7 @@ export default function MindMeldPage() {
               everyone&apos;s words.
             </li>
             <li>Any word anyone has ever said is dead — it can never be used again.</li>
-            <li>You win together the moment everyone says the exact same word. 🧠⚡🧠</li>
+            <li>You win together the moment everyone says the exact same word.</li>
           </ol>
         </section>
       </>
@@ -82,7 +83,7 @@ export default function MindMeldPage() {
         room={room}
         playerId={state.playerId}
         joinPath="/mindmeld"
-        settingsLine={`⏱ ${room.settings.roundTimeSec}s rounds · max ${
+        settingsLine={`${room.settings.roundTimeSec}s rounds · max ${
           room.settings.maxRounds === 0 ? "∞" : room.settings.maxRounds
         } rounds · match: ${room.settings.matchMode}`}
         onToggleReady={actions.toggleReady}
@@ -121,7 +122,7 @@ export default function MindMeldPage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">🧠 Mind Meld</h1>
+        <h1 className="mm-title"><Icon name="lightbulb" /> Mind Meld</h1>
       </header>
       {screen}
       {state.status === "reconnecting" && (

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { BidBattleSnapshot, TeamId } from "@shared/bidbattle";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -17,7 +18,7 @@ export default function WinnerScreen({ room, myTeam, winner, onPlayAgain, onLeav
 
   return (
     <div className="panel end-screen">
-      <h2 className="win-title">🏆 Team {winnerTeam} wins!</h2>
+      <h2 className="win-title"><Icon name="trophy" /> Team {winnerTeam} wins!</h2>
       <p className="win-word trivia-winner">{won ? "Victory!" : myTeam ? "Defeat…" : ""}</p>
       <p className="win-rounds">
         Final score: Team A {scores.A} — {scores.B} Team B
@@ -29,7 +30,7 @@ export default function WinnerScreen({ room, myTeam, winner, onPlayAgain, onLeav
           <li key={p.id}>
             <span className="player-name">
               {p.name}
-              {p.id === room.hostId && " 👑"}
+              {p.id === room.hostId && <> <Icon name="crown" className="ic-yellow" label="Host" /></>}
             </span>
             <span className={`badge ${p.team === winnerTeam ? "ready-badge" : "waiting-badge"}`}>
               Team {p.team}
@@ -40,10 +41,10 @@ export default function WinnerScreen({ room, myTeam, winner, onPlayAgain, onLeav
 
       <div className="lobby-buttons">
         <button className="btn primary" onClick={onPlayAgain}>
-          🔁 Play again
+          <Icon name="repeat" /> Play again
         </button>
         <Link to="/" className="btn" onClick={onLeave}>
-          🕹 Back to arcade
+          <Icon name="gamepad" /> Back to arcade
         </Link>
       </div>
     </div>

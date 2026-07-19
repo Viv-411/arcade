@@ -1,5 +1,6 @@
 import type { CategoryOption, TriviaSnapshot } from "@shared/trivia";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: TriviaSnapshot;
@@ -41,7 +42,7 @@ export default function VoteScreen({ room, vote, myVote, onVote, onLeave }: Prop
               onClick={() => onVote(o.id)}
             >
               <span className="vote-name">{o.name}</span>
-              {count > 0 && <span className="vote-count">{count} 🗳</span>}
+              {count > 0 && <span className="vote-count">{count} <Icon name="checkbox" /></span>}
             </button>
           );
         })}
@@ -55,7 +56,7 @@ export default function VoteScreen({ room, vote, myVote, onVote, onLeave }: Prop
           >
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             {p.name}
-            <span className="lock-icon">{p.voted ? "🗳" : "…"}</span>
+            <span className="lock-icon">{p.voted ? <Icon name="checkbox" /> : "…"}</span>
           </div>
         ))}
       </div>

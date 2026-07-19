@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Icon from "../components/Icon";
 
 /** Mode choice: same word bank and rules; one shared device vs. networked play. */
 export default function ImposterChoicePage() {
@@ -8,26 +9,26 @@ export default function ImposterChoicePage() {
         <Link to="/" className="back-link">
           ← Arcade
         </Link>
-        <h1 className="mm-title">🕵️ Imposter</h1>
+        <h1 className="mm-title"><Icon name="sunglasses" /> Imposter</h1>
       </header>
       <div className="game-grid">
         <Link to="/imposter/local" className="game-card active accent-green">
-          <div className="game-emoji">📱</div>
+          <div className="game-emoji"><Icon name="smartphone" /></div>
           <h2>On this device</h2>
           <p>
             Pass one phone around the room. Everyone peeks at their card, then you play out
             loud. No internet needed.
           </p>
-          <span className="badge play-badge">▶ Play now</span>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
         <Link to="/imposter-online" className="game-card active accent-green">
-          <div className="game-emoji">🌐</div>
+          <div className="game-emoji"><Icon name="globe" /></div>
           <h2>Online</h2>
           <p>
             Everyone on their own device: typed clues, secret votes, word steals — with rooms,
             quick play, and friend invites.
           </p>
-          <span className="badge play-badge">▶ Play now</span>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
       </div>
       <section className="howto panel">

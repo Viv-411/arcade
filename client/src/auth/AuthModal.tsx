@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { appBaseUrl, isAuthConfigured, supabase } from "./supabaseClient";
+import Icon from "../components/Icon";
 
 interface Props {
   user: User | null;
@@ -146,8 +147,8 @@ export default function AuthModal({ user, username, onClose, onSignOut }: Props)
           />
         </label>
 
-        {error && <p className="used-warning">⚠ {error}</p>}
-        {notice && <p className="auth-notice">✉️ {notice}</p>}
+        {error && <p className="used-warning"><Icon name="warning" /> {error}</p>}
+        {notice && <p className="auth-notice"><Icon name="mail" /> {notice}</p>}
 
         <div className="lobby-buttons">
           <button
@@ -174,7 +175,7 @@ export default function AuthModal({ user, username, onClose, onSignOut }: Props)
     >
       <div className="panel auth-modal">
         <button className="auth-close" onClick={onClose} aria-label="Close">
-          ✕
+          <Icon name="close" label="Close" />
         </button>
         {body}
       </div>

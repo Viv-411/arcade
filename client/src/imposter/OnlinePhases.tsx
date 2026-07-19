@@ -7,6 +7,7 @@ import type {
   YourRolePayload,
 } from "@shared/imposter";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 export function RoleCard({ role }: { role: YourRolePayload }) {
   const imposter = role.role === "imposter";
@@ -14,7 +15,7 @@ export function RoleCard({ role }: { role: YourRolePayload }) {
     <div className={`role-card ${imposter ? "imposter" : "crew"}`}>
       {imposter ? (
         <>
-          <span className="role-title">🕵️ You are the Imposter</span>
+          <span className="role-title"><Icon name="sunglasses" /> You are the Imposter</span>
           {role.hint && (
             <span className="role-hint">
               Hint — the category is <strong>{role.hint}</strong>
@@ -43,11 +44,11 @@ export function RevealScreen({
   const left = useSecondsLeft(room.phaseDeadline);
   return (
     <div className="panel imposter-reveal">
-      <p className="hint">Your card — keep it to yourself! 🤫</p>
+      <p className="hint">Your card — keep it to yourself!</p>
       {myRole ? <RoleCard role={myRole} /> : <div className="spinner" />}
       {myRole && (
         <p className="starting-player">
-          🎤 <strong>{myRole.startingPlayerName}</strong> gives the first clue
+          <Icon name="mic" /> <strong>{myRole.startingPlayerName}</strong> gives the first clue
         </p>
       )}
       {left !== null && <p className="next-round">Clues begin in {left}…</p>}
@@ -95,11 +96,11 @@ export function CluesScreen({
       <p className={`turn-banner ${myTurn ? "my-turn" : ""}`}>
         {myTurn
           ? spoken
-            ? "🎤 Your turn — say your clue out loud!"
-            : "🎤 Your turn — type ONE word"
+            ? <><Icon name="mic" /> Your turn — say your clue out loud!</>
+            : <><Icon name="mic" /> Your turn — type ONE word</>
           : `${turnPlayer?.name ?? "…"} is giving a clue…`}
       </p>
-      {!iAmAlive && <p className="hint">You were eliminated — spectating. 👻</p>}
+      {!iAmAlive && <p className="hint">You were eliminated — spectating.</p>}
       {myTurn && !spoken && (
         <div className="word-row">
           <input
@@ -120,7 +121,7 @@ export function CluesScreen({
       {spoken && (myTurn || isHost) && (
         <div className="lobby-buttons">
           <button className="btn primary" onClick={onAdvanceTurn}>
-            ✅ Said it — next
+            <Icon name="check" /> Said it — next
           </button>
         </div>
       )}
@@ -142,7 +143,7 @@ export function ClueBoard({ room }: { room: ImposterSnapshot }) {
             {r.entries.map((e, i) => (
               <span key={i} className="history-entry">
                 <span className="history-name">{e.name}:</span>{" "}
-                <strong>{e.word ?? (spoken ? "🗣" : "—")}</strong>
+                <strong>{e.word ?? (spoken ? <Icon name="megaphone" /> : "—")}</strong>
               </span>
             ))}
             {r.entries.length === 0 && <em>…</em>}
@@ -156,9 +157,11 @@ export function ClueBoard({ room }: { room: ImposterSnapshot }) {
 function MiniCard({ role }: { role: YourRolePayload }) {
   return (
     <p className="mini-card">
-      {role.role === "imposter"
-        ? `🕵️ imposter${role.hint ? ` · hint: ${role.hint}` : ""}`
-        : `your word: ${role.word}`}
+      {role.role === "imposter" ? (
+        <><Icon name="sunglasses" /> imposter{role.hint ? ` · hint: ${role.hint}` : ""}</>
+      ) : (
+        `your word: ${role.word}`
+      )}
     </p>
   );
 }
@@ -186,17 +189,17 @@ export function DecisionScreen({
             className={`btn ${myDecision === "another" ? "primary" : ""}`}
             onClick={() => onDecide("another")}
           >
-            🔁 Another round
+            <Icon name="repeat" /> Another round
           </button>
           <button
             className={`btn ${myDecision === "accuse" ? "primary" : ""}`}
             onClick={() => onDecide("accuse")}
           >
-            👉 Accuse now
+            <Icon name="chevron-right" /> Accuse now
           </button>
         </div>
       ) : (
-        <p className="hint">Spectating… 👻</p>
+        <p className="hint">Spectating…</p>
       )}
       <ActedChips room={room} label="voted" />
       <ClueBoard room={room} />
@@ -258,7 +261,7 @@ function ActedChips({ room, label }: { room: ImposterSnapshot; label: string }) 
           >
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             {p.name}
-            <span className="lock-icon">{p.acted ? `✓ ${label}` : "…"}</span>
+            <span className="lock-icon">{p.acted ? <><Icon name="check" /> {label}</> : "…"}</span>
           </div>
         ))}
     </div>
@@ -282,7 +285,7 @@ export function StealScreen({
   const itsMe = room.stealTargetId === playerId && stealPrompt;
   return (
     <div className="panel vote-screen">
-      <h2 className="screen-title">🃏 Word Steal!</h2>
+      <h2 className="screen-title"><Icon name="card" /> Word Steal!</h2>
       <p>
         <strong>{target?.name ?? "The imposter"}</strong> was caught — but gets ONE guess at
         the secret word to steal the win!
@@ -338,7 +341,7 @@ export function FinalScreen({
   return (
     <div className="panel end-screen">
       <h2 className="win-title">
-        {winners === "crew" ? "😇 Crew wins!" : winners === "imposters" ? "🕵️ Imposters win!" : "Game over"}
+        {winners === "crew" ? <><Icon name="smile" /> Crew wins!</> : winners === "imposters" ? <><Icon name="sunglasses" /> Imposters win!</> : "Game over"}
       </h2>
       {myRole && winners && (
         <p className="trivia-winner win-word">{iWon ? "Victory!" : "Defeat…"}</p>
@@ -355,7 +358,7 @@ export function FinalScreen({
               {r.playerId === playerId && " (you)"}
             </span>
             <span className={`badge ${r.role === "imposter" ? "waiting-badge" : "ready-badge"}`}>
-              {r.role === "imposter" ? "🕵️ imposter" : "😇 crew"}
+              {r.role === "imposter" ? <><Icon name="sunglasses" /> imposter</> : <><Icon name="smile" /> crew</>}
             </span>
           </li>
         ))}
@@ -363,10 +366,10 @@ export function FinalScreen({
       <ClueBoard room={room} />
       <div className="lobby-buttons">
         <button className="btn primary" onClick={onPlayAgain}>
-          🔁 Play again
+          <Icon name="repeat" /> Play again
         </button>
         <Link to="/" className="btn" onClick={onLeave}>
-          🕹 Back to arcade
+          <Icon name="gamepad" /> Back to arcade
         </Link>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CwClueNumber } from "@shared/codewords";
+import Icon from "../components/Icon";
 
 interface Props {
   /** Called with the clue word + number; parent handles the socket ack. */
@@ -20,7 +21,7 @@ export default function ClueInput({ onSubmit, disabled }: Props) {
   };
   return (
     <div className="cw-clue-input panel">
-      <h3>🕵️ Your clue</h3>
+      <h3><Icon name="eye" /> Your clue</h3>
       <div className="cw-clue-row">
         <input
           value={word}

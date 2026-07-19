@@ -2,6 +2,7 @@ import { useState } from "react";
 import { bidBattleModeSize, type BidBattleMode, type BidBattleSnapshot, type TeamId } from "@shared/bidbattle";
 import { useSecondsLeft } from "../core/hooks";
 import InviteFriends from "../social/InviteFriends";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -54,7 +55,7 @@ export default function BidBattleLobby({
         </span>
         <span className="room-code">{room.code}</span>
         <button className="btn small" onClick={copyLink}>
-          {copied ? "✓ Copied!" : "Copy invite link"}
+          {copied ? <><Icon name="check" /> Copied!</> : "Copy invite link"}
         </button>
       </div>
 
@@ -75,7 +76,7 @@ export default function BidBattleLobby({
         </div>
       )}
 
-      {autoStartIn !== null && <p className="auto-start">🚀 Auto-starting in {autoStartIn}s…</p>}
+      {autoStartIn !== null && <p className="auto-start"><Icon name="clock" /> Auto-starting in {autoStartIn}s…</p>}
 
       <InviteFriends
         game="bidbattle"
@@ -95,7 +96,7 @@ export default function BidBattleLobby({
                     <span className={`dot ${p.connected ? "on" : "off"}`} />
                     <span className="player-name">
                       {p.name}
-                      {p.id === room.hostId && " 👑"}
+                      {p.id === room.hostId && <> <Icon name="crown" className="ic-yellow" label="Host" /></>}
                       {p.id === playerId && " (you)"}
                     </span>
                     <span className={`badge ${p.ready ? "ready-badge" : "waiting-badge"}`}>
@@ -125,7 +126,7 @@ export default function BidBattleLobby({
         </button>
         {isHost && (
           <button className="btn primary" disabled={!canStart} onClick={onStart}>
-            ▶ Start match
+            <Icon name="play" /> Start match
           </button>
         )}
         <button className="btn danger" onClick={onLeave}>
@@ -143,7 +144,7 @@ export default function BidBattleLobby({
         </p>
       )}
       <p className="settings-line">
-        🏆 first to {room.settings.targetPoints} · ⏱ {room.settings.bidTurnSec}s bids ·{" "}
+        <Icon name="trophy" /> first to {room.settings.targetPoints} · <Icon name="clock" /> {room.settings.bidTurnSec}s bids ·{" "}
         {room.settings.deliverySec}s naming sprint
       </p>
     </div>

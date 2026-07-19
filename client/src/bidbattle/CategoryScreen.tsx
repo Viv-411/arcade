@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { BidBattleSnapshot } from "@shared/bidbattle";
 import { customApprovalThreshold } from "@shared/bidbattle";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -57,7 +58,7 @@ export default function CategoryScreen({ room, myVote, onSuggest, onVote }: Prop
                 {o.label}
                 {o.suggestedBy && <span className="suggested-by"> — {o.suggestedBy}</span>}
               </span>
-              {count > 0 && <span className="vote-count">{count} 🗳</span>}
+              {count > 0 && <span className="vote-count">{count} <Icon name="checkbox" /></span>}
             </button>
           );
         })}
@@ -94,7 +95,7 @@ export default function CategoryScreen({ room, myVote, onSuggest, onVote }: Prop
           >
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             {p.name}
-            <span className="lock-icon">{p.voted ? "🗳" : "…"}</span>
+            <span className="lock-icon">{p.voted ? <Icon name="checkbox" /> : "…"}</span>
           </div>
         ))}
       </div>

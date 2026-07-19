@@ -6,6 +6,7 @@ import { useJoinLinkOverride } from "../core/hooks";
 import GameEntry from "../components/GameEntry";
 import GameLobby from "../components/GameLobby";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 import {
   CluesScreen,
   DecisionScreen,
@@ -59,7 +60,7 @@ export default function ImposterOnlinePage() {
         gameKey="imposter"
         minPlayers={3}
         maxPlayers={IMPOSTER_MAX_PLAYERS}
-        settingsLine={`🕵️ ${room.settings.imposters} imposter${room.settings.imposters === 1 ? "" : "s"} · ${
+        settingsLine={`${room.settings.imposters} imposter${room.settings.imposters === 1 ? "" : "s"} · ${
           room.settings.category ?? "random category"
         } · hints ${room.settings.hints ? "on" : "off"} · ${room.settings.clueInputMode} clues · steal ${
           room.settings.wordSteal ? "on" : "off"
@@ -88,7 +89,7 @@ export default function ImposterOnlinePage() {
                     actions.setSettings({ category: e.target.value || null })
                   }
                 >
-                  <option value="">🎲 Random</option>
+                  <option value="">Random</option>
                   {IMPOSTER_CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -203,7 +204,7 @@ export default function ImposterOnlinePage() {
         <Link to="/imposter" className="back-link">
           ← Imposter
         </Link>
-        <h1 className="mm-title">🕵️ Imposter Online</h1>
+        <h1 className="mm-title"><Icon name="sunglasses" /> Imposter Online</h1>
       </header>
       {screen}
       {state.voteResult && room && room.state !== "finished" && room.state !== "steal" && (
@@ -222,7 +223,7 @@ export default function ImposterOnlinePage() {
                   </li>
                 );
               })}
-              {state.voteResult.tally.length === 0 && <li>Nobody voted 😶</li>}
+              {state.voteResult.tally.length === 0 && <li>Nobody voted</li>}
             </ul>
             {state.voteResult.eliminatedId ? (
               <p>
@@ -231,7 +232,7 @@ export default function ImposterOnlinePage() {
                 </strong>{" "}
                 was eliminated — they were{" "}
                 <strong className={state.voteResult.revealedRole === "imposter" ? "used-warning" : "auth-notice"}>
-                  {state.voteResult.revealedRole === "imposter" ? "🕵️ the Imposter!" : "😇 crew…"}
+                  {state.voteResult.revealedRole === "imposter" ? <><Icon name="sunglasses" /> the Imposter!</> : <><Icon name="smile" /> crew…</>}
                 </strong>
               </p>
             ) : state.voteResult.runoffNext ? (

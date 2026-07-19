@@ -6,6 +6,7 @@ import { useCodewords } from "../codewords/useCodewords";
 import BoardGrid from "../codewords/BoardGrid";
 import { ClueBar, ClueHistory, WinnerBanner } from "../codewords/CluePanel";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 const TEAMS: CwTeam[] = ["red", "blue"];
 const NUMBERS: CwClueNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, "unlimited"];
@@ -47,7 +48,7 @@ function QrPair({
     <div className={`cw-qr-pair ${small ? "cw-qr-small" : ""}`}>
       {TEAMS.map((team) => (
         <div key={team} className={`cw-qr cw-qr-${team}`}>
-          <h3>{team === "red" ? "🔴 Red spymaster" : "🔵 Blue spymaster"}</h3>
+          <h3>{team === "red" ? <><Icon name="circle" className="ic-red" /> Red spymaster</> : <><Icon name="circle" className="ic-blue" /> Blue spymaster</>}</h3>
           {urls[team] ? (
             <img src={urls[team]!} alt={`${cwTeamLabel(team)} spymaster QR`} />
           ) : (
@@ -65,7 +66,7 @@ function QrPair({
               );
             }}
           >
-            {copiedTeam === team ? "✓ Copied!" : "copy link instead"}
+            {copiedTeam === team ? <><Icon name="check" /> Copied!</> : "copy link instead"}
           </button>
         </div>
       ))}
@@ -98,7 +99,7 @@ export default function CodewordsBoardPage() {
             disabled={state.busy}
             onClick={() => actions.createRoom("Shared Board", false, { mode: "board" })}
           >
-            📺 Create a shared board
+            <Icon name="tv" /> Create a shared board
           </button>
         </div>
         <p className="hint">
@@ -128,7 +129,7 @@ export default function CodewordsBoardPage() {
             <li key={s.team}>
               <span className={`dot ${s.connected ? "on" : "off"}`} />
               <span className="player-name">
-                {s.team === "red" ? "🔴" : "🔵"} {cwTeamLabel(s.team)} spymaster phone
+                {s.team === "red" ? <Icon name="circle" className="ic-red" /> : <Icon name="circle" className="ic-blue" />} {cwTeamLabel(s.team)} spymaster phone
               </span>
               <span className={`badge ${s.connected ? "ready-badge" : "waiting-badge"}`}>
                 {s.connected ? "Connected" : "Scan the QR"}
@@ -138,7 +139,7 @@ export default function CodewordsBoardPage() {
         </ul>
         <div className="lobby-buttons">
           <button className="btn primary" disabled={!ready} onClick={actions.startGame}>
-            ▶ Start game
+            <Icon name="play" /> Start game
           </button>
           <button className="btn danger" onClick={actions.leaveRoom}>
             Close board
@@ -180,7 +181,7 @@ export default function CodewordsBoardPage() {
                 className="btn primary"
                 onClick={() => actions.submitClue(null, manualNumber)}
               >
-                🗣️ Clue given
+                <Icon name="megaphone" /> Clue given
               </button>
             </div>
           </div>
@@ -203,7 +204,7 @@ export default function CodewordsBoardPage() {
                   setSelected(null);
                 }}
               >
-                👆 Reveal “{room.board[selected]?.word.toUpperCase()}”
+                <Icon name="pointer" /> Reveal “{room.board[selected]?.word.toUpperCase()}”
               </button>
             )}
             <button
@@ -211,13 +212,13 @@ export default function CodewordsBoardPage() {
               disabled={room.guessesMade < 1}
               onClick={actions.passTurn}
             >
-              ✋ Pass turn
+              <Icon name="hand" /> Pass turn
             </button>
           </div>
         )}
         {room.needsSpymaster.length > 0 && !finished && (
           <p className="cw-claim panel">
-            ⚠️ {room.needsSpymaster.map((t) => cwTeamLabel(t)).join(" & ")} spymaster phone
+            <Icon name="warning" /> {room.needsSpymaster.map((t) => cwTeamLabel(t)).join(" & ")} spymaster phone
             disconnected — re-scan the QR below to restore it.
           </p>
         )}
@@ -249,7 +250,7 @@ export default function CodewordsBoardPage() {
         <Link to="/codewords" className="back-link">
           ← Codewords
         </Link>
-        <h1 className="mm-title">🗝️ Codewords — Shared Board</h1>
+        <h1 className="mm-title"><Icon name="grid-3x3" /> Codewords — Shared Board</h1>
       </header>
       {screen}
       {state.status === "reconnecting" && (

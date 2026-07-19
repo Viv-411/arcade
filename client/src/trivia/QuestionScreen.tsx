@@ -4,6 +4,7 @@ import type {
   TriviaSnapshot,
 } from "@shared/trivia";
 import { useSecondsLeft, useTimeFraction } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: TriviaSnapshot;
@@ -102,11 +103,13 @@ export default function QuestionScreen({
         {!revealed && answered && <p className="hint">Answer locked in — waiting for others…</p>}
         {revealed && myReveal && (
           <p className={`points-earned ${myReveal.correct ? "good" : "bad"}`}>
-            {myReveal.correct
-              ? `✓ Correct! +${myReveal.pointsEarned} points`
-              : myReveal.choice === null
-                ? "⏱ No answer — 0 points"
-                : "✗ Wrong — 0 points"}
+            {myReveal.correct ? (
+              <><Icon name="check" /> Correct! +{myReveal.pointsEarned} points</>
+            ) : myReveal.choice === null ? (
+              <><Icon name="clock" /> No answer — 0 points</>
+            ) : (
+              <><Icon name="close" /> Wrong — 0 points</>
+            )}
           </p>
         )}
       </div>
@@ -120,7 +123,7 @@ export default function QuestionScreen({
             <span className={`dot ${p.connected ? "on" : "off"}`} />
             {p.name}
             {p.id === playerId && " (you)"}
-            <span className="lock-icon">{p.answered ? "🔒" : "…"}</span>
+            <span className="lock-icon">{p.answered ? <Icon name="lock" /> : "…"}</span>
           </div>
         ))}
       </div>

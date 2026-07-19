@@ -28,6 +28,7 @@
     "better-sqlite3": "^12.2.0",
     "express": "^4.21.2",
     "jose": "^6.2.3",
+    "pixelarticons": "^2.2.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

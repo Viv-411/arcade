@@ -8,6 +8,7 @@ import BoardGrid from "../codewords/BoardGrid";
 import ClueInput from "../codewords/ClueInput";
 import { ClueBar, ClueHistory, WinnerBanner } from "../codewords/CluePanel";
 import Toasts from "../components/Toasts";
+import Icon from "../components/Icon";
 
 export default function CodewordsRemotePage() {
   const { state, actions } = useCodewords("codewords");
@@ -26,7 +27,7 @@ export default function CodewordsRemotePage() {
             <>
               Two teams, one grid of 25 words, one shared secret key. Spymasters give
               one-word clues; operatives vote on which cards to flip —{" "}
-              <strong>never touch the 💀</strong>.
+              <strong>never touch the <Icon name="skull" /></strong>.
             </>
           }
           onCreate={(name) => actions.createRoom(name, false)}
@@ -36,7 +37,7 @@ export default function CodewordsRemotePage() {
         <section className="howto panel">
           <h3>How to play</h3>
           <ol>
-            <li>4-10 players in two teams; each team picks a 🕵️ spymaster.</li>
+            <li>4-10 players in two teams; each team picks a <Icon name="eye" /> spymaster.</li>
             <li>Both spymasters privately see the same full key (who's red, blue, bystander,
               assassin).</li>
             <li>On your team's turn the spymaster types a one-word clue + number; operatives
@@ -94,7 +95,7 @@ export default function CodewordsRemotePage() {
               className="btn primary"
               onClick={() => state.playerId && actions.setSpymaster(state.playerId)}
             >
-              🕵️ Become the {myTeam ? cwTeamLabel(myTeam) : ""} spymaster
+              <Icon name="eye" /> Become the {myTeam ? cwTeamLabel(myTeam) : ""} spymaster
             </button>
           </div>
         )}
@@ -111,7 +112,7 @@ export default function CodewordsRemotePage() {
         />
         {isSpymaster && !finished && (
           <p className="hint">
-            🕵️ Only you and the other spymaster see the card colors — don't say them out
+            <Icon name="eye" /> Only you and the other spymaster see the card colors — don't say them out
             loud… except through your clue.
           </p>
         )}
@@ -127,7 +128,7 @@ export default function CodewordsRemotePage() {
               disabled={room.guessesMade < 1}
               onClick={() => actions.voteCard("pass", state.myVote)}
             >
-              ✋ Vote to pass {state.tally?.pass ? `(${state.tally.pass})` : ""}
+              <Icon name="hand" /> Vote to pass {state.tally?.pass ? `(${state.tally.pass})` : ""}
             </button>
           </div>
         )}
@@ -149,7 +150,7 @@ export default function CodewordsRemotePage() {
         <Link to="/codewords" className="back-link">
           ← Codewords
         </Link>
-        <h1 className="mm-title">🗝️ Codewords</h1>
+        <h1 className="mm-title"><Icon name="grid-3x3" /> Codewords</h1>
       </header>
       {screen}
       {state.status === "reconnecting" && (

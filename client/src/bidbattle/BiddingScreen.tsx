@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BidBattleSnapshot, TeamId } from "@shared/bidbattle";
 import { useSecondsLeft } from "../core/hooks";
+import Icon from "../components/Icon";
 
 interface Props {
   room: BidBattleSnapshot;
@@ -52,7 +53,7 @@ export default function BiddingScreen({ room, myTeam, onRaise, onChallenge }: Pr
       </div>
 
       <p className={`turn-banner ${myTurn ? "my-turn" : ""}`}>
-        {myTurn ? "⚡ Your team's turn!" : `Team ${bidding.turnTeam} is thinking…`}
+        {myTurn ? <><Icon name="zap" /> Your team's turn!</> : `Team ${bidding.turnTeam} is thinking…`}
       </p>
 
       {myTurn && (
@@ -77,7 +78,7 @@ export default function BiddingScreen({ room, myTeam, onRaise, onChallenge }: Pr
             onClick={onChallenge}
             title={bidding.currentBid < 1 ? "No bid to challenge yet — you must open" : ""}
           >
-            😏 Make them name it
+            <Icon name="sword" /> Make them name it
           </button>
           <p className="hint">
             Raise if your team can name more — or make Team{" "}

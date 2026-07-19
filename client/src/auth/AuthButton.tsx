@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import Icon from "../components/Icon";
 
 /**
  * Small corner button: opens the sign-in modal when anonymous; goes to the
@@ -16,7 +17,7 @@ export default function AuthButton() {
       onClick={() => (user ? navigate("/account") : openAuthModal())}
       title={user ? "Your account" : "Sign in (optional)"}
     >
-      {loading ? "…" : user ? `👤 @${username ?? "…"}` : "👤 Sign in"}
+      {loading ? "…" : user ? <><Icon name="user" /> @{username ?? "…"}</> : <><Icon name="user" /> Sign in</>}
     </button>
   );
 }
