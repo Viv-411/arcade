@@ -120,6 +120,63 @@ implementation handles OpenTDB's constraints:
   offline-safe resort fills from a small built-in question set — a game always gets
   its questions.
 
+### Custom trivia sets in play
+
+Question sets built on the **My Sets** page (`/sets`, see the accounts section)
+can be played two ways. Both require you to be **logged in**; built-in OpenTDB
+trivia is untouched and still works fully anonymously.
+
+**1. In a private Speed Trivia lobby.** Create a private room (the normal
+"Create room" button — not Quick Play), and the lobby shows a **Questions**
+picker for the host: "Category vote (OpenTDB)" or any set the host **owns or
+has had shared with them**. Pick a set and:
+
+- the **category vote is skipped** entirely — the game jumps straight from the
+  lobby into question 1 (the difficulty selector hides too; it only applies to
+  OpenTDB);
+- **everyone in the lobby plays it**, whether or not the set was shared with
+  them individually — the host's access is what's checked. Non-hosts see the
+  set's title and question count in the lobby;
+- questions are otherwise handled by the **same engine as OpenTDB games**: the
+  same speed scoring, reveal pause, standings, reconnection and stats. The
+  server shuffles each question's answer options (recomputing the correct index
+  server-side) and keeps the correct answer hidden until the reveal, exactly as
+  before.
+
+**Set size vs. questions-per-game:** the question order is **always shuffled**.
+If the set has *fewer* questions than the room's questions-per-game setting, the
+game is shortened to the whole set and the lobby/round bar show the real count.
+If it has *more*, the game plays a **random subset** of that size (not the first
+N) — so replaying a large set gives a different run each time.
+
+**Custom sets are private-lobby only.** Public rooms and Quick Play always use
+the OpenTDB category vote, so strangers matched together never land in someone
+else's homemade set; picking a set in a public room is rejected server-side, and
+a room that somehow turns public drops its pick. If the set becomes unreadable
+between the pick and the start (deleted, share revoked, host signed out), the
+game announces it and **falls back to the category vote** rather than failing.
+
+**Authorization note:** the set is loaded server-side with the **service-role**
+Supabase client, because players other than the host may have no read access of
+their own. The service role **bypasses RLS**, so `server/src/trivia/customSets.ts`
+re-implements the access rule in code — the acting user must own the set or hold
+a `trivia_set_shares` row for it, and the set must not be removed. That check
+runs when the host picks the set *and again* (against the current host) when the
+game starts.
+
+**2. Solo Trivia** (`/solo/trivia?set=<id>`, or the "Play solo" button on any
+set you can read). Single-player practice: no sockets, no room, no other
+players. It loads the set through **your own** Supabase session (so RLS is the
+authority, no service role involved), shuffles the questions and options, and
+runs the same question card with the same 1000→500 speed curve.
+
+Solo scoring is **practice only and deliberately client-side**: it is computed
+in your browser, is *not* cheat-proof, and **never touches account stats or any
+leaderboard** — the summary at the end is local and disappears when you leave.
+The multiplayer question card is shared as a purely presentational component
+(`client/src/trivia/QuestionCardView.tsx`) so the two modes can't drift apart
+visually while keeping all authority server-side in multiplayer.
+
 ## Bid Battle — the rules
 
 A team category-naming auction, **1v1 or 2v2** (exactly 2 or 4 players, Team A vs
@@ -420,7 +477,7 @@ What exists (accounts phase 4 — messages):
   for reads/posts, and lobby membership + capacity for invites. Delivery is
   realtime over the `/social` socket; unread state is tracked per member.
 
-What exists (accounts phase 5 — custom trivia sets, CONTENT LAYER only):
+What exists (accounts phase 5 — custom trivia sets, content layer + gameplay):
 
 - **My Sets** (`/sets`, behind login — reachable from the home header and the
   account page): create/edit/delete your own question sets, plus a separate
@@ -444,6 +501,10 @@ What exists (accounts phase 5 — custom trivia sets, CONTENT LAYER only):
   duplicate the entire set. Copies are new rows with new ids
   (`source_set_id` records where a copy came from, for attribution only) —
   editing or deleting the source never affects the copies.
+- **Playing a custom set** — two ways, both described in "Custom trivia sets in
+  play" below: a **private Speed Trivia lobby** (host picks the set, everyone
+  in the lobby plays it) and **Solo Trivia** (`/solo/trivia`, single-player
+  practice).
 - **Authorization model**: every query runs through the signed-in user's own
   Supabase session, so **Postgres RLS is the server-side authority** — the
   same pattern as the friendships table. No service-role endpoint exists for

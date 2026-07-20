@@ -284,11 +284,13 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   build time, server env read at runtime; Render has the same five vars set.
 - Supabase schema fully applied (profiles+trigger, trivia_sets/questions,
   player_stats+record_game_result, friendships, chats/chat_members/
-  chat_messages) EXCEPT migration 20260719000000_trivia_set_shares.sql
-  (set sharing + question provenance + share-aware RLS) which is written
-  and committed but NOT yet pushed to the hosted DB — the /sets page
-  errors on share/provenance queries until the owner runs db push.
-  Migrations go to the hosted DB via
+  chat_messages, trivia_set_shares) — ALL migrations are applied to the
+  hosted DB as of 2026-07-19, including 20260719000000_trivia_set_shares.sql
+  and its follow-up 20260719000001_fix_share_read_policy.sql (the original
+  share-aware trivia_sets select policy compared an unqualified `id` inside
+  the subquery, which bound to trivia_set_shares.id — the inner relation —
+  so shared reads silently returned nothing; always QUALIFY column names in
+  RLS policy subqueries). Migrations go to the hosted DB via
   `npx supabase db push --db-url "postgresql://postgres.lpfjrayitzwbdowgpdfj:<DB_PASSWORD>@aws-1-us-west-2.pooler.supabase.com:5432/postgres"`
   (direct db host is IPv6-only from this network; ask the owner for the DB
   password — NEVER commit it; it is not in the repo or .env).
@@ -330,13 +332,10 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
 
 ## Backlog (agreed future work, not started)
 
-- Singleplayer section on Home has two placeholder cards: Solo Trivia
-  (client-side scoring — must never feed competitive leaderboards) and Daily
-  Challenge. Solo trivia should reuse the trivia question card as shared
-  PRESENTATIONAL components (see README note), driven by a local controller.
-- Trivia-set CONTENT layer is DONE (see /sets); the remaining piece is
-  GAMEPLAY WIRING: playing a custom set in Speed Trivia (a QuestionSource
-  that reads a set server-side, set picker in the lobby, etc.).
+- Home's Singleplayer section has ONE placeholder card left: Daily Challenge
+  (Solo Trivia shipped 2026-07-19 at /solo/trivia).
+- Custom trivia sets are DONE end to end (content layer at /sets + gameplay
+  in private lobbies and solo).
 - User-uploaded Imposter category packs could reuse the accounts DB.
 ## Session history
 
@@ -580,3 +579,40 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     MIGRATION NOT YET APPLIED to the hosted DB (needs the owner's db push);
     README carries the manual RLS checklist. Gameplay wiring is the next
     phase (backlog).
+
+26. **Custom trivia sets — gameplay wiring (2026-07-19)** — both migrations
+    pushed to the hosted DB, which surfaced an RLS bug: the share-aware
+    trivia_sets select policy used an UNQUALIFIED `id` in its subquery, so
+    Postgres bound it to the inner relation (trivia_set_shares.id) and
+    shared reads returned nothing. Fix migration
+    20260719000001_fix_share_read_policy.sql qualifies `trivia_sets.id`;
+    19-check RLS harness green afterwards. Then two ways to PLAY a set:
+    - **Private Speed Trivia lobbies.** New shared type CustomSetInfo +
+      TriviaSnapshot.customSet + client event setCustomSet. The host-only
+      picker (client/src/trivia/CustomSetPicker.tsx, in the lobby extras)
+      lists owned + shared sets; picking one SKIPS the category vote
+      (beginGame branches to loadCustomSetAndStart; "voting" becomes a brief
+      load screen) and hides the difficulty selector. PUBLIC/quick-play
+      rooms are rejected server-side and drop any stale pick.
+      server/src/trivia/customSets.ts loads the set with the SERVICE ROLE
+      (other players may have no access of their own) and therefore
+      RE-IMPLEMENTS the access rule IN CODE — owner or trivia_set_shares
+      row, set not removed — checked at pick time AND again against the
+      CURRENT host at game start, with graceful fallback to a category vote
+      on any failure. Question order always shuffled; options reshuffled
+      server-side with the correct index recomputed; set smaller than
+      questionsPerGame shortens the game, larger plays a RANDOM subset.
+      Everything downstream of game.questions is the untouched engine.
+    - **Solo practice** (/solo/trivia?set=ID, pages/SoloTriviaPage.tsx): no
+      sockets, no room; reads the set through the USER'S OWN session (RLS,
+      no service role), scores client-side on the same 1000→500 curve.
+      PRACTICE ONLY — never feeds account stats or leaderboards. The
+      question card was extracted to the purely presentational
+      trivia/QuestionCardView.tsx, shared by multiplayer and solo.
+    Home's Solo Trivia card is live; SetsPage gained a "Play solo" button.
+    Live-verified with a scratch harness (private-lobby game end to end,
+    non-host/public/anonymous/unknown-set rejections, share grant unlocking
+    a set for the recipient, and a full sweep asserting the guest NEVER
+    receives correctIndex before the reveal). Harness gotcha: core
+    `toggleReady`/`startGame` take NO ack callback — awaiting an ack on
+    them hangs forever.

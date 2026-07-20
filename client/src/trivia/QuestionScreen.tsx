@@ -5,6 +5,7 @@ import type {
 } from "@shared/trivia";
 import { useSecondsLeft, useTimeFraction } from "../core/hooks";
 import Icon from "../components/Icon";
+import QuestionCardView from "./QuestionCardView";
 
 interface Props {
   room: TriviaSnapshot;
@@ -44,7 +45,6 @@ export default function QuestionScreen({
   }
 
   const myReveal = revealed ? reveal.perPlayer.find((e) => e.playerId === playerId) : null;
-  const answered = myChoice !== null;
 
   return (
     <div className="game-board trivia-board">
@@ -73,46 +73,28 @@ export default function QuestionScreen({
         </div>
       )}
 
-      <div className="panel question-panel">
-        <p className="question-text">{question.questionText}</p>
-        <div className="answer-grid">
-          {question.options.map((opt, i) => {
-            const classes = ["answer-btn"];
-            if (revealed) {
-              if (i === reveal.correctIndex) classes.push("correct");
-              else if (myReveal?.choice === i) classes.push("wrong");
-              else classes.push("dimmed");
-            } else if (myChoice === i) {
-              classes.push("chosen");
-            } else if (answered) {
-              classes.push("dimmed");
-            }
-            return (
-              <button
-                key={i}
-                className={classes.join(" ")}
-                disabled={answered || revealed}
-                onClick={() => onAnswer(i)}
-              >
-                <span className="answer-letter">{String.fromCharCode(65 + i)}</span>
-                <span className="answer-text">{opt}</span>
-              </button>
-            );
-          })}
-        </div>
-        {!revealed && answered && <p className="hint">Answer locked in — waiting for others…</p>}
-        {revealed && myReveal && (
-          <p className={`points-earned ${myReveal.correct ? "good" : "bad"}`}>
-            {myReveal.correct ? (
-              <><Icon name="check" /> Correct! +{myReveal.pointsEarned} points</>
-            ) : myReveal.choice === null ? (
-              <><Icon name="clock" /> No answer — 0 points</>
-            ) : (
-              <><Icon name="close" /> Wrong — 0 points</>
-            )}
-          </p>
-        )}
-      </div>
+      <QuestionCardView
+        questionText={question.questionText}
+        options={question.options}
+        myChoice={revealed ? myReveal?.choice ?? null : myChoice}
+        revealed={revealed}
+        correctIndex={revealed ? reveal.correctIndex : null}
+        waitingLine={<p className="hint">Answer locked in — waiting for others…</p>}
+        resultLine={
+          myReveal && (
+            <p className={`points-earned ${myReveal.correct ? "good" : "bad"}`}>
+              {myReveal.correct ? (
+                <><Icon name="check" /> Correct! +{myReveal.pointsEarned} points</>
+              ) : myReveal.choice === null ? (
+                <><Icon name="clock" /> No answer — 0 points</>
+              ) : (
+                <><Icon name="close" /> Wrong — 0 points</>
+              )}
+            </p>
+          )
+        }
+        onAnswer={onAnswer}
+      />
 
       <div className="players-bar">
         {room.players.map((p) => (

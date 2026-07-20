@@ -28,6 +28,13 @@ export const DEFAULT_TRIVIA_SETTINGS: TriviaSettings = {
 /** The always-present "Surprise Me / Any" category vote option. */
 export const ANY_CATEGORY_ID = -1;
 
+/** A custom question set chosen as the source for a PRIVATE lobby's game. */
+export interface CustomSetInfo {
+  setId: string;
+  title: string;
+  questionCount: number;
+}
+
 export const TRIVIA_MIN_PLAYERS = 2;
 export const TRIVIA_MAX_PLAYERS = 10;
 
@@ -100,6 +107,8 @@ export interface TriviaSnapshot {
   vote: TriviaVotePublic | null;
   /** Winning category name once the vote resolves (questions may still be loading). */
   chosenCategory: string | null;
+  /** Host-picked custom set (private lobbies only); null = OpenTDB vote. */
+  customSet: CustomSetInfo | null;
   question: TriviaQuestionPublic | null;
   /** The most recent question reveal, cleared when the next question starts. */
   lastReveal: TriviaRevealPayload | null;
@@ -135,6 +144,11 @@ export interface TriviaClientEvents {
   playAgain(): void;
   startGame(): void;
   setDifficulty(payload: { difficulty: TriviaDifficulty }): void;
+  /** Host, private lobby only: play a custom set instead of the OpenTDB vote. */
+  setCustomSet(
+    payload: { setId: string | null },
+    ack: Ack<{ set: CustomSetInfo | null }>,
+  ): void;
   voteCategory(payload: { categoryId: number }): void;
   answer(payload: { optionIndex: number }, ack: Ack<{ optionIndex: number }>): void;
 }

@@ -190,6 +190,15 @@ export function useTrivia() {
     [core.emitEvent],
   );
 
+  const setCustomSet = useCallback(
+    (setId: string | null) => {
+      core.emitWithAck("setCustomSet", { setId }, (res) => {
+        if (!res.ok) core.toast(res.error);
+      });
+    },
+    [core.emitWithAck, core.toast],
+  );
+
   const createRoom = useCallback(
     (name: string, isPublic: boolean, settings?: Partial<TriviaSettings>) =>
       core.actions.createRoom(name, isPublic, settings),
@@ -211,6 +220,7 @@ export function useTrivia() {
       voteCategory,
       answer,
       setDifficulty,
+      setCustomSet,
     },
   };
 }

@@ -3,6 +3,7 @@ import type { Ack, SocketData } from "../../../shared/events.js";
 import {
   ANY_CATEGORY_ID,
   DEFAULT_TRIVIA_SETTINGS,
+  type CustomSetInfo,
   TRIVIA_MAX_PLAYERS,
   TRIVIA_MIN_PLAYERS,
   type CategoryOption,
@@ -26,6 +27,7 @@ import {
   type BaseRoom,
 } from "../core/roomManager.js";
 import type { PreparedQuestion, QuestionSource } from "./questionSource.js";
+import { describeAccessibleSet, loadAccessibleSet } from "./customSets.js";
 
 type TriviaNamespace = Namespace<
   TriviaClientEvents,
@@ -58,6 +60,9 @@ interface TriviaGameData {
 
 interface TriviaRoom extends BaseRoom<TriviaSettings, TriviaPlayer> {
   game: TriviaGameData;
+  /** Host-picked custom set (private lobbies only). Survives playAgain;
+   *  re-authorized against the CURRENT host at every game start. */
+  customSet: CustomSetInfo | null;
 }
 
 const VOTE_OPTION_COUNT = 5;
@@ -118,6 +123,11 @@ export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer,
     socket.on("setDifficulty", (payload: { difficulty: string }) =>
       this.setDifficulty(socket, payload),
     );
+    socket.on(
+      "setCustomSet",
+      (payload: { setId: string | null }, ack: Ack<{ set: CustomSetInfo | null }>) =>
+        void this.setCustomSet(socket, payload, ack),
+    );
   }
 
   protected sanitizeSettings(partial?: Partial<TriviaSettings>): TriviaSettings {
@@ -150,7 +160,7 @@ export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer,
   }
 
   protected makeRoom(base: BaseRoom<TriviaSettings, TriviaPlayer>): TriviaRoom {
-    return { ...base, game: freshGame(0) };
+    return { ...base, game: freshGame(0), customSet: null };
   }
 
   protected makePlayer(base: BasePlayer): TriviaPlayer {
@@ -220,6 +230,7 @@ export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer,
             }
           : null,
       chosenCategory: game.chosenCategory?.name ?? null,
+      customSet: room.customSet,
       question: this.currentQuestionPublic(room),
       lastReveal: game.lastReveal,
       scoreboard: this.scoreboard(room),
@@ -285,13 +296,88 @@ export class TriviaManager extends BaseRoomManager<TriviaSettings, TriviaPlayer,
     this.broadcastRoom(room);
   }
 
+  /**
+   * Host picks a custom question set (or clears it). PRIVATE lobbies only —
+   * quick play / public matchmaking always uses the OpenTDB vote. The server
+   * verifies IN CODE that the host owns the set or holds a share (the loader
+   * uses the service role, which bypasses RLS).
+   */
+  private async setCustomSet(
+    socket: AnySocket,
+    payload: { setId: string | null },
+    ack: Ack<{ set: CustomSetInfo | null }>,
+  ): Promise<void> {
+    const ctx = this.roomOf(socket);
+    if (!ctx) return ack({ ok: false, error: "You are not in a room." });
+    const { room, player } = ctx;
+    if (room.state !== "lobby") return ack({ ok: false, error: "The game already started." });
+    if (player.id !== room.hostId) {
+      return ack({ ok: false, error: "Only the host can pick the question source." });
+    }
+    if (room.isPublic) {
+      return ack({ ok: false, error: "Custom sets are for private lobbies only." });
+    }
+    if (payload?.setId == null) {
+      room.customSet = null;
+      this.broadcastRoom(room);
+      return ack({ ok: true, data: { set: null } });
+    }
+    const userId = socket.data.userId;
+    if (!userId) return ack({ ok: false, error: "Sign in to use your custom sets." });
+    const res = await describeAccessibleSet(userId, String(payload.setId));
+    if (!res.ok) return ack({ ok: false, error: res.error });
+    if (room.state !== "lobby" || player.id !== room.hostId) {
+      return ack({ ok: false, error: "The lobby changed — try again." });
+    }
+    room.customSet = res.info;
+    this.broadcastRoom(room);
+    ack({ ok: true, data: { set: res.info } });
+  }
+
   // ---------- category vote ----------
 
   protected beginGame(room: TriviaRoom): void {
     room.state = "voting";
     room.game = freshGame(room.game.fetchSeq + 1);
+    if (room.customSet && !room.isPublic) {
+      // Custom set: no category vote — "voting" is just a brief loading state.
+      this.broadcastRoom(room);
+      void this.loadCustomSetAndStart(room);
+      return;
+    }
+    room.customSet = null; // never let a stale pick leak into a public game
     this.broadcastRoom(room);
     void this.startVote(room);
+  }
+
+  /** Load the chosen set, re-authorizing against the CURRENT host; on any
+   *  failure fall back to the normal category vote so the game still starts. */
+  private async loadCustomSetAndStart(room: TriviaRoom): Promise<void> {
+    const game = room.game;
+    const seq = game.fetchSeq;
+    const chosen = room.customSet!;
+    const host = room.hostId ? room.players.get(room.hostId) : null;
+    const result = host?.userId
+      ? await loadAccessibleSet(host.userId, chosen.setId, room.settings.questionsPerGame)
+      : ({ ok: false, error: "The host isn't signed in." } as const);
+    if (!this.store.has(room.code) || room.state !== "voting" || game.fetchSeq !== seq) {
+      return;
+    }
+    if (!result.ok) {
+      room.customSet = null;
+      this.tnsp.to(room.code).emit("errorMsg", {
+        message: `Custom set unavailable (${result.error}) — falling back to a category vote.`,
+      });
+      this.broadcastRoom(room);
+      void this.startVote(room);
+      return;
+    }
+    room.customSet = result.info; // refresh the playable count shown to players
+    game.chosenCategory = { id: ANY_CATEGORY_ID, name: result.info.title };
+    room.state = "playing";
+    game.questions = result.questions;
+    game.qIndex = 0;
+    this.startQuestion(room);
   }
 
   private async startVote(room: TriviaRoom): Promise<void> {

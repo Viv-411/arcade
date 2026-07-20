@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import Icon, { type IconName } from "../components/Icon";
 
 const SOLO_COMING_SOON = [
-  { name: "Solo Trivia", icon: "target", blurb: "Practice runs on any question set." },
   { name: "Daily Challenge", icon: "calendar", blurb: "One puzzle a day, streaks included." },
 ] satisfies { name: string; icon: IconName; blurb: string }[];
 
@@ -77,6 +76,15 @@ export default function Home() {
 
       <h2 className="section-title"><Icon name="gamepad" /> Singleplayer</h2>
       <div className="game-grid">
+        <Link to="/solo/trivia" className="game-card active accent-yellow">
+          <div className="game-emoji"><Icon name="target" /></div>
+          <h2>Solo Trivia</h2>
+          <p>
+            Practice runs on any question set you own or that a friend shared with you.
+            Scores stay on your device — no leaderboards.
+          </p>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
+        </Link>
         {SOLO_COMING_SOON.map((g) => (
           <div key={g.name} className="game-card disabled">
             <div className="game-emoji"><Icon name={g.icon} /></div>

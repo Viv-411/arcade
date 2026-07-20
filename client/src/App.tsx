@@ -7,6 +7,7 @@ import AccountPage from "./pages/AccountPage";
 import FriendsPage from "./pages/FriendsPage";
 import MessagesPage from "./pages/MessagesPage";
 import SetsPage from "./pages/SetsPage";
+import SoloTriviaPage from "./pages/SoloTriviaPage";
 import ImposterChoicePage from "./pages/ImposterChoicePage";
 import ImposterLocalPage from "./pages/ImposterLocalPage";
 import ImposterOnlinePage from "./pages/ImposterOnlinePage";
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/sets" element={<SetsPage />} />
+          <Route path="/solo/trivia" element={<SoloTriviaPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </SocialProvider>

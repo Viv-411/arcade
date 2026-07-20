@@ -10,6 +10,7 @@ import { useJoinLinkOverride } from "../core/hooks";
 import GameEntry from "../components/GameEntry";
 import GameLobby from "../components/GameLobby";
 import VoteScreen from "../trivia/VoteScreen";
+import CustomSetPicker from "../trivia/CustomSetPicker";
 import QuestionScreen from "../trivia/QuestionScreen";
 import TriviaFinal from "../trivia/TriviaFinal";
 import Toasts from "../components/Toasts";
@@ -90,27 +91,52 @@ export default function TriviaPage() {
         room={room}
         playerId={state.playerId}
         joinPath="/trivia"
-        settingsLine={`${room.settings.questionsPerGame} questions · ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty} · up to ${TRIVIA_MAX_PLAYERS} players`}
+        settingsLine={
+          room.customSet
+            ? `${Math.min(room.customSet.questionCount, room.settings.questionsPerGame)} questions from "${room.customSet.title}" · ${room.settings.questionTimeSec}s each · up to ${TRIVIA_MAX_PLAYERS} players`
+            : `${room.settings.questionsPerGame} questions · ${room.settings.questionTimeSec}s each · difficulty: ${room.settings.difficulty} · up to ${TRIVIA_MAX_PLAYERS} players`
+        }
         minPlayers={TRIVIA_MIN_PLAYERS}
         maxPlayers={TRIVIA_MAX_PLAYERS}
         extras={
-          <label className="field difficulty-field">
-            <span>Difficulty {isHost ? "" : "(host chooses)"}</span>
-            <select
-              value={room.settings.difficulty}
-              disabled={!isHost}
-              onChange={(e) => actions.setDifficulty(e.target.value as TriviaDifficulty)}
-            >
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </label>
+          <>
+            <CustomSetPicker
+              isHost={isHost}
+              isPublic={room.isPublic}
+              customSet={room.customSet}
+              questionsPerGame={room.settings.questionsPerGame}
+              onPick={actions.setCustomSet}
+            />
+            {!room.customSet && (
+              <label className="field difficulty-field">
+                <span>Difficulty {isHost ? "" : "(host chooses)"}</span>
+                <select
+                  value={room.settings.difficulty}
+                  disabled={!isHost}
+                  onChange={(e) => actions.setDifficulty(e.target.value as TriviaDifficulty)}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+            )}
+          </>
         }
         onToggleReady={actions.toggleReady}
         onStart={actions.startGame}
         onLeave={actions.leaveRoom}
       />
+    );
+  } else if (room.state === "voting" && room.customSet) {
+    // Custom sets skip the vote entirely; "voting" is just the load window.
+    screen = (
+      <div className="panel vote-screen">
+        <h2 className="screen-title">Custom set</h2>
+        <p className="chosen-category">{room.customSet.title}</p>
+        <div className="spinner" />
+        <p className="hint">Loading questions…</p>
+      </div>
     );
   } else if (room.state === "voting") {
     screen = (

@@ -310,6 +310,11 @@ export default function SetsPage() {
                 by @{current.ownerUsername ?? "?"} · read-only
               </span>
             )}
+            {questions.length > 0 && (
+              <Link className="btn small" to={`/solo/trivia?set=${current.id}`}>
+                <Icon name="play" /> Play solo
+              </Link>
+            )}
           </div>
 
           {isOwner ? (
