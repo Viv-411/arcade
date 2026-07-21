@@ -84,7 +84,7 @@ function toOptions(raw: unknown): string[] {
 export async function listMySets(userId: string): Promise<SetSummary[]> {
   const { data, error } = await sb()
     .from("trivia_sets")
-    .select("id, title, description, category, owner_id, updated_at, questions(count)")
+    .select("id, title, description, category, owner_id, updated_at, questions!questions_set_id_fkey(count)")
     .eq("owner_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -104,7 +104,7 @@ export async function listSharedSets(userId: string): Promise<SetSummary[]> {
   const { data, error } = await sb()
     .from("trivia_set_shares")
     .select(
-      "set:trivia_sets(id, title, description, category, owner_id, updated_at, owner:profiles!trivia_sets_owner_id_fkey(username), questions(count))",
+      "set:trivia_sets(id, title, description, category, owner_id, updated_at, owner:profiles!trivia_sets_owner_id_fkey(username), questions!questions_set_id_fkey(count))",
     )
     .eq("shared_with", userId);
   if (error) throw new Error(error.message);
@@ -140,7 +140,7 @@ export async function getSet(setId: string): Promise<SetSummary | null> {
   const { data, error } = await sb()
     .from("trivia_sets")
     .select(
-      "id, title, description, category, owner_id, updated_at, owner:profiles!trivia_sets_owner_id_fkey(username), questions(count)",
+      "id, title, description, category, owner_id, updated_at, owner:profiles!trivia_sets_owner_id_fkey(username), questions!questions_set_id_fkey(count)",
     )
     .eq("id", setId)
     .maybeSingle();
