@@ -615,4 +615,23 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     a set for the recipient, and a full sweep asserting the guest NEVER
     receives correctIndex before the reveal). Harness gotcha: core
     `toggleReady`/`startGame` take NO ack callback — awaiting an ack on
-    them hangs forever.
+    them hangs forever. Also noted: `bidbattle.test.mjs` flaked at random
+    points across several runs on this machine under load; reproduced
+    identically on unmodified `main`, so it's a pre-existing timing
+    sensitivity in that test, not a regression — worth a look separately.
+
+27. **Fix ambiguous `questions` embed on /sets (2026-07-21)** — once
+    `source_set_id` (provenance FK, added in the sharing migration) was
+    live on the hosted DB, `questions` had TWO foreign keys into
+    `trivia_sets` (`set_id` and `source_set_id`), so PostgREST's bare
+    `questions(count)` embed in `client/src/sets/api.ts` became ambiguous
+    and `/sets` failed to load ("Could not embed because more than one
+    relationship was found for 'trivia_sets' and 'questions'"). Fixed by
+    qualifying all three call sites with the explicit relationship hint
+    `questions!questions_set_id_fkey(count)`. Lesson: any embed shorthand
+    on a table with more than one FK to the same target must name the
+    relationship explicitly, or it will break the moment a second FK
+    lands — even if it worked fine before that column existed. Also
+    cleaned up leftover test accounts/sets in the hosted DB from earlier
+    live-verification scratch runs (some got killed mid-script before
+    their cleanup ran).
