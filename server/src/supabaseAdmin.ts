@@ -9,8 +9,12 @@ let cached: SupabaseClient<Database> | null | undefined;
  * without checking authorization first. Returns null when not configured
  * (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY unset); callers must handle that.
  *
- * No server-side DB access exists yet — this is the sanctioned entry point
- * for future phases (e.g. loading a user's trivia set for a multiplayer game).
+ * This is the ONLY sanctioned service-role entry point. Current callers, each
+ * of which validates authorization ITSELF because RLS is bypassed here:
+ * - stats.ts — records finished games via record_game_result.
+ * - social/manager.ts — friendships, presence, and the deny-all chat tables.
+ * - trivia/customSets.ts — loads a host's custom set for a private lobby,
+ *   re-implementing the owner-or-share access rule in code.
  */
 export function getSupabaseAdmin(): SupabaseClient<Database> | null {
   if (cached !== undefined) return cached;

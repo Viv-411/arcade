@@ -15,8 +15,9 @@ before making changes.
 3. **Pushing:** commits go to `origin main` → https://github.com/Viv-411/arcade.
    Ask before pushing unless the user's request already says to push.
 4. **Verify before committing:** `npm run typecheck && npm test` (test builds and
-   plays full games of both titles over real sockets). Both games must pass — Mind
-   Meld must never regress when touching shared infra. CI runs the same on GitHub.
+   plays full games of all five titles over real sockets). Every game must pass —
+   Mind Meld must never regress when touching shared infra. CI runs the same on
+   GitHub.
 5. Games must remain **testable in two browser tabs** on one machine — player
    identity is per-tab (`sessionStorage`), never move it to `localStorage`.
 6. When adding features, keep the game-module seams clean (see Architecture): shared
@@ -262,6 +263,16 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   OpenTDB rate-limits, so tests stay deterministic in CI.
 - A stale server process on the test port once caused a phantom "no ack" failure —
   the orchestrator surfaces the EADDRINUSE crash in its server-log output.
+- **Don't set a speed-up setting so low that the test must win a race against the
+  server's own timer.** This caused the long-standing bidbattle flake (fixed
+  2026-07-31): `bidTurnSec: 3` had to cover a challenge-rejection plus several
+  raises in ONE turn (only a *successful* raise re-arms the timer), and
+  `reviewSec: 4` had to cover an 8-round-trip flag/defend/finalize exchange that
+  can never resolve early (the test deliberately leaves one item in the
+  non-terminal "ok" state). Both now sit at ~3x the needed margin. Keep any
+  `waitFor` timeout that waits on a full turn elapsing at >= 2x that setting.
+- Keep each file's `globalTimeout` BELOW the orchestrator's 150s per-file kill in
+  `tests/run.mjs`, or the nicer in-test message can never fire.
 - Manual UI check: two tabs on http://localhost:5173/<game> (per-tab identity).
 
 ## Environment / ops notes
@@ -303,8 +314,15 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 - Auto-start policy (2026-07-17): public lobbies auto-start ONLY when
   completely full, via a 15s countdown; otherwise host-start with all ready.
 - git: single `main`, remote origin = https://github.com/Viv-411/arcade, CI
-  green. The owner also maintains PROJECT_CONTEXT.md (their doc — keep in sync
-  when convenient but CLAUDE.md is the contributor source of truth).
+  green. As of 2026-07-31 `origin/main` is fully up to date — the custom
+  trivia sets work (3 commits) had sat unpushed for ten days, so the LIVE SITE
+  lacked /sets and /solo/trivia while the hosted DB already had their
+  migrations. If a feature seems missing in production, diff
+  `git log origin/main..HEAD` before debugging anything else.
+- PROJECT_CONTEXT.md was reconciled against the code on 2026-07-31 (it had
+  drifted badly: no Codewords, wrong auto-start rule, sets listed as
+  unbuilt). Both docs are now accurate; CLAUDE.md remains the contributor
+  source of truth and PROJECT_CONTEXT.md the "why" doc.
 - Owner preferences (standing): no AI attribution in commits; ask before push
   unless told; secrets shared in chat (Supabase keys, DB password) should be
   rotated by the owner someday — remind occasionally, don't nag.
@@ -635,3 +653,52 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     cleaned up leftover test accounts/sets in the hosted DB from earlier
     live-verification scratch runs (some got killed mid-script before
     their cleanup ran).
+
+28. **Ship the backlog + docs/flake cleanup (2026-07-31)** — a full read of
+    the codebase turned up one shipping problem and a pile of drift.
+    - **Pushed the 3 unpushed commits.** Sessions 25–27 had never reached
+      `origin/main`, so the deployed site had NO /sets and NO /solo/trivia
+      (its Solo Trivia card was still a "Coming soon" placeholder) even
+      though both sharing migrations were already applied to the hosted DB.
+      Verified by grepping the deployed JS bundle, not by assumption.
+    - **Fixed the bidbattle flake** (session 26 left it "worth a look").
+      Root cause was NOT a server bug: the test's speed-up settings were
+      tight enough that it had to win races against the server's own
+      timers. `bidTurnSec: 3` had to cover a challenge-rejection plus
+      several raises inside ONE turn (only a *successful* raise re-arms the
+      timer), and `reviewSec: 4` had to cover an ~8-round-trip
+      flag/defend/finalize exchange that can never resolve early, because
+      the test deliberately leaves item 3 in the non-terminal "ok" status.
+      Raised to 6s/10s (~3x margin), bumped the dependent `waitFor`
+      timeouts that were pinned at exactly one turn length, and lowered the
+      in-file `globalTimeout` to 140s so it fires BEFORE run.mjs's 150s
+      kill. Runtime 53s → 71s, measured over 3 runs each. Note plain CPU
+      load does NOT reproduce the flake (Node still gets scheduled), so
+      this was fixed by reading the timing structure, not by repro.
+    - **PROJECT_CONTEXT.md reconciled** — it was stuck at 2026-07-14: no
+      Codewords section at all, "all four games", the OLD auto-start rule
+      ("20s at 2+ players, instant at max" — wrong since 2026-07-17),
+      online Imposter described as typed-clues-only (it has a
+      typed/spoken host setting), and trivia sets listed as "only the
+      schema exists". Added §5.5 Codewords, the custom-sets rules, the
+      messages layer, the two Supabase access patterns (client-direct+RLS
+      vs service-role+in-code checks), the no-emoji/icon rule and design
+      system, and the newer gotchas.
+    - **Stale docstrings + README:** SetsPage/sets/api.ts no longer claim
+      gameplay is "a later phase"; supabaseAdmin.ts now lists its three
+      real callers instead of "no server-side DB access exists yet";
+      README's auth section had the WRONG verification method (said HS256
+      only, it's JWKS/ES256 with an HS256 fallback), plus "foundation
+      only", "all three games", and a stale test description.
+    - **Last emoji removed** from the UI path: Bid Battle's ballot label
+      was `"🎲 Random category"` on the SERVER. Label is now plain text and
+      the client draws `<Icon name="shuffle" />` off the existing
+      `kind === "random"` field — server strings that reach the screen are
+      subject to the no-emoji rule too.
+    - `shared/index.ts` was missing `codewords.ts` and `social.ts`; nothing
+      imports the barrel, but a half-populated one is a trap, so it's
+      complete now.
+    - Left alone deliberately: the `eslint-disable` comments in 5 files are
+      inert (no ESLint config or dep in the repo). Removing them is churn
+      and adding ESLint is a tooling decision for the owner — flagged, not
+      taken.

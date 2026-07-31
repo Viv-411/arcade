@@ -6,7 +6,7 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
  * Null when VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are unset — the whole
- * app (all three games, fully anonymous) works without Supabase configured;
+ * app (all five games, fully anonymous) works without Supabase configured;
  * only the login button degrades to a "not configured" notice.
  */
 export const supabase: SupabaseClient<Database> | null =

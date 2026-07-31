@@ -11,7 +11,7 @@ on the server; every game gets its own Socket.IO namespace (`/mindmeld`, `/trivi
 and its own client route, so adding a new game means adding one namespace module on
 the server and one route/module on the client — the home page is a grid of game cards.
 
-**Shared multiplayer infrastructure** (used by both games, not duplicated):
+**Shared multiplayer infrastructure** (used by all five games, not duplicated):
 
 - Server: `server/src/core/roomManager.ts` — a game-agnostic base class with room
   creation + 4-letter codes, join by code, Quick Play matchmaking, ready toggles,
@@ -307,8 +307,9 @@ npm start              # open http://localhost:3001
 npm run typecheck
 
 # End-to-end tests: builds, boots the server on a test port, and plays full
-# games of both Mind Meld and Speed Trivia (incl. a 10-player game) over real
-# sockets. `npm run test:only` skips the rebuild.
+# games of ALL FIVE titles over real sockets (six test files, including a
+# 10-player trivia game and the Codewords secrecy sweeps).
+# `npm run test:only` skips the rebuild.
 npm test
 ```
 
@@ -403,11 +404,11 @@ imposter count, category, hints, word steal (default on), typed vs spoken clues
 Categories come from the built-in word bank in `shared/imposterWords.ts` —
 user-uploaded category packs could reuse the accounts/DB foundation later.
 
-## User accounts (Supabase) — optional, foundation only
+## User accounts (Supabase) — optional, never required
 
 Accounts are built on Supabase (Auth + Postgres) and are **completely optional**: a
 logged-in user is just an anonymous player who additionally has an account. All
-three games work fully anonymously with zero configuration — if the Supabase env
+five games work fully anonymously with zero configuration — if the Supabase env
 vars are unset, the only difference is that the corner "Sign in" button explains
 auth isn't configured. **No game or feature is gated behind login**, and nothing
 will be without a deliberate future decision (a reusable `requireAuth()` gate is
@@ -547,15 +548,17 @@ What existed from phase 1:
   signup + login, "Continue with Google", and sign-out; shows your username when
   logged in. Session persists across refreshes (Supabase JS client).
 - **Server-side identity (optional everywhere):** Express middleware verifies the
-  Supabase access token (HS256 with `SUPABASE_JWT_SECRET`) and sets `req.userId` on
-  `/api` routes (`GET /api/me` returns it); every game namespace's Socket.IO
-  handshake reads an optional token into `socket.data.userId`. Missing/invalid
-  token = anonymous, always allowed.
+  Supabase access token and sets `req.userId` on `/api` routes (`GET /api/me`
+  returns it); every game namespace's Socket.IO handshake reads an optional token
+  into `socket.data.userId`. Verification uses **`jose`**: new Supabase projects
+  sign **ES256**, checked against the project's public JWKS endpoint (no secret
+  needed on our side), with an **HS256** `SUPABASE_JWT_SECRET` fallback for legacy
+  projects. Missing/invalid token = anonymous, always allowed — it never rejects.
 - **Database schema + RLS** (in `supabase/migrations/`): `profiles` (auto-created
   by a Postgres trigger on signup — chosen over a server call so profiles exist
-  even if the app server never sees the user), plus `trivia_sets` and `questions`
-  tables defined now so the schema is stable. **The trivia-set posting UI is a
-  later phase — this is schema only.**
+  even if the app server never sees the user), plus `trivia_sets`, `questions`,
+  `trivia_set_shares`, `player_stats`, `friendships`, and the server-only
+  `chats`/`chat_members`/`chat_messages` tables.
 
 ### Environment variables
 
@@ -665,17 +668,21 @@ not a code bug):**
 5. While your Google consent screen is in **"testing"** mode, only whitelisted
    test users can log in — add yourself, or publish the consent screen.
 
-### Notes for the later phases (why the schema looks like this)
+### Why the schema looks like this
 
 - `questions.options` and `questions.correct_index` are intentionally readable by
-  any client allowed to view the set: future **solo play will score client-side**.
+  any client allowed to view the set, because **solo play scores client-side**.
   That's fine for practice but **not cheat-proof** — solo results must never feed
-  a public/competitive leaderboard without server-side answer checking.
-- When solo mode is built, the trivia question card / answer buttons / reveal
-  should be extracted from `client/src/trivia/QuestionScreen.tsx` into shared
-  **presentational** components driven by either the existing socket engine or a
-  local solo controller — reuse the UI, not the networking. (No solo controller
-  exists in this phase.)
+  a public/competitive leaderboard without server-side answer checking, and today
+  they feed nothing at all.
+- Both of the above were built as planned: the question card / answer buttons /
+  reveal live in the purely presentational `client/src/trivia/QuestionCardView.tsx`,
+  driven either by the socket engine (multiplayer) or by the local controller in
+  `client/src/pages/SoloTriviaPage.tsx` — the UI is reused, the networking is not.
+- Multiplayer custom sets take the opposite path from solo: the server loads them
+  with the **service role** (other players in the lobby may have no access of their
+  own), so `server/src/trivia/customSets.ts` re-implements the owner-or-share rule
+  in code. Change the RLS rule and you must change that file to match.
 
 ## Deployment
 

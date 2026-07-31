@@ -2,8 +2,29 @@
 // delivery, review) and a 2v2 quick play match (mode pools, teams, forfeit).
 import { connect, emit, waitFor, assert, sleep, globalTimeout } from "./helpers.mjs";
 
-const timer = globalTimeout(170000, "bidbattle test");
-const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10, reviewSec: 4 };
+// Global timeout stays BELOW the orchestrator's 150s per-file kill in run.mjs,
+// so a hang reports this message instead of an opaque child-process timeout.
+const timer = globalTimeout(140000, "bidbattle test");
+
+/**
+ * Speed-up settings. Two of these are load-bearing and were the source of a
+ * long-standing flake, so don't shrink them back:
+ *
+ * - `bidTurnSec` bounds how long the test has to land a whole sequence of
+ *   round-trips inside ONE bid turn (challenge-rejection + several raises).
+ *   Only a *successful* raise re-arms the turn timer, so at 3s a loaded
+ *   machine could let the turn time out mid-sequence and the next raise would
+ *   be rejected with "not your team's turn" / "bidding has ended".
+ * - `reviewSec` bounds the flag/defend/finalize exchange. The 1v1 review
+ *   deliberately leaves item 3 unflagged, which is NOT a terminal status, so
+ *   `maybeResolveReviewEarly` never fires and the review always runs the full
+ *   clock — at 4s the last `finalizeFlag` could land after resolution and the
+ *   valid-count assertion would see the wrong number.
+ *
+ * Both now carry ~3x headroom. The cost is ~18s of extra wall time: measured
+ * 53s before, 71s after, against a 150s orchestrator budget.
+ */
+const FAST = { targetPoints: 1, bidTurnSec: 6, deliverySec: 30, categorySec: 10, reviewSec: 10 };
 
 // =========================== 1v1 private match ===========================
 {
@@ -55,10 +76,11 @@ const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10,
   const bid1 = await waitFor(a, "bidUpdate", () => true, 10000);
   assert(bid1.currentBid === 0 && !bid1.openingPassed, "bidding opened with no bid");
   const opener1 = bid1.turnTeam;
-  const passed = await waitFor(a, "bidUpdate", (p) => p.openingPassed, 6000);
+  // Each of these waits on a full bidTurnSec elapsing, so allow 2x that.
+  const passed = await waitFor(a, "bidUpdate", (p) => p.openingPassed, 15000);
   assert(passed.turnTeam !== opener1, "opener timeout passes the opening to the other team");
-  const ballot2 = waitFor(a, "categoryBallot", () => true, 8000);
-  const redrawMsg = waitFor(a, "errorMsg", (p) => /redraw/i.test(p.message), 8000);
+  const ballot2 = waitFor(a, "categoryBallot", () => true, 15000);
+  const redrawMsg = waitFor(a, "errorMsg", (p) => /redraw/i.test(p.message), 15000);
   await redrawMsg;
   await ballot2;
   assert(true, "double opening timeout awards no point and redraws the category");
@@ -211,7 +233,7 @@ const FAST = { targetPoints: 1, bidTurnSec: 3, deliverySec: 30, categorySec: 10,
   const resultP = waitFor(p1, "roundResult", () => true, 15000);
   const overP = waitFor(p1, "gameOver", () => true, 20000);
   d1.emit("finishDelivery");
-  const result = await resultP; // nobody flags; review times out at 4s
+  const result = await resultP; // nobody flags; review runs its full reviewSec
   assert(result.validCount === 1 && result.winnerTeam === end.deliveringTeam, "unflagged item counts — delivering team scores");
   const over = await overP;
   assert(over.winnerTeam === end.deliveringTeam, "2v2 match ends at 1 point");

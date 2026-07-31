@@ -1,12 +1,21 @@
 import { supabase } from "../auth/supabaseClient";
 
 /**
- * Data layer for custom trivia sets (content management only — gameplay
- * wiring is a later phase). Every call runs through the client's OWN
- * Supabase session, so Postgres RLS is the server-side authority:
- * owners read/write their sets, recipients of a trivia_set_shares row can
- * read (never write), and the anon key can touch nothing. No service-role
- * path exists for this feature.
+ * Data layer for custom trivia sets (content management + the reads that
+ * solo practice uses). Every call runs through the client's OWN Supabase
+ * session, so Postgres RLS is the server-side authority: owners read/write
+ * their sets, recipients of a trivia_set_shares row can read (never write),
+ * and the anon key can touch nothing. No service-role path exists here.
+ *
+ * NOTE: multiplayer is the exception — when a host picks a set for a private
+ * lobby, the SERVER loads it with the service role (other players may have no
+ * access of their own) and therefore re-implements the access rule in code.
+ * See server/src/trivia/customSets.ts; keep the two rules in agreement.
+ *
+ * Embed hint gotcha: `questions` has TWO foreign keys into trivia_sets
+ * (set_id and source_set_id), so every embed MUST name the relationship
+ * explicitly — `questions!questions_set_id_fkey(count)`. A bare
+ * `questions(count)` is ambiguous and fails at runtime.
  */
 
 export interface SetSummary {

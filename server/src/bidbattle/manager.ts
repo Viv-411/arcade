@@ -433,7 +433,8 @@ export class BidBattleManager extends BaseRoomManager<
       // Quick play: set categories only — auto-draw from the curated deck.
       this.chooseCategory(room, this.drawRandomCategory(room), "random");
     } else {
-      g.ballotOptions = [{ id: RANDOM_OPTION_ID, kind: "random", label: "🎲 Random category" }];
+      // Label stays plain text (no emoji — the client draws the icon from `kind`).
+      g.ballotOptions = [{ id: RANDOM_OPTION_ID, kind: "random", label: "Random category" }];
       g.categoryDeadline = Date.now() + room.settings.categorySec * 1000;
       this.broadcastRoom(room);
       this.bnsp.to(room.code).emit("categoryBallot", this.ballotPublic(room));

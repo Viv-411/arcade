@@ -27,9 +27,14 @@ import {
 } from "../sets/api";
 
 /**
- * Custom trivia sets — CONTENT LAYER ONLY (create/edit, share with friends,
- * copy-based composition). Gameplay wiring is the next phase. Everything here
- * requires login; anonymous play never touches this page.
+ * Custom trivia sets — the content layer: create/edit, share with friends,
+ * copy-based composition. Sets built here are playable two ways: a host can
+ * pick one in a PRIVATE Speed Trivia lobby (see trivia/CustomSetPicker), or
+ * anyone with access can practice at /solo/trivia?set=ID.
+ *
+ * Everything on this page requires login and runs through the user's OWN
+ * Supabase session, so RLS is the authority (no service-role path here);
+ * anonymous play never touches it.
  */
 export default function SetsPage() {
   const { configured, user, loading, openAuthModal } = useAuth();

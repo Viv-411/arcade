@@ -55,6 +55,7 @@ export default function CategoryScreen({ room, myVote, onSuggest, onVote }: Prop
               onClick={() => onVote(o.id)}
             >
               <span className="vote-name">
+                {o.kind === "random" && <><Icon name="shuffle" /> </>}
                 {o.label}
                 {o.suggestedBy && <span className="suggested-by"> — {o.suggestedBy}</span>}
               </span>
