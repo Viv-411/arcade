@@ -14,6 +14,7 @@ import { TRIVIA_MAX_PLAYERS } from "../../../shared/trivia.js";
 import { bidBattleModeSize } from "../../../shared/bidbattle.js";
 import { IMPOSTER_MAX_PLAYERS } from "../../../shared/imposter.js";
 import { CODEWORDS_REMOTE_MAX_PLAYERS } from "../../../shared/codewords.js";
+import { CHESS_MAX_PLAYERS } from "../../../shared/chess.js";
 import type { AnySocket } from "../core/roomManager.js";
 import { presence } from "../core/presence.js";
 import { getSupabaseAdmin } from "../supabaseAdmin.js";
@@ -608,7 +609,9 @@ export class SocialManager {
           ? TRIVIA_MAX_PLAYERS
           : game === "imposter"
             ? IMPOSTER_MAX_PLAYERS
-            : game === "codewords"
+            : game === "chess"
+            ? CHESS_MAX_PLAYERS
+          : game === "codewords"
               ? (room as { settings?: { mode?: string } }).settings?.mode === "board"
                 ? 0 // shared-board rooms only admit QR-token spymaster phones
                 : CODEWORDS_REMOTE_MAX_PLAYERS

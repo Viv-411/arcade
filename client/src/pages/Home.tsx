@@ -72,6 +72,16 @@ export default function Home() {
           </p>
           <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
+        <Link to="/chess" className="game-card active accent-mono">
+          <div className="game-emoji"><Icon name="crown" /></div>
+          <h2>Chess</h2>
+          <p>
+            Real chess with a real clock — every rule, from castling to en passant.
+            Play a friend online with a server-refereed board, or pass one device
+            back and forth.
+          </p>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
+        </Link>
       </div>
 
       <h2 className="section-title"><Icon name="gamepad" /> Singleplayer</h2>

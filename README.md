@@ -1,7 +1,8 @@
 # 🕹 Arcade
 
 A real-time multiplayer web arcade for party games: **Mind Meld** 🧠,
-**Speed Trivia** ⚡, **Bid Battle** 💰, **Imposter** 🕵️, and **Codewords** 🗝️.
+**Speed Trivia** ⚡, **Bid Battle** 💰, **Imposter** 🕵️, **Codewords** 🗝️, and
+**Chess** ♟.
 
 ## How it works
 
@@ -11,7 +12,7 @@ on the server; every game gets its own Socket.IO namespace (`/mindmeld`, `/trivi
 and its own client route, so adding a new game means adding one namespace module on
 the server and one route/module on the client — the home page is a grid of game cards.
 
-**Shared multiplayer infrastructure** (used by all five games, not duplicated):
+**Shared multiplayer infrastructure** (used by all six games, not duplicated):
 
 - Server: `server/src/core/roomManager.ts` — a game-agnostic base class with room
   creation + 4-letter codes, join by code, Quick Play matchmaking, ready toggles,
@@ -291,6 +292,100 @@ Implementation notes / decisions:
   only). Public remote lobbies follow the arcade-wide rule: auto-start only when
   completely full (teams and spymasters self-heal at launch if unset).
 
+## Chess — the rules
+
+Standard chess for two players, in two modes behind `/chess`:
+
+- **Online** (`/chess/online`, namespace `/chess`) — two devices, using the same
+  lobby/room/reconnection layer as every other game.
+- **On This Device** (`/chess/local`) — pass and play. Pure client-side React
+  with no server and no account, like Imposter's local mode.
+
+### Libraries (and why)
+
+Chess rules are famously easy to get *almost* right, so none of them are
+hand-written here:
+
+- **[chess.js](https://github.com/jhlywa/chess.js) v1.4** is the single source of
+  truth for legality and game state: legal move generation, check, checkmate,
+  stalemate, castling (both sides, with all its conditions), en passant, pawn
+  promotion, the fifty-move rule, threefold repetition, insufficient material,
+  and the rule that you may never leave your own king in check. **The server
+  runs its own chess.js instance and validates every move with it** — a client
+  claiming a move is legal counts for nothing.
+- **[react-chessboard](https://github.com/Clariity/react-chessboard) v4** draws
+  the board: piece images, drag-and-drop, coordinate labels. (v5 requires React
+  19 and this app is on React 18, so v4 is pinned deliberately.)
+- Sound effects are **synthesized with the Web Audio API**, not shipped as audio
+  files — no binary assets, no licensing questions, and it works offline.
+
+### What the server owns (online mode)
+
+The server is authoritative for **move legality, turn order, the clocks, and the
+result**. Clients render optimistically — your piece moves the instant you drop
+it — but the server's position always wins: it replies with the authoritative
+FEN and the client snaps back if they ever disagree.
+
+- **Clocks are server-side.** The server tracks each side's remaining
+  milliseconds, charges the mover for the time they used, pays the increment on
+  a completed move, and broadcasts the state. It re-broadcasts every 5s so a
+  long think (or a phone that went to sleep) can't drift the display. Clients
+  tick down locally from the moment an update *arrives*, which means the two
+  machines never need agreeing wall clocks.
+- **Timeouts are flagged by the server**, on a timer, whether or not anyone is
+  watching. Closing the tab does not pause your clock.
+- **Timeout with insufficient material is a draw, not a loss.** If your flag
+  falls but your opponent could not possibly checkmate you, the game is drawn
+  (FIDE 6.9). The question is whether mate is *possible*, not *forced*, so a
+  bare king, K+B and K+N are draws — but **K+N+N is a loss**, because two
+  knights can mate with cooperation.
+- **Disconnect ≠ resign.** A disconnected player's clock keeps running and the
+  board shows a "reconnecting" note; if they never come back their flag falls
+  and the present player wins on time. **Leaving** the room deliberately is
+  different — that ends the game immediately for the leaver.
+- **Reconnection** sends the whole game back: FEN, move history, whose turn,
+  both clocks with the elapsed time already applied, your colour, and any
+  pending draw offer. A refresh never ends the game or desyncs the clock.
+
+### Time controls
+
+Set before the game starts, by the host (online) or in setup (pass-and-play):
+presets for **Bullet 1+0**, **Blitz 3+2** and **5+0**, **Rapid 10+0** and
+**15+10**, plus **Unlimited** (no clock at all) and a custom base+increment
+entry. Quick Play only matches players who picked the **same** time control, so
+a bullet game never gets paired against a 15+10.
+
+You also pick **White / Black / Random** before starting, and a rematch swaps
+colours automatically.
+
+### Playing
+
+Drag a piece or tap it and then tap a destination — both work. Legal
+destinations show as dots (rings for captures), the last move and a king in
+check are highlighted, and a pawn reaching the back rank opens a Q/R/B/N picker.
+There's a SAN move list, captured-piece trays with a material count, a
+flip-board button, resign, and draw offer/accept/decline. In pass-and-play the
+board can auto-flip to whoever is to move (toggleable).
+
+### Deliberate choices and limits
+
+- **No computer opponent.** Both modes are human vs human; there is no engine
+  and no analysis. Adding one (e.g. Stockfish via WebAssembly) is a possible
+  future feature, not a missing piece of this one.
+- **Board themes and a sound toggle are per-viewer preferences** kept in
+  `localStorage`, so two players in the same game can each pick their own. A
+  **piece-set** chooser is not included — the board uses react-chessboard's
+  default pieces.
+- **In-memory, like every other game here: a server restart ends live games.**
+  There is no persistence, no saved PGN, and no game history beyond the room's
+  lifetime. Chess games are longer than the other titles, so this bites harder —
+  it's the same Redis-shaped tradeoff described under Deployment.
+- Draw offers are the only negotiation; there is no takeback.
+- Chess loads its libraries **lazily** (a ~200 kB chunk), so the other five
+  games don't pay for them on first load.
+- Time controls accept **fractional** base minutes on the wire so the test suite
+  can flag a clock in seconds; the UI only ever offers whole minutes.
+
 ## Running it
 
 ```bash
@@ -307,8 +402,9 @@ npm start              # open http://localhost:3001
 npm run typecheck
 
 # End-to-end tests: builds, boots the server on a test port, and plays full
-# games of ALL FIVE titles over real sockets (six test files, including a
-# 10-player trivia game and the Codewords secrecy sweeps).
+# games of ALL SIX titles over real sockets (seven test files, including a
+# 10-player trivia game, the Codewords secrecy sweeps, and a chess game where
+# the server flags a clock).
 # `npm run test:only` skips the rebuild.
 npm test
 ```
@@ -408,7 +504,7 @@ user-uploaded category packs could reuse the accounts/DB foundation later.
 
 Accounts are built on Supabase (Auth + Postgres) and are **completely optional**: a
 logged-in user is just an anonymous player who additionally has an account. All
-five games work fully anonymously with zero configuration — if the Supabase env
+six games work fully anonymously with zero configuration — if the Supabase env
 vars are unset, the only difference is that the corner "Sign in" button explains
 auth isn't configured. **No game or feature is gated behind login**, and nothing
 will be without a deliberate future decision (a reusable `requireAuth()` gate is

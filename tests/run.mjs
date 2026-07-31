@@ -17,6 +17,7 @@ const TESTS = [
   "bidbattle.test.mjs",
   "imposter.test.mjs",
   "codewords.test.mjs",
+  "chess.test.mjs",
 ];
 
 if (!existsSync(SERVER)) {

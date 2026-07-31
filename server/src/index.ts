@@ -13,6 +13,7 @@ import { BidBattleManager } from "./bidbattle/manager.js";
 import { TriviaManager } from "./trivia/manager.js";
 import { ImposterManager } from "./imposter/manager.js";
 import { CodewordsManager } from "./codewords/manager.js";
+import { ChessManager } from "./chess/manager.js";
 import { OpenTdbSource } from "./trivia/questionSource.js";
 import { InMemoryRoomStore } from "./store.js";
 import { createStatsStore } from "./stats.js";
@@ -80,6 +81,11 @@ const codewordsNsp = io.of("/codewords");
 codewordsNsp.use(socketOptionalAuth);
 new CodewordsManager(codewordsNsp as any, codewordsStore, stats);
 
+const chessStore = new InMemoryRoomStore<any>();
+const chessNsp = io.of("/chess");
+chessNsp.use(socketOptionalAuth);
+new ChessManager(chessNsp as any, chessStore, stats);
+
 // Presence + lobby invites for signed-in players (reads the same room stores
 // to validate invites; anonymous play never touches this namespace).
 new SocialManager(io.of("/social") as any, {
@@ -88,6 +94,7 @@ new SocialManager(io.of("/social") as any, {
   bidbattle: bidbattleStore,
   imposter: imposterStore,
   codewords: codewordsStore,
+  chess: chessStore,
 });
 
 app.get("/healthz", (_req, res) => {

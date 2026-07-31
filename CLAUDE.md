@@ -26,13 +26,15 @@ before making changes.
 
 ## What this project is
 
-A real-time multiplayer web arcade for party games, playable in the browser. Five
+A real-time multiplayer web arcade for party games, playable in the browser. Six
 games are live: **Mind Meld** 🧠 (2–4 players converge on the same word),
 **Speed Trivia** ⚡ (2–10 players race through multiple-choice questions),
 **Bid Battle** 💰 (team category-naming auction, exactly 1v1 or 2v2),
 **Imposter** 🕵️ (social deduction, 3–10 players online PLUS a fully client-side
 pass-and-play mode), and **Codewords** 🗝️ (two-team word-association deduction on
-a 5×5 grid, with a Remote mode and a Shared Board + QR-spymaster-phones mode).
+a 5×5 grid, with a Remote mode and a Shared Board + QR-spymaster-phones mode),
+and **Chess** ♟ (standard chess with server-authoritative clocks, online PLUS a
+pass-and-play mode).
 The README.md holds the full player-facing rules; this file holds contributor
 context.
 
@@ -74,6 +76,12 @@ build`, start `npm start`, `PORT` env respected.
                             Teams live on the game's own player type; per-team
                             visibility uses socket.io rooms `${code}#A`/`#B`.
                             categories.ts — curated category deck.
+/server/src/chess/          manager.ts — chess.js is the ONLY legality authority
+                            (it THROWS on illegal moves — always try/catch).
+                            Owns both clocks: charges the mover, pays the
+                            increment, arms an exact flag timer + a 5s resync
+                            broadcast. hasMatingMaterial() is exported for the
+                            test and implements the FIDE 6.9 flag rule.
 /server/src/codewords/      manager.ts — Codewords state machine (untimed clue ↔
                             guess turns; remote majority-vote reveals; board-mode
                             tap reveals + QR-token spymaster joins). wordBank.ts —
@@ -88,6 +96,12 @@ build`, start `npm start`, `PORT` env respected.
 /client/src/trivia/         useTrivia.ts + VoteScreen/QuestionScreen/TriviaFinal.
 /client/src/codewords/      useCodewords.ts (shared by three surfaces via distinct
                             gameKeys) + BoardGrid/CluePanel/ClueInput/CodewordsLobby.
+/client/src/chess/          useChessOnline.ts + ChessBoardView (react-chessboard v4;
+                            v5 needs React 19, we're on 18 — do NOT bump it),
+                            panels.tsx, GameControls.tsx, sounds.ts (Web Audio,
+                            no audio files), theme.ts. The three chess PAGES are
+                            lazy-loaded in App.tsx so the other games don't
+                            download chess.js + the board (~200 kB).
 /client/src/pages/          Home (game grid), MindMeldPage, TriviaPage — each game
                             page shows its own "How to play" on the entry screen.
                             Codewords has FOUR pages: choice, remote, board
@@ -142,6 +156,19 @@ scoring). Clients render optimistically but never decide results.
   Board-mode games record NO account stats (remote
   does). Word bank is ORIGINAL (wordBank.ts) — never import or imitate a
   published Codenames list, and never use the "Codenames" trademark in UI.
+- Chess: EXACTLY 2 players. Perfect information — unlike Imposter/Codewords
+  there is NOTHING to hide, so the snapshot carries the whole position and
+  there are no secrecy sweeps to keep passing. What IS load-bearing is
+  AUTHORITY: the server validates every move with chess.js (which THROWS on
+  illegal input — always try/catch), owns both clocks, and flags timeouts on
+  its own timer whether or not a client is watching. The client applies an
+  OPTIMISTIC position so the piece moves instantly, but discards it the moment
+  the server speaks. Flag rule: a timeout is a DRAW when the opponent can't
+  possibly mate (FIDE 6.9 asks about POSSIBLE, not forced, mate — so K+B and
+  K+N are draws but K+N+N is a loss). Disconnect ≠ resign (clock keeps
+  running, they can rejoin); LEAVING ends the game. playAgain swaps colours.
+  Base minutes are FRACTIONAL on the wire on purpose so tests can flag a clock
+  in seconds; the UI only offers whole minutes.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -245,6 +272,12 @@ unlock/re-lock, playAgain reset), full trivia flow (host-only difficulty, vote +
 early resolve, decoded questions, hidden correct answer, duplicate/late answer
 rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain),
 a 10-player trivia game (11th join rejected; Mind Meld still capped at 4),
+chess (server-side rejection of illegal/out-of-turn/not-your-piece moves,
+increment paid, castling, check, promotion incl. the captured piece, checkmate,
+rematch colour swap, resign, draw offer/decline/accept, reconnection restoring
+position + history + a still-running opponent clock, a real server-flagged
+timeout on a 3s clock, and the insufficient-material flag rule asserted
+directly against the exported hasMatingMaterial),
 Bid Battle 1v1 + 2v2 (ballot with custom approval, opener-timeout pass +
 double-timeout redraw, raise/challenge validation, dedup, team-only item
 visibility, full flag/defend/accept/uphold review math, forfeit on leave,
@@ -289,7 +322,7 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 
 ## Current state (update before every commit)
 
-- FIVE games live; deployed at https://arcade-1628.onrender.com (Render free
+- SIX games live; deployed at https://arcade-1628.onrender.com (Render free
   tier; owner-managed; a keep-alive GitHub workflow pings it). Local `.env`
   (gitignored) holds the owner's real Supabase keys — client env is baked at
   build time, server env read at runtime; Render has the same five vars set.
@@ -313,6 +346,11 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   notification bell (requests + invites + unread chats).
 - Auto-start policy (2026-07-17): public lobbies auto-start ONLY when
   completely full, via a 15s countdown; otherwise host-start with all ready.
+- Client deps now include chess.js 1.4 + react-chessboard 4.7 (chess only).
+  react-chessboard v5 requires React 19 and this app is on React 18 — v4 is
+  pinned deliberately; do not "upgrade" it without moving React first.
+- Home's game grid is six cards; accents are pink/yellow/green/cyan/red plus
+  chess's `--accent-mono` off-white.
 - git: single `main`, remote origin = https://github.com/Viv-411/arcade, CI
   green. As of 2026-07-31 `origin/main` is fully up to date — the custom
   trivia sets work (3 commits) had sat unpushed for ten days, so the LIVE SITE
@@ -352,6 +390,10 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
 
 - Home's Singleplayer section has ONE placeholder card left: Daily Challenge
   (Solo Trivia shipped 2026-07-19 at /solo/trivia).
+- Chess has NO computer opponent by design (see README). If one is ever added,
+  Stockfish via WebAssembly on the CLIENT is the obvious route — do not put an
+  engine in the game loop on the server, it's a single shared process.
+- Chess piece-set chooser (board themes + sound toggle already exist).
 - Custom trivia sets are DONE end to end (content layer at /sets + gameplay
   in private lobbies and solo).
 - User-uploaded Imposter category packs could reuse the accounts DB.
@@ -702,3 +744,41 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       inert (no ESLint config or dep in the repo). Removing them is churn
       and adding ESLint is a tooling decision for the owner — flagged, not
       taken.
+
+29. **Chess (sixth game, 2026-07-31)** — standard chess in two modes behind
+    `/chess`: Online (`/chess/online`, namespace `/chess`, on the shared room
+    core) and pass-and-play (`/chess/local`, pure React, no sockets — same
+    rule as Imposter's local mode, keep it that way).
+    - **Libraries, not hand-rolled rules.** chess.js 1.4 is the ONLY legality
+      authority on BOTH sides; react-chessboard 4.7 draws the board. Pinned to
+      v4 on purpose: **v5 requires React 19 and this app is React 18** — npm
+      refused the install, which is how the constraint surfaced. Sounds are
+      synthesized with the Web Audio API rather than shipped as audio files
+      (no binary assets, no licensing question, works offline).
+    - **chess.js v1 `move()` THROWS on an illegal move** (v0 returned null) —
+      every call site wraps it in try/catch. Also note `isDrawByFiftyMoves()`
+      exists in 1.4, so the draw reasons can be told apart properly.
+    - **Server owns legality, turn order, clocks, and results.** Clocks are
+      banked ms + `turnStartedAt`; the server charges the mover, pays the
+      increment, arms an EXACT flag timer, and re-broadcasts every 5s. The
+      client ticks down from when an update ARRIVED (never from a shared wall
+      clock), so client/server skew is a non-issue.
+    - **Flag rule:** timeout is a DRAW if the opponent can't possibly mate.
+      FIDE 6.9 is about POSSIBLE mate, not forced, so K+B and K+N draw but
+      K+N+N is a loss. chess.js's own isInsufficientMaterial() asks about BOTH
+      sides at once and is the wrong question — hence hasMatingMaterial().
+    - Optimistic client position (piece moves instantly) that is ALWAYS
+      discarded when the server speaks. Disconnect ≠ resign: the clock keeps
+      running and they can rejoin; leaving ends the game. playAgain swaps
+      colours.
+    - **The three chess pages are lazy-loaded** (`React.lazy` in App.tsx) —
+      the only lazy routes in the app. Without it the main bundle went
+      609 kB → 806 kB and every Mind Meld player paid for chess.js; with it
+      the main chunk is back to ~642 kB and chess is a separate ~147 kB chunk.
+    - `baseMinutes` is deliberately FRACTIONAL on the wire (a local
+      `clampFloat`, not the shared rounding `clamp`) so tests can flag a clock
+      in 3 seconds instead of a minute. The UI only offers whole minutes.
+    - Two test assertions I got wrong before the code: `Bxd1` really is legal
+      in that promotion line (it takes the new queen), and `liveClocks()`
+      already nets off elapsed time so a 3s clock reads 2999, not 3000. The
+      failures were the test's fault both times, not the server's.
