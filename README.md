@@ -381,8 +381,15 @@ board can auto-flip to whoever is to move (toggleable).
   lifetime. Chess games are longer than the other titles, so this bites harder —
   it's the same Redis-shaped tradeoff described under Deployment.
 - Draw offers are the only negotiation; there is no takeback.
-- Chess loads its libraries **lazily** (a ~200 kB chunk), so the other five
-  games don't pay for them on first load.
+- Chess loads its libraries **lazily** (a ~147 kB chunk), so the other five
+  games don't pay for them on first load. Hovering the Chess card on the home
+  page starts the download early, all three chess routes share one loading
+  boundary, and if the chunk fails (most likely because the site was redeployed
+  while your tab was open) it retries, then reloads once, then shows an error
+  with a Reload button rather than a dead screen.
+- Board coordinates are drawn **outside** the board rather than using
+  react-chessboard's built-in notation, which tints each label with one of the
+  two square colours and so nearly disappears on a themed board.
 - Time controls accept **fractional** base minutes on the wire so the test suite
   can flag a clock in seconds; the UI only ever offers whole minutes.
 

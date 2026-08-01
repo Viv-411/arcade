@@ -15,7 +15,7 @@ import { useChessOnline } from "../chess/useChessOnline";
 import { useJoinLinkOverride } from "../core/hooks";
 import ChessBoardView from "../chess/ChessBoardView";
 import { BoardPrefs, ColorPicker, TimeControlPicker } from "../chess/GameControls";
-import { CapturedTray, ClockView, END_REASON_TEXT, MoveList } from "../chess/panels";
+import { CapturedTray, ClockView, END_REASON_TEXT, MoveList } from "../chess/chessPanels";
 import { setSoundEnabled, soundEnabled } from "../chess/sounds";
 import { loadTheme, saveTheme, type BoardTheme } from "../chess/theme";
 import GameEntry from "../components/GameEntry";

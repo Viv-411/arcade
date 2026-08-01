@@ -41,6 +41,11 @@ const PROMOTION_CHOICES: { piece: string; label: string }[] = [
   { piece: "n", label: "Knight" },
 ];
 
+const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
+const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
+/** Width of the rank gutter (and height of the file gutter), in px. */
+const GUTTER = 18;
+
 const PROMO_GLYPH: Record<string, Record<string, string>> = {
   white: { q: "♕", r: "♖", b: "♗", n: "♘" },
   black: { q: "♛", r: "♜", b: "♝", n: "♞" },
@@ -191,47 +196,73 @@ export default function ChessBoardView({
 
   const promotingColor: ChessColor = turn === "w" ? "white" : "black";
 
-  return (
-    <div className="chess-board-wrap" style={{ width: boardWidth }}>
-      <Chessboard
-        id="arcade-chess"
-        position={fen}
-        boardWidth={boardWidth}
-        boardOrientation={orientation}
-        onPieceDrop={onPieceDrop}
-        onSquareClick={onSquareClick}
-        isDraggablePiece={({ sourceSquare }) => isOwnMovablePiece(sourceSquare)}
-        arePiecesDraggable={canMoveNow}
-        customSquareStyles={squareStyles}
-        customLightSquareStyle={{ backgroundColor: theme.light }}
-        customDarkSquareStyle={{ backgroundColor: theme.dark }}
-        customBoardStyle={{ borderRadius: "6px", boxShadow: "0 10px 30px rgba(0,0,0,0.45)" }}
-        animationDuration={180}
-        showBoardNotation
-      />
+  // Files/ranks in board order for the current orientation.
+  const files = orientation === "white" ? FILES : [...FILES].reverse();
+  const ranks = orientation === "white" ? RANKS : [...RANKS].reverse();
 
-      {pending && (
-        <div className="chess-promo-overlay" role="dialog" aria-label="Choose promotion piece">
-          <div className="chess-promo-panel">
-            <p className="chess-promo-title">Promote to</p>
-            <div className="chess-promo-choices">
-              {PROMOTION_CHOICES.map((c) => (
-                <button
-                  key={c.piece}
-                  className="chess-promo-btn"
-                  onClick={() => choosePromotion(c.piece)}
-                  aria-label={c.label}
-                >
-                  <span className={`chess-promo-glyph ${promotingColor}`}>
-                    {PROMO_GLYPH[promotingColor][c.piece]}
-                  </span>
-                  <span className="chess-promo-label">{c.label}</span>
-                </button>
-              ))}
+  return (
+    <div className="chess-board-outer" style={{ width: boardWidth + GUTTER }}>
+      {/* Coordinates are rendered HERE rather than by react-chessboard: its
+          built-in notation paints each label in one of the two SQUARE colours
+          by a parity rule, so on a themed board they sit at very low contrast
+          against the square they're on (and crowd the corner square, which
+          draws both a rank and a file). In the gutter they're always legible
+          and can't collide with a piece. */}
+      <div className="chess-ranks" style={{ height: boardWidth }} aria-hidden="true">
+        {ranks.map((r) => (
+          <span key={r}>{r}</span>
+        ))}
+      </div>
+
+      <div className="chess-board-wrap" style={{ width: boardWidth }}>
+        <Chessboard
+          id="arcade-chess"
+          position={fen}
+          boardWidth={boardWidth}
+          boardOrientation={orientation}
+          onPieceDrop={onPieceDrop}
+          onSquareClick={onSquareClick}
+          isDraggablePiece={({ sourceSquare }) => isOwnMovablePiece(sourceSquare)}
+          arePiecesDraggable={canMoveNow}
+          customSquareStyles={squareStyles}
+          customLightSquareStyle={{ backgroundColor: theme.light }}
+          customDarkSquareStyle={{ backgroundColor: theme.dark }}
+          customBoardStyle={{ borderRadius: "6px", boxShadow: "0 10px 30px rgba(0,0,0,0.45)" }}
+          animationDuration={180}
+          showBoardNotation={false}
+        />
+
+        {pending && (
+          <div className="chess-promo-overlay" role="dialog" aria-label="Choose promotion piece">
+            <div className="chess-promo-panel">
+              <p className="chess-promo-title">Promote to</p>
+              <div className="chess-promo-choices">
+                {PROMOTION_CHOICES.map((c) => (
+                  <button
+                    key={c.piece}
+                    className="chess-promo-btn"
+                    onClick={() => choosePromotion(c.piece)}
+                    aria-label={c.label}
+                  >
+                    <span className={`chess-promo-glyph ${promotingColor}`}>
+                      {PROMO_GLYPH[promotingColor][c.piece]}
+                    </span>
+                    <span className="chess-promo-label">{c.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Corner spacer keeps the file letters aligned under the board. */}
+      <div className="chess-corner" aria-hidden="true" />
+      <div className="chess-files" style={{ width: boardWidth }} aria-hidden="true">
+        {files.map((f) => (
+          <span key={f}>{f}</span>
+        ))}
+      </div>
     </div>
   );
 }

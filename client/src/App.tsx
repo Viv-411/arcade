@@ -1,5 +1,4 @@
-import { Suspense, lazy } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Outlet, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import MindMeldPage from "./pages/MindMeldPage";
 import TriviaPage from "./pages/TriviaPage";
@@ -20,25 +19,15 @@ import { AuthProvider } from "./auth/AuthContext";
 import AuthButton from "./auth/AuthButton";
 import { SocialProvider } from "./social/SocialContext";
 import NotificationBell from "./social/NotificationBell";
+import {
+  ChessChoicePage,
+  ChessLocalPage,
+  ChessOnlinePage,
+  ChessRouteFrame,
+} from "./chess/lazyChess";
 
-// Chess pulls in chess.js + react-chessboard (~200 kB), which nobody playing
-// the other five games should have to download. These three routes are the
-// ONLY lazy ones — everything above stays eagerly bundled as before.
-const ChessChoicePage = lazy(() => import("./pages/ChessChoicePage"));
-const ChessOnlinePage = lazy(() => import("./pages/ChessOnlinePage"));
-const ChessLocalPage = lazy(() => import("./pages/ChessLocalPage"));
-
-function PageLoading() {
-  return (
-    <div className="page">
-      <div className="panel" style={{ textAlign: "center" }}>
-        <div className="spinner" />
-        <p>Loading…</p>
-      </div>
-    </div>
-  );
-}
-
+// Chess is the only code-split route group; see chess/lazyChess for why and
+// for how stale-chunk failures are handled.
 export default function App() {
   return (
     <AuthProvider>
@@ -59,30 +48,19 @@ export default function App() {
           <Route path="/codewords/remote" element={<CodewordsRemotePage />} />
           <Route path="/codewords/board" element={<CodewordsBoardPage />} />
           <Route path="/codewords/key" element={<CodewordsKeyPage />} />
+          {/* One Suspense + error boundary for the whole group, so moving
+              between the chess pages never re-shows a loading state. */}
           <Route
-            path="/chess"
             element={
-              <Suspense fallback={<PageLoading />}>
-                <ChessChoicePage />
-              </Suspense>
+              <ChessRouteFrame>
+                <Outlet />
+              </ChessRouteFrame>
             }
-          />
-          <Route
-            path="/chess/online"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <ChessOnlinePage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/chess/local"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <ChessLocalPage />
-              </Suspense>
-            }
-          />
+          >
+            <Route path="/chess" element={<ChessChoicePage />} />
+            <Route path="/chess/online" element={<ChessOnlinePage />} />
+            <Route path="/chess/local" element={<ChessLocalPage />} />
+          </Route>
           <Route path="/account" element={<AccountPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/messages" element={<MessagesPage />} />

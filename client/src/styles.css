@@ -2773,9 +2773,72 @@ select:focus {
   gap: 12px;
 }
 
+/* Board + coordinate gutters. react-chessboard's built-in notation paints
+   labels in one of the two SQUARE colours by a parity rule, which reads as
+   near-invisible on a themed board and crowds the corner square; we render our
+   own outside the board instead (showBoardNotation={false}). */
+.chess-board-outer {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  justify-content: start;
+  column-gap: 2px;
+}
+
 .chess-board-wrap {
   position: relative;
   line-height: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.chess-ranks,
+.chess-files {
+  display: flex;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Each label centres on its own rank/file by taking an equal share. */
+.chess-ranks {
+  grid-column: 1;
+  grid-row: 1;
+  flex-direction: column;
+  width: 16px;
+}
+.chess-ranks span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chess-corner {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.chess-files {
+  grid-column: 2;
+  grid-row: 2;
+  flex-direction: row;
+  height: 16px;
+}
+.chess-files span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+}
+
+.chess-loading {
+  text-align: center;
 }
 
 /* ---- player bars: name, captured pieces, clock ---- */

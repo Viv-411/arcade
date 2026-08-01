@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Icon, { type IconName } from "../components/Icon";
+import { preloadChess } from "../chess/lazyChess";
 
 const SOLO_COMING_SOON = [
   { name: "Daily Challenge", icon: "calendar", blurb: "One puzzle a day, streaks included." },
@@ -72,7 +73,15 @@ export default function Home() {
           </p>
           <span className="badge play-badge"><Icon name="play" /> Play now</span>
         </Link>
-        <Link to="/chess" className="game-card active accent-mono">
+        {/* Chess is code-split; the handlers start fetching it on intent so
+            the board is usually already there by the time the tap lands. */}
+        <Link
+          to="/chess"
+          className="game-card active accent-mono"
+          onMouseEnter={preloadChess}
+          onTouchStart={preloadChess}
+          onFocus={preloadChess}
+        >
           <div className="game-emoji"><Icon name="crown" /></div>
           <h2>Chess</h2>
           <p>

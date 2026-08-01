@@ -98,10 +98,13 @@ build`, start `npm start`, `PORT` env respected.
                             gameKeys) + BoardGrid/CluePanel/ClueInput/CodewordsLobby.
 /client/src/chess/          useChessOnline.ts + ChessBoardView (react-chessboard v4;
                             v5 needs React 19, we're on 18 — do NOT bump it),
-                            panels.tsx, GameControls.tsx, sounds.ts (Web Audio,
-                            no audio files), theme.ts. The three chess PAGES are
-                            lazy-loaded in App.tsx so the other games don't
-                            download chess.js + the board (~200 kB).
+                            chessPanels.tsx, GameControls.tsx, sounds.ts (Web
+                            Audio, no audio files), theme.ts, lazyChess.tsx.
+                            The three chess PAGES are the ONLY lazy routes;
+                            lazyChess owns the loaders, the retry/stale-chunk
+                            recovery, the error boundary, and preloadChess().
+                            Board coordinates are drawn by US in gutters, not
+                            by react-chessboard (see the gotcha below).
 /client/src/pages/          Home (game grid), MindMeldPage, TriviaPage — each game
                             page shows its own "How to play" on the entry screen.
                             Codewords has FOUR pages: choice, remote, board
@@ -307,6 +310,13 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 - Keep each file's `globalTimeout` BELOW the orchestrator's 150s per-file kill in
   `tests/run.mjs`, or the nicer in-test message can never fire.
 - Manual UI check: two tabs on http://localhost:5173/<game> (per-tab identity).
+- **Do NOT add `build.rollupOptions.output.manualChunks` for the chess split.**
+  It looks like an improvement (a nicely named chunk) but Vite then emits a
+  `<link rel="modulepreload">` for that chunk in index.html, so EVERY visitor
+  downloads chess up front and the lazy route stops saving anything. Verified
+  both ways: with manualChunks index.html preloads it, without it there are no
+  preload links at all. If you touch the split, check `client/dist/index.html`
+  for modulepreload lines and grep the main chunk for `Chessboard`.
 
 ## Environment / ops notes
 
@@ -782,3 +792,31 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       in that promotion line (it takes the new queen), and `liveClocks()`
       already nets off elapsed time so a 3s clock reads 2999, not 3000. The
       failures were the test's fault both times, not the server's.
+
+30. **Chess follow-ups: lazy-load hardening + board coordinates (2026-07-31)**
+    — owner feedback after playing the committed version.
+    - **Lazy loading.** Verified first that the split itself was working (no
+      chess code in the main chunk), so the problems were robustness, not
+      correctness. Fixed: all three chess routes now share ONE Suspense +
+      error boundary via a react-router layout route with `<Outlet/>` (was
+      three separate boundaries, which re-flashed a loading state when moving
+      between chess pages); dynamic imports retry once and then do a single
+      SESSION-GUARDED page reload, because content-hashed chunk URLs 404 for
+      any tab left open across a redeploy and previously that dead-ended with
+      no recovery; a real error boundary with a Reload button replaces the
+      blank screen; and hovering/touching the Home card calls `preloadChess()`
+      so the chunk is usually already fetched by the time the tap lands.
+    - **A `manualChunks` entry was tried and REVERTED** — see the testing
+      gotcha above. It produced a nicely named chunk but made Vite
+      modulepreload it from index.html, i.e. every visitor downloaded chess on
+      first load. The legible chunk name came instead from renaming
+      `panels.tsx` → `chessPanels.tsx` (Rollup names the shared chunk after
+      that module), which has no such side effect.
+    - **Board coordinates.** react-chessboard's `showBoardNotation` paints
+      each label in one of the two SQUARE colours by a parity rule, so on a
+      themed board they sit at very low contrast on the square they occupy,
+      and the corner square draws BOTH a rank and a file on top of each other.
+      Now `showBoardNotation={false}` and we render ranks/files ourselves in
+      gutters outside the board (`.chess-board-outer` grid), in `--muted`,
+      orientation-aware, so they can never collide with a piece or blend into
+      a square.

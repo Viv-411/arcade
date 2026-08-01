@@ -16,7 +16,7 @@ import {
 } from "@shared/chess";
 import ChessBoardView from "../chess/ChessBoardView";
 import { BoardPrefs, ColorPicker, TimeControlPicker } from "../chess/GameControls";
-import { CapturedTray, ClockView, END_REASON_TEXT, MoveList } from "../chess/panels";
+import { CapturedTray, ClockView, END_REASON_TEXT, MoveList } from "../chess/chessPanels";
 import { playChessSound, setSoundEnabled, soundEnabled, soundForMove } from "../chess/sounds";
 import { loadTheme, saveTheme, type BoardTheme } from "../chess/theme";
 import Icon from "../components/Icon";
