@@ -39,44 +39,57 @@ export function ClockView({
 
 // --------------------------- captured pieces ---------------------------
 
+const CAPTURE_ORDER: Record<string, number> = { q: 0, r: 1, b: 2, n: 3, p: 4 };
+
 /**
- * Captured material for one side, derived from the position rather than the
- * move list so it stays correct after a rejoin (where we may not have every
- * move locally). `color` is the side whose LOSSES are shown.
+ * Pieces captured BY `color`, taken from the MOVE LIST.
+ *
+ * Deriving this from the board instead (start-count minus on-board-count) is
+ * wrong the moment anyone promotes: the promoted pawn reads as a lost pawn, so
+ * the opponent's tray sprouts a phantom capture and the material count is off.
+ * The move list records each capture exactly and survives a rejoin, because
+ * the server ships the full history in its snapshot.
  */
-export function capturedFrom(fen: string, color: ChessColor): string[] {
-  const START: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
-  const short = color === "white" ? "w" : "b";
-  const onBoard: Record<string, number> = { p: 0, n: 0, b: 0, r: 0, q: 0 };
-  let board;
-  try {
-    board = new Chess(fen).board();
-  } catch {
-    return [];
-  }
-  for (const row of board) {
-    for (const sq of row) {
-      if (sq && sq.color === short && sq.type in onBoard) onBoard[sq.type] += 1;
-    }
-  }
-  const lost: string[] = [];
-  for (const type of ["q", "r", "b", "n", "p"]) {
-    const missing = (START[type] ?? 0) - (onBoard[type] ?? 0);
-    for (let i = 0; i < missing; i++) lost.push(type);
-  }
-  return lost;
+export function capturedBy(moves: ChessMoveInfo[], color: ChessColor): string[] {
+  return moves
+    .filter((m) => m.color === color && m.captured)
+    .map((m) => m.captured as string)
+    .sort((a, b) => (CAPTURE_ORDER[a] ?? 9) - (CAPTURE_ORDER[b] ?? 9));
 }
 
+/**
+ * Material difference from the pieces actually ON the board (positive = white
+ * ahead). Counting real pieces is promotion-proof: a new queen is simply worth
+ * a queen.
+ */
 export function materialScore(fen: string): number {
-  const white = capturedFrom(fen, "white").reduce((n, p) => n + (PIECE_VALUE[p] ?? 0), 0);
-  const black = capturedFrom(fen, "black").reduce((n, p) => n + (PIECE_VALUE[p] ?? 0), 0);
-  return black - white; // positive = white is up material
+  let score = 0;
+  try {
+    for (const row of new Chess(fen).board()) {
+      for (const sq of row) {
+        if (!sq) continue;
+        const value = PIECE_VALUE[sq.type] ?? 0;
+        score += sq.color === "w" ? value : -value;
+      }
+    }
+  } catch {
+    return 0;
+  }
+  return score;
 }
 
-export function CapturedTray({ fen, color }: { fen: string; color: ChessColor }) {
-  // Pieces captured BY `color` are the opponent's losses.
+export function CapturedTray({
+  fen,
+  moves,
+  color,
+}: {
+  fen: string;
+  moves: ChessMoveInfo[];
+  color: ChessColor;
+}) {
+  // The tray shows what THIS player has taken off the board.
   const opponent: ChessColor = color === "white" ? "black" : "white";
-  const pieces = capturedFrom(fen, opponent);
+  const pieces = capturedBy(moves, color);
   const score = materialScore(fen);
   const advantage = color === "white" ? score : -score;
   return (

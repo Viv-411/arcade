@@ -310,6 +310,10 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 - Keep each file's `globalTimeout` BELOW the orchestrator's 150s per-file kill in
   `tests/run.mjs`, or the nicer in-test message can never fire.
 - Manual UI check: two tabs on http://localhost:5173/<game> (per-tab identity).
+  The Claude-in-Chrome extension DOES work here (see the ops note); driving the
+  real UI caught three things the socket tests structurally cannot — a layout
+  wrap, a CSS flex-direction inherit, and a material-count bug. Budget a
+  browser pass for anything visual.
 - **Do NOT add `build.rollupOptions.output.manualChunks` for the chess split.**
   It looks like an improvement (a nicely named chunk) but Vite then emits a
   `<link rel="modulepreload">` for that chunk in index.html, so EVERY visitor
@@ -327,8 +331,14 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 - The trivia smoke test hits the real OpenTDB API; first fetch after server start can
   queue ~10s behind the startup warm-up (rate-limit throttle). Offline, the built-in
   question fallback keeps games working.
-- Browser automation: the Claude-in-Chrome extension has not been connectable in this
-  environment; open tabs with macOS `open <url>` instead.
+- Browser automation: the Claude-in-Chrome extension DOES work (verified
+  2026-08-01). Earlier sessions recorded it as "not connectable", but the real
+  cause was simply that no Chrome instance was paired: the extension was
+  installed and enabled, and `list_connected_browsers` returned `[]`. Fix is
+  owner-side — be signed into claude.ai in Chrome with the SAME account as
+  Claude Code, then open the extension. After that, `list_connected_browsers`
+  → `select_browser` → drive it. Serve a real build (`npm run build`, then
+  `PORT=3199 node dist/server/src/index.js`) so lazy chunks are exercised.
 
 ## Current state (update before every commit)
 
@@ -820,3 +830,34 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       gutters outside the board (`.chess-board-outer` grid), in `--muted`,
       orientation-aware, so they can never collide with a piece or blend into
       a square.
+
+31. **First real browser pass — three UI bugs found and fixed (2026-08-01)**
+    — the Claude-in-Chrome extension turned out to work all along (the old
+    "not connectable" note was wrong; nothing was ever PAIRED). Drove the real
+    built app on :3199 and played through every game. Three defects that the
+    socket suite structurally cannot catch:
+    - **The in-game chess screen wrapped.** The shared `.page` caps content at
+      720px, but a board (~500px) plus the move-list panel (250px min) needs
+      ~760px, so the panel wrapped under the board and pushed the controls
+      off-screen. Added `.page.chess-playing { max-width: 1120px }` and put
+      that class ONLY on the two in-game screens, so entry/setup/lobby keep the
+      standard column width and no other game is touched.
+    - **`.chess-toggle-field` inherited `flex-direction: column`** from the
+      global `.field`, so the auto-flip label sat centred above its switch
+      instead of beside it. Needed an explicit `flex-direction: row`. (Same
+      family as the known global `input { width: 100% }` trap — assume `.field`
+      fights you whenever you put controls on one row.)
+    - **Captured-piece trays and material count were wrong after a
+      promotion.** They inferred captures as start-count minus on-board-count,
+      so a promoted pawn read as a LOST pawn: the opponent's tray sprouted a
+      phantom captured pawn and the advantage number was understated. Now the
+      tray comes from the MOVE LIST (`capturedBy`, exact and promotion-proof,
+      and the server ships full history so it survives a rejoin) and the
+      advantage sums the pieces actually ON the board. Verified by promoting
+      to a queen and reading +16, which matches a hand count (47 vs 31).
+    Everything else verified live: legal-move dots, castling, the promotion
+    picker honouring Rook vs Queen, clocks switching and ticking, online
+    lobby + join-link + ready sync + bidirectional move sync + board flip for
+    Black + orientation-aware coordinates + resign showing "you win"/"you
+    lose" on the right sides, a full 2-tab Mind Meld game to a win with stats
+    credited, and every other game's pages rendering with ZERO console errors.

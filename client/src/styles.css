@@ -2748,6 +2748,14 @@ select:focus {
   --accent-glow: rgba(232, 228, 216, 0.24);
 }
 
+/* The shared `.page` caps content at 720px, which is narrower than a board
+   (~500px) plus the move-list panel (250px min) — so the panel wrapped under
+   the board and pushed the controls off-screen. Widen ONLY the in-game chess
+   screens; the entry/setup/lobby screens keep the standard column width. */
+.page.chess-playing {
+  max-width: 1120px;
+}
+
 /* ---- layout: board on the left, panels on the right ---- */
 .chess-layout {
   display: flex;
@@ -3085,8 +3093,10 @@ select:focus {
   align-items: center;
 }
 
+/* .field is column-flex by default; this one is a label + switch on one row. */
 .chess-toggle-field {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 10px;

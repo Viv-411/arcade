@@ -272,7 +272,7 @@ export default function ChessLocalPage() {
 
   // ------------------------------- game screen -------------------------------
   return (
-    <div className="page chess">
+    <div className="page chess chess-playing">
       <header className="mm-header">
         <Link to="/chess" className="back-link">
           ← Chess
@@ -288,7 +288,7 @@ export default function ChessLocalPage() {
             <div className="chess-player-info">
               <span className={`chess-color-dot ${topColor}`} />
               <strong>{nameFor(topColor)}</strong>
-              <CapturedTray fen={fen} color={topColor} />
+              <CapturedTray fen={fen} moves={moves} color={topColor} />
             </div>
             {timed && (
               <ClockView
@@ -312,7 +312,7 @@ export default function ChessLocalPage() {
             <div className="chess-player-info">
               <span className={`chess-color-dot ${orientation}`} />
               <strong>{nameFor(orientation)}</strong>
-              <CapturedTray fen={fen} color={orientation} />
+              <CapturedTray fen={fen} moves={moves} color={orientation} />
             </div>
             {timed && (
               <ClockView

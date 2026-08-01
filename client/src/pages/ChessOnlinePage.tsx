@@ -9,6 +9,7 @@ import {
   otherChessColor,
   type ChessColor,
   type ChessColorPref,
+  type ChessMoveInfo,
   type ChessTimeControl,
 } from "@shared/chess";
 import { useChessOnline } from "../chess/useChessOnline";
@@ -183,7 +184,7 @@ export default function ChessOnlinePage() {
   };
 
   return (
-    <div className="page chess">
+    <div className="page chess chess-playing">
       <Header />
       <div className="chess-layout">
         <div className="chess-main">
@@ -192,6 +193,7 @@ export default function ChessOnlinePage() {
             name={nameOf(topColor)}
             connected={connectedOf(topColor)}
             fen={state.fen}
+            moves={room.moves}
             ms={topColor === "white" ? clocks?.whiteMs : clocks?.blackMs}
             active={clocks?.running === topColor}
             timed={timed}
@@ -211,6 +213,7 @@ export default function ChessOnlinePage() {
             name={nameOf(orientation)}
             connected={connectedOf(orientation)}
             fen={state.fen}
+            moves={room.moves}
             ms={orientation === "white" ? clocks?.whiteMs : clocks?.blackMs}
             active={clocks?.running === orientation}
             timed={timed}
@@ -322,6 +325,7 @@ function PlayerBar({
   name,
   connected,
   fen,
+  moves,
   ms,
   active,
   timed,
@@ -330,6 +334,7 @@ function PlayerBar({
   name: string;
   connected: boolean;
   fen: string;
+  moves: ChessMoveInfo[];
   ms: number | undefined;
   active: boolean;
   timed: boolean;
@@ -340,7 +345,7 @@ function PlayerBar({
         <span className={`chess-color-dot ${color}`} />
         <strong className={connected ? "" : "disconnected"}>{name}</strong>
         {!connected && <span className="dot off" title="Disconnected" />}
-        <CapturedTray fen={fen} color={color} />
+        <CapturedTray fen={fen} moves={moves} color={color} />
       </div>
       {timed && <ClockView ms={ms ?? 0} active={active} label={name} />}
     </div>
