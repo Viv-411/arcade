@@ -12,6 +12,13 @@
 > UI/icon passes, and the trivia-sets feature. Coding continues in Claude Code
 > against `CLAUDE.md`; research, docs, dashboard work, and context upkeep run
 > through Cowork.
+>
+> **Update 2026-10-26:** a **sixth** game, **Chess** (online with server-owned clocks +
+> pass-and-play), shipped 2026-07-31 after this reconciliation; it has no section here
+> yet — `CLAUDE.md` (rules + gotchas) and `README.md` (player rules) cover it. Deps were
+> refreshed the same day (React Router 7, Vite 6.4, Node ≥20.12; 0 audit findings), and
+> the hosted Supabase project was found paused (free-tier idle pause; owner restores it
+> from the dashboard).
 
 ---
 
@@ -377,7 +384,7 @@ second, 7 bystanders, 1 assassin. Spymasters give one-word clues; operatives gue
 - **No Claude / AI attribution in commit messages** (owner requirement — sole
   authorship). Keep `CLAUDE.md`'s "Current state" + "Session history" updated in the same
   commit as the change.
-- Verify before committing: `npm run typecheck && npm test` (all five titles must pass
+- Verify before committing: `npm run typecheck && npm test` (all six titles must pass
   over real sockets).
 
 ## 10. Known gotchas

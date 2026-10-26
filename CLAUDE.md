@@ -15,7 +15,7 @@ before making changes.
 3. **Pushing:** commits go to `origin main` → https://github.com/Viv-411/arcade.
    Ask before pushing unless the user's request already says to push.
 4. **Verify before committing:** `npm run typecheck && npm test` (test builds and
-   plays full games of all five titles over real sockets). Every game must pass —
+   plays full games of all six titles over real sockets). Every game must pass —
    Mind Meld must never regress when touching shared infra. CI runs the same on
    GitHub.
 5. Games must remain **testable in two browser tabs** on one machine — player
@@ -260,7 +260,8 @@ npm start            # node dist/server/src/index.js — serves client + sockets
 ```
 
 Run npm scripts **from the repo root** (the server resolves `client/dist` and
-`data/` from cwd). Node ≥18 (developed on Node 24, macOS).
+`data/` from cwd). Node ≥20.12 (`process.loadEnvFile` needs 20.12+, and
+React Router 7 needs 20+; CI uses 22; developed on Node 24/25, macOS).
 
 ## Testing
 
@@ -339,6 +340,12 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   Claude Code, then open the extension. After that, `list_connected_browsers`
   → `select_browser` → drive it. Serve a real build (`npm run build`, then
   `PORT=3199 node dist/server/src/index.js`) so lazy chunks are exercised.
+  Gotcha (2026-10-26): a server started from a SANDBOXED Bash call is
+  reachable by curl inside the sandbox but NOT by the user's Chrome (the
+  extension's tab shows an error page). Either start the server outside the
+  sandbox or drive headless Chrome over CDP from inside it (`--headless=new
+  --remote-debugging-port=N`, then Node's built-in WebSocket) — that is how
+  the React Router 7 upgrade was route-checked.
 
 ## Current state (update before every commit)
 
@@ -371,6 +378,23 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   pinned deliberately; do not "upgrade" it without moving React first.
 - Home's game grid is six cards; accents are pink/yellow/green/cyan/red plus
   chess's `--accent-mono` off-white.
+- Deps (2026-10-26): React Router 7 (react-router-dom 7.18, library mode —
+  same `BrowserRouter`/`Routes`/`Link`/`useNavigate`/`useSearchParams` API
+  the app already used, no code changes needed) and Vite 6.4 (NOT 7/8 —
+  6.4.5 is the smallest jump that clears every advisory; Vite 8 swaps in
+  Rolldown, which would need the chess-chunk checks below redone).
+  `npm audit` = 0 vulnerabilities after this pass. React stays on 18.
+- SUPABASE FREE-TIER PAUSE: on 2026-10-26 the project host
+  (lpfjrayitzwbdowgpdfj.supabase.co) returned NXDOMAIN — the signature of a
+  paused free project (pauses after ~7 days idle). While paused, login,
+  friends, chats, stats and /sets are down on the live site; anonymous play
+  is unaffected by design. Restore is owner-only via the Supabase
+  dashboard. If accounts features "suddenly" break after a quiet spell,
+  check this first (`dig +short <ref>.supabase.co`).
+- Keep-alive caveat: the repo is PRIVATE, so the `*/5` keep-alive cron
+  bills Actions minutes (each run rounds up to a minute) against the
+  2,000/month free allowance shared with CI — owner to confirm on GitHub's
+  billing page; unverified from this environment (no `gh` CLI installed).
 - git: single `main`, remote origin = https://github.com/Viv-411/arcade, CI
   green. As of 2026-07-31 `origin/main` is fully up to date — the custom
   trivia sets work (3 commits) had sat unpushed for ten days, so the LIVE SITE
@@ -861,3 +885,25 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     Black + orientation-aware coordinates + resign showing "you win"/"you
     lose" on the right sides, a full 2-tab Mind Meld game to a win with stats
     credited, and every other game's pages rendering with ZERO console errors.
+
+32. **Return-after-a-break health pass (2026-10-26)** — owner came back after
+    ~3 months. Findings + fixes:
+    - The owner's local checkout was 8 commits behind `origin/main` (all of
+      sessions 25–31); fast-forwarded. The live site already matched origin.
+    - **Security:** `npm audit` showed 8 production advisories (1 critical
+      proxy-addr, highs in socket.io-parser/engine.io/body-parser, moderates
+      in qs/express/react-router) + dev-only Vite/esbuild ones. `npm audit
+      fix` cleared the in-range ones; react-router-dom 6 → 7.18 and vite 5 →
+      6.4.5 cleared the rest. 0 vulnerabilities remain.
+    - `engines.node` raised `>=18` → `>=20.12`: the server's
+      `process.loadEnvFile` already required 20.12, and React Router 7
+      requires 20.
+    - Verified: typecheck + full suite (all 7 test files); the chess lazy
+      split still holds (no modulepreload in index.html, no chess code in
+      the main chunk, chess chunks fetched only on /chess*); headless-Chrome
+      sweep of all 21 routes with zero console errors; a two-tab UI flow
+      (SPA link navigation without reload, create private room, join via a
+      `?room=` link, leave → the other tab drops the player).
+    - Supabase project found PAUSED (see Current state) — owner action.
+    - Doc drift fixed: "five titles" → six in this file, the CI comment, and
+      PROJECT_CONTEXT.md's status line.
