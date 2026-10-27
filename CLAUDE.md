@@ -215,7 +215,7 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
-  OWNER FEEL RULES (2026-10-27, SIM_VERSION 6 — see sessions 36–37 for the
+  OWNER FEEL RULES (2026-10-27, SIM_VERSION 7 — see sessions 36–38 for the
   latest numbers, which supersede the ones in this paragraph): the owner wants the driving
   as close to PolyTrack's FEEL as possible (handling only — the game, tracks
   and look stay original). Targets were MEASURED from PolyTrack's public
@@ -1119,3 +1119,19 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       exploit-heavy (Winter 4 #1 accelerates continuously to 525 km/h) —
       don't tune to them.
     - Owner wants better campaign tracks too (open item — see Backlog).
+
+38. **Hotlap: engine + brakes matched to the owner's own PolyTrack graph
+    (2026-10-27)** — owner screenshotted their run's Graphs panel. Digitised
+    (~22 px/s, ~1.14 px per km/h): launch ~57 km/h per s to ~175, still
+    ~25–37 km/h per s at 300–400 km/h, and two braking events as STRAIGHT
+    lines 372→6 km/h in ~1.45 s and 382→0 in ~1.3 s — constant ~7–8 g.
+    SIM 6 → 7: engineForce 16000, topSpeedRef 168 (pull stays strong to
+    ~400 km/h; theoretical top ~500), brakeForce 82000 with muLong 5.0 →
+    braking ~7.5 g at any speed (382→0 in 1.44 s, 76 m), stays flat/straight.
+    Our speeds at 1/3/4/6 s: 57/168/220/313 km/h; 382 km/h at 8.0 s (owner's
+    run: ~7.8 s). Bots retuned (careful 22/50, fast 27/62 m/s²).
+    - Tailwind (easy) became a launch-over-the-wall trap: boost pad → steep
+      crest → 150° turn at ~236 km/h, where the car goes light and brakes
+      can't bite. Smoothed the climb (80 m/rise 8 → 110 m/rise 4.5, and the
+      matching descent) and bumped it to version 2. Lesson: after any big
+      speed increase, re-check crests that lead into corners.

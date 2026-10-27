@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 6;
+export const SIM_VERSION = 7;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -63,7 +63,7 @@ export const CAR = {
   /** Max fraction of a wheel's slip its grip may cancel in one substep (4 wheels act at once). */
   gripStepFraction: 0.2,
   /** Braking/traction friction coefficient (doesn't fade with speed). */
-  muLong: 2.5,
+  muLong: 5.0,
   /** Peak cornering friction coefficient; sliding drops to `slideFactor` of it. */
   mu: 2.0,
   /** Fraction of grip lost by top speed (linear in speed). */
@@ -71,11 +71,11 @@ export const CAR = {
   /** Speed (m/s) by which the full grip fade has applied. */
   gripFadeSpeed: 92,
   slideFactor: 0.96,
-  engineForce: 17500,
+  engineForce: 16000,
   /** Speed (m/s) up to which full engine force is available. */
   pullSpeed: 50,
-  topSpeedRef: 130,
-  brakeForce: 40000,
+  topSpeedRef: 168,
+  brakeForce: 82000,
   reverseForce: 5200,
   reverseMax: 14,
   rolling: 1.2,
