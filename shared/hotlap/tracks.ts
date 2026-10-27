@@ -40,7 +40,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dawn",
     blurb: "Wide, walled and forgiving. Learn the throttle.",
-    medals: { bronze: 33080, silver: 28500, gold: 25950, ace: 23920 },
+    medals: { bronze: 33820, silver: 29140, gold: 26540, ace: 24460 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: -90, r: 60, bank: 8 },
@@ -66,7 +66,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "noon",
     blurb: "Long straights, lazy sweepers and boost pads. Keep it pinned.",
-    medals: { bronze: 34460, silver: 29690, gold: 27040, ace: 24910 },
+    medals: { bronze: 36120, silver: 31120, gold: 28340, ace: 26120 },
     segs: [
       { k: "s", len: 90 },
       { k: "s", len: 40, boost: true },
@@ -92,7 +92,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dusk",
     blurb: "Climb the ridge, crest the top and hop the gully home.",
-    medals: { bronze: 32350, silver: 27870, gold: 25380, ace: 23390 },
+    medals: { bronze: 34500, silver: 29730, gold: 27070, ace: 24950 },
     segs: [
       { k: "s", len: 80 },
       { k: "t", deg: 45, r: 60, bank: -6 },
@@ -123,7 +123,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "storm",
     blurb: "A climbing ladder of hairpins. Brake late, turn early.",
-    medals: { bronze: 36450, silver: 31400, gold: 28600, ace: 26350 },
+    medals: { bronze: 38220, silver: 32930, gold: 29990, ace: 27630 },
     segs: [
       { k: "s", len: 90 },
       { k: "t", deg: 180, r: 22, rise: 5, bank: -12 },
@@ -151,7 +151,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "noon",
     blurb: "Two steep banked bowls split by a tight chicane.",
-    medals: { bronze: 40830, silver: 35180, gold: 32040, ace: 29520 },
+    medals: { bronze: 42210, silver: 36370, gold: 33120, ace: 30520 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: -25, r: 80, bank: 22 },
@@ -182,7 +182,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "night",
     blurb: "Leap off the sea wall and keep it tidy on the open causeway.",
-    medals: { bronze: 40000, silver: 34460, gold: 31380, ace: 28920 },
+    medals: { bronze: 42480, silver: 36600, gold: 33330, ace: 30720 },
     segs: [
       { k: "s", len: 90 },
       { k: "t", deg: 90, r: 50, bank: -10 },
@@ -213,7 +213,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "neon",
     blurb: "A road that ties itself in knots, over and under its own bridge.",
-    medals: { bronze: 50230, silver: 43270, gold: 39410, ace: 36320 },
+    medals: { bronze: 52050, silver: 44840, gold: 40840, ace: 37630 },
     segs: [
       { k: "s", len: 150 },
       { k: "t", deg: 270, r: 45, rise: 12, bank: -12 },
@@ -247,7 +247,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "storm",
     blurb: "Climb into the cloud, then fall out of it in big leaps.",
-    medals: { bronze: 53240, silver: 45870, gold: 41780, ace: 38500 },
+    medals: { bronze: 58130, silver: 50080, gold: 45610, ace: 42030 },
     segs: [
       { k: "s", len: 80 },
       { k: "s", len: 100, rise: 14 },
@@ -289,7 +289,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "night",
     blurb: "The walls close in and the bends keep coming. Thread it.",
-    medals: { bronze: 51970, silver: 44770, gold: 40770, ace: 37580 },
+    medals: { bronze: 54130, silver: 46630, gold: 42470, ace: 39140 },
     segs: [
       { k: "s", len: 100 },
       { k: "t", deg: -90, r: 40, bank: 8 },
@@ -327,7 +327,7 @@ export const TRACKS: TrackDef[] = [
     walls: "none",
     theme: "dawn",
     blurb: "A bare ribbon strung across the sky. No walls to save you.",
-    medals: { bronze: 54060, silver: 46570, gold: 42410, ace: 39090 },
+    medals: { bronze: 56650, silver: 48810, gold: 44450, ace: 40960 },
     segs: [
       { k: "s", len: 80, walls: "both" },
       { k: "s", len: 160, rise: 16, walls: "both" },
@@ -364,7 +364,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "neon",
     blurb: "Wind up the spiral tower, then dive off the top.",
-    medals: { bronze: 69370, silver: 59760, gold: 54430, ace: 50160 },
+    medals: { bronze: 75190, silver: 64780, gold: 59000, ace: 54370 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: 360, r: 40, rise: 13, bank: -14 },
@@ -400,7 +400,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dusk",
     blurb: "Everything you have learned, all at once, as the sun goes down.",
-    medals: { bronze: 72920, silver: 62820, gold: 57210, ace: 52730 },
+    medals: { bronze: 77560, silver: 66820, gold: 60860, ace: 56080 },
     segs: [
       { k: "s", len: 100 },
       { k: "t", deg: 90, r: 40, bank: -10 },

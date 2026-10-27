@@ -215,19 +215,32 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
-  OWNER FEEL RULES (2026-10-26): the car must feel ZIPPY like a racecar, not
-  heavy — ~3 g brakes, 2.8–3.7 g cornering, steering that bites in ≤~120 ms
-  (measure with a probe before/after any tuning, don't guess). Two pieces of
-  car.ts are load-bearing for that: the per-wheel grip cap
-  (`gripStepFraction`) — stiff grip without it makes yaw chatter every
-  substep, invisible but it eats grip and feels vague — and the grounded
-  yaw assist toward the kinematic yaw rate (kills phantom drift, makes taps
-  precise). The CAMERA is a rigid chase cam: fixed distance/height, constant
-  FOV, no shake, follows the car's HEADING (not velocity) — never let speed,
-  braking or boost move or zoom it (owner request). All themes are DAYTIME
-  (owner found night/neon distracting); theme keys kept for the tracks.
-  After physics changes also retune BOT_CAREFUL/BOT_FAST to the car's grip,
-  or medals calibrate far too easy.
+  OWNER FEEL RULES (2026-10-27, SIM_VERSION 4): the owner wants the driving
+  as close to PolyTrack's FEEL as possible (handling only — the game, tracks
+  and look stay original). Targets were MEASURED from PolyTrack's public
+  leaderboard replays + their speed graph (no code/assets used): constant
+  ~17 m/s² launch to ~200 km/h (ours 0–100 1.6 s, 0–200 3.3 s), still
+  ~10 m/s² near 330 km/h (ours tops ~418), ~2.3 g brakes, ~2.0–2.2 g grip
+  that FADES with speed (fast corners need wide arcs), and corners taken as
+  a CONTROLLED SLIDE (nose leads the travel direction by ~7–11°, speed
+  bleeds gradually). Measure with probes before/after any tuning. Load-
+  bearing pieces of car.ts: the per-wheel grip cap (`gripStepFraction`) —
+  without it yaw chatters every substep; the grounded yaw assist, whose
+  target is capped by the grip LEFT after braking/driving (so braking hard
+  into a corner trades rotation for stopping — the owner flagged turns
+  under braking as "weird" before this) and leads by `slideLead` until the
+  slide reaches `maxSlip`; and `rearSlide`, which loosens the rear with
+  steering × speed but fades out as the slide nears `maxSlip` (self-
+  limiting — no spin-outs). Steering ramp lengthens with speed
+  (`steerRampPerMs`). The CAMERA: fixed distance/height, constant FOV, no
+  shake, follows the direction of TRAVEL (a slide shows the car angled in
+  frame, as in PolyTrack) and leans 35% with the car on banks — never let
+  speed, braking or boost move or zoom it. The car is an original low-
+  detail open-wheel design (exposed wheels drawn exactly at the physics
+  contact; three brake lights). All themes are DAYTIME. After physics
+  changes retune BOT_CAREFUL/BOT_FAST to the real grip (the bot also
+  respects crests, can't brake in the air, and caps takeoff speed when a
+  corner follows a landing) or medals calibrate wrong.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -448,8 +461,9 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   pinned deliberately; do not "upgrade" it without moving React first.
 - Home's game grid is six cards; accents are pink/yellow/green/cyan/red plus
   chess's `--accent-mono` off-white.
-- Hotlap shipped locally (2026-10-26): 12 tracks, verified leaderboards,
-  ghosts. Client deps: three 0.170 (only in the lazy HotlapPlayPage chunk,
+- Hotlap shipped locally (2026-10-26; physics SIM_VERSION 4 as of
+  2026-10-27, tuned toward PolyTrack's measured feel): 12 tracks, verified
+  leaderboards, ghosts. Client deps: three 0.170 (only in the lazy HotlapPlayPage chunk,
   ~560 kB; no modulepreload — verified). Migration
   20261026000000_hotlap_records.sql must be pushed after the owner resumes
   Supabase, or production leaderboards stay 503.
@@ -1038,3 +1052,27 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       barriers with coloured rails, concrete undersides; no headlights or
       underglow; exhaust glow only on boost pads.
     - Bot retuned to the new grip; medals recalibrated (laps ~15–20% faster).
+
+35. **Hotlap playtest round 2 (2026-10-27)** — owner: car too chunky (wants a
+    simple F1-style car with visible wheel contact + brake lights), steering
+    too responsive at high speed, turns weird under braking, and "make the
+    driving as close to PolyTrack as possible" using Claude in Chrome.
+    - Claude in Chrome CAN'T hold keys (the `key` action only taps; synthetic
+      JS KeyboardEvents are ignored by PolyTrack), so driving it for
+      measurements was impossible. Instead: PolyTrack's leaderboard →
+      select a run → Watch → its "Graphs" panel plots speed vs time, and
+      the replay shows inputs + speedometer. Digitised the #1 Summer 1 run
+      (launch 0→217 km/h in 3.5 s, linear; ~10 m/s² at 330 km/h; ~2–2.5 g
+      braking) and studied corner frames (controlled slides, camera follows
+      travel direction, partial roll on steep banks). Top runs use wall-
+      riding tricks — don't tune to those.
+    - SIM 2 → 4. Found that the yaw assist rotated the car at ~4 g while
+      braking (it ignored grip already spent): now capped by the remaining
+      friction budget. Grip fades 30% by 92 m/s; downforce cut. Engine
+      reshaped (flat to 50 m/s, taper to 130). Controlled slide added and
+      made self-limiting (first attempt spun out — slip grew to 33°).
+    - Bot: crest-speed planning (the faster car launched over humps on
+      Skywire/Last Light), no braking credit in the air, takeoff cap before
+      jumps followed by corners, retuned grip. All 12 tracks pass both bots.
+    - New open-wheel car mesh + brake lights; higher sun on low-sun themes
+      so the shadow sits under the car.

@@ -1,6 +1,9 @@
 /**
- * The Hotlap car: an original low-poly wedge built in code (no model files).
- * Local frame matches the physics body: +Z forward, +Y up, +X = LEFT.
+ * The Hotlap car: an original, low-detail open-wheel racer built in code (no
+ * model files). Four exposed wheels sit exactly where the physics puts them,
+ * so you can always see each tyre touching the road. Local frame matches the
+ * physics body: +Z forward, +Y up, +X = LEFT. The road is ~0.9 m below the
+ * body origin at rest.
  */
 import * as THREE from "three";
 import { CAR, type CarState } from "@shared/hotlap/car";
@@ -11,115 +14,137 @@ export interface CarVisual {
   dispose(): void;
 }
 
-/** Side profile (z, y) of the lower body, nose to tail. */
-const BODY_PROFILE: [number, number][] = [
-  [2.18, -0.38], [2.22, -0.18], [2.0, -0.02], [1.1, 0.1], [0.55, 0.16],
-  [-1.2, 0.2], [-1.85, 0.24], [-2.12, 0.16], [-2.16, -0.38],
-];
-const CABIN_PROFILE: [number, number][] = [
-  [0.75, 0.14], [0.05, 0.55], [-0.85, 0.57], [-1.45, 0.24],
-];
-
-function extrudeProfile(profile: [number, number][], width: number, bevel: number) {
-  const shape = new THREE.Shape();
-  profile.forEach(([z, y], i) => (i === 0 ? shape.moveTo(z, y) : shape.lineTo(z, y)));
-  shape.closePath();
-  const g = new THREE.ExtrudeGeometry(shape, {
-    depth: width - bevel * 2,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 1,
-  });
-  // Shape is in (x=z, y=y); extrusion runs along +Z. Rotate so the profile's
-  // x becomes our forward Z and the extrusion becomes our lateral X.
-  g.rotateY(-Math.PI / 2);
-  g.translate((width - bevel * 2) / 2, 0, 0);
+/**
+ * A box whose cross-section changes along Z: rectangle (w0 × h0) centred at
+ * height y0 at z0, morphing to (w1 × h1) centred at y1 at z1. Flat-shaded.
+ */
+function taper(z0: number, z1: number, w0: number, w1: number, h0: number, h1: number, y0: number, y1: number) {
+  const a = [
+    [-w0 / 2, y0 - h0 / 2, z0], [w0 / 2, y0 - h0 / 2, z0], [w0 / 2, y0 + h0 / 2, z0], [-w0 / 2, y0 + h0 / 2, z0],
+    [-w1 / 2, y1 - h1 / 2, z1], [w1 / 2, y1 - h1 / 2, z1], [w1 / 2, y1 + h1 / 2, z1], [-w1 / 2, y1 + h1 / 2, z1],
+  ];
+  const quads = [
+    [0, 3, 2, 1], // back (z0)
+    [4, 5, 6, 7], // front (z1)
+    [3, 7, 6, 2], // top
+    [0, 1, 5, 4], // bottom
+    [1, 2, 6, 5], // +x side
+    [0, 4, 7, 3], // -x side
+  ];
+  const pos: number[] = [];
+  for (const [p, q, r, s] of quads) {
+    for (const i of [p, q, r, p, r, s]) pos.push(...a[i]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   g.computeVertexNormals();
   return g;
 }
 
-export function buildCar(opts: { color: string; accent: string; ghost?: boolean; underglow?: boolean }): CarVisual {
+export function buildCar(opts: { color: string; accent: string; ghost?: boolean }): CarVisual {
   const root = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const ghost = !!opts.ghost;
+  const ghostProps = ghost ? { transparent: true, opacity: 0.35, depthWrite: false } : {};
+  const std = (color: string, extra: THREE.MeshStandardMaterialParameters = {}) =>
+    keep(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.5, metalness: 0.15, side: THREE.DoubleSide, ...ghostProps, ...extra }));
 
-  const ghostProps = ghost ? { transparent: true, opacity: 0.32, depthWrite: false } : {};
-  const paint = keep(new THREE.MeshStandardMaterial({
-    color: opts.color, metalness: 0.35, roughness: 0.35, flatShading: true,
-    // A little self-light so the car never goes muddy when driving into the sun.
-    emissive: new THREE.Color(opts.color), emissiveIntensity: ghost ? 0.5 : 0.14, ...ghostProps,
-  }));
-  const dark = keep(new THREE.MeshStandardMaterial({ color: "#14151c", roughness: 0.7, flatShading: true, ...ghostProps }));
-  const glass = keep(new THREE.MeshStandardMaterial({
-    color: "#0d1830", metalness: 0.6, roughness: 0.15, emissive: new THREE.Color(opts.accent), emissiveIntensity: 0.12, flatShading: true, ...ghostProps,
-  }));
-  const accentMat = keep(new THREE.MeshBasicMaterial({ color: opts.accent, ...ghostProps }));
-  const head = keep(new THREE.MeshBasicMaterial({ color: "#fff6e0", ...ghostProps }));
-  const tail = keep(new THREE.MeshBasicMaterial({ color: "#ff1744", ...ghostProps }));
+  const paint = std(opts.color, { metalness: 0.3, roughness: 0.38, emissive: new THREE.Color(opts.color), emissiveIntensity: ghost ? 0.5 : 0.06 });
+  const carbon = std("#1a1b22", { roughness: 0.7 });
+  const accent = std(opts.accent, { roughness: 0.4 });
+  const white = std("#f4f5f8", { roughness: 0.5 });
+  const brakeOff = new THREE.Color("#5a0d16");
+  const brakeOn = new THREE.Color("#ff2338");
+  const brakeMat = keep(new THREE.MeshBasicMaterial({ color: brakeOff, ...ghostProps }));
 
-  const body = new THREE.Mesh(keep(extrudeProfile(BODY_PROFILE, 1.86, 0.08)), paint);
-  const cabin = new THREE.Mesh(keep(extrudeProfile(CABIN_PROFILE, 1.32, 0.06)), glass);
-  body.castShadow = !ghost;
-  cabin.castShadow = !ghost;
-  root.add(body, cabin);
+  const add = (g: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0) => {
+    const mesh = new THREE.Mesh(keep(g), m);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = !ghost;
+    root.add(mesh);
+    return mesh;
+  };
 
-  // Side skirts / stripe.
-  const stripeGeo = keep(new THREE.BoxGeometry(0.04, 0.07, 3.3));
+  // Floor / plank — low and wide between the wheels.
+  add(taper(-1.55, 0.95, 1.2, 1.0, 0.05, 0.05, -0.77, -0.77), carbon);
+  // Monocoque: from behind the cockpit to the nose root.
+  add(taper(-0.55, 0.85, 0.78, 0.6, 0.38, 0.3, -0.53, -0.56), paint);
+  // Nose cone, tapering down toward the front wing.
+  add(taper(0.85, 2.05, 0.56, 0.22, 0.28, 0.13, -0.56, -0.66), paint);
+  // Sidepods with an undercut at the back.
   for (const side of [1, -1]) {
-    const s = new THREE.Mesh(stripeGeo, accentMat);
-    s.position.set(side * 0.94, -0.06, 0.05);
-    root.add(s);
+    add(taper(-1.0, 0.45, 0.32, 0.42, 0.22, 0.32, -0.6, -0.55), paint, side * 0.55, 0, 0);
+    // Coloured inlet stripe on the pod front.
+    add(taper(0.44, 0.47, 0.42, 0.42, 0.3, 0.3, -0.55, -0.55), accent, side * 0.55, 0, 0);
   }
-  // Rear wing.
-  const wing = new THREE.Mesh(keep(new THREE.BoxGeometry(1.9, 0.06, 0.42)), dark);
-  wing.position.set(0, 0.62, -1.92);
-  wing.rotation.x = -0.12;
-  const wingEdge = new THREE.Mesh(keep(new THREE.BoxGeometry(1.92, 0.035, 0.06)), accentMat);
-  wingEdge.position.set(0, 0.66, -2.12);
-  const postGeo = keep(new THREE.BoxGeometry(0.07, 0.4, 0.14));
-  for (const side of [1, -1]) {
-    const p = new THREE.Mesh(postGeo, dark);
-    p.position.set(side * 0.55, 0.42, -1.9);
-    root.add(p);
-  }
-  root.add(wing, wingEdge);
-  // Lights.
-  const lampGeo = keep(new THREE.BoxGeometry(0.42, 0.07, 0.05));
-  for (const side of [1, -1]) {
-    const h = new THREE.Mesh(lampGeo, head);
-    h.position.set(side * 0.6, -0.08, 2.18);
-    h.rotation.x = 0.35;
-    const t = new THREE.Mesh(lampGeo, tail);
-    t.position.set(side * 0.58, 0.08, -2.16);
-    root.add(h, t);
-  }
-  // Underglow strip — off: it read as neon in daylight (kept for later themes).
-  if (!ghost && opts.underglow) {
-    const glow = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.5, 3.6)), keep(new THREE.MeshBasicMaterial({
-      color: opts.accent, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending,
-    })));
-    glow.rotation.x = -Math.PI / 2;
-    glow.position.y = -0.62;
-    root.add(glow);
-  }
+  // Engine cover / airbox sweeping down to the rear.
+  add(taper(-1.7, -0.25, 0.26, 0.46, 0.14, 0.42, -0.5, -0.24), paint);
+  // Cockpit opening + helmet.
+  add(taper(-0.2, 0.55, 0.46, 0.4, 0.05, 0.05, -0.36, -0.37), carbon);
+  const helmet = new THREE.Mesh(keep(new THREE.SphereGeometry(0.17, 10, 8)), white);
+  helmet.position.set(0, -0.2, 0.1);
+  helmet.castShadow = !ghost;
+  root.add(helmet);
+  const visor = new THREE.Mesh(keep(new THREE.BoxGeometry(0.24, 0.06, 0.05)), carbon);
+  visor.position.set(0, -0.19, 0.25);
+  root.add(visor);
+  // Roll hoop / intake above the helmet.
+  add(taper(-0.18, -0.02, 0.12, 0.16, 0.16, 0.18, -0.06, -0.08), carbon);
 
-  // Wheels: a steer pivot holding a spinning wheel.
-  const tyreGeo = keep(new THREE.CylinderGeometry(CAR.wheelRadius, CAR.wheelRadius, 0.32, 16));
-  tyreGeo.rotateZ(Math.PI / 2);
-  const rimGeo = keep(new THREE.CylinderGeometry(CAR.wheelRadius * 0.6, CAR.wheelRadius * 0.6, 0.34, 6));
-  rimGeo.rotateZ(Math.PI / 2);
-  const rimMat = keep(new THREE.MeshStandardMaterial({ color: "#b8bcc8", metalness: 0.8, roughness: 0.3, flatShading: true, ...ghostProps }));
+  // Front wing: main plane + endplates + accent flap.
+  add(new THREE.BoxGeometry(1.86, 0.04, 0.42), carbon, 0, -0.73, 2.02);
+  add(new THREE.BoxGeometry(1.7, 0.035, 0.16), accent, 0, -0.68, 1.95);
+  for (const side of [1, -1]) add(new THREE.BoxGeometry(0.03, 0.17, 0.48), carbon, side * 0.93, -0.68, 2.02);
+
+  // Rear wing: two elements on endplates, plus a centre pillar.
+  add(new THREE.BoxGeometry(1.08, 0.05, 0.34), paint, 0, 0.0, -1.98);
+  add(new THREE.BoxGeometry(1.08, 0.04, 0.2), carbon, 0, 0.1, -2.08);
+  for (const side of [1, -1]) add(new THREE.BoxGeometry(0.03, 0.5, 0.5), carbon, side * 0.55, -0.12, -2.0);
+  add(new THREE.BoxGeometry(0.05, 0.42, 0.06), carbon, 0, -0.24, -1.92);
+  // Diffuser.
+  add(taper(-1.95, -1.55, 0.9, 1.1, 0.16, 0.05, -0.71, -0.76), carbon);
+
+  // Brake lights: a centre light under the rear wing + one on each endplate.
+  const lamp = (w: number, h: number, x: number, y: number, z: number) => {
+    const m = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, 0.03)), brakeMat);
+    m.position.set(x, y, z);
+    root.add(m);
+  };
+  lamp(0.16, 0.1, 0, -0.42, -1.99);
+  lamp(0.03, 0.18, 0.565, -0.12, -2.26);
+  lamp(0.03, 0.18, -0.565, -0.12, -2.26);
+
+  // Wheels: exposed, on a steer pivot that rides the suspension.
+  const tyreMat = std("#16161a", { roughness: 0.9, metalness: 0 });
+  const rimMat = std("#c8ccd6", { metalness: 0.7, roughness: 0.3 });
   const wheels = CAR.wheels.map((w) => {
+    const width = w.front ? 0.34 : 0.44;
     const pivot = new THREE.Group();
     pivot.position.set(w.x, w.y, w.z);
     const spin = new THREE.Group();
-    const tyre = new THREE.Mesh(tyreGeo, dark);
+    const tyreGeo = keep(new THREE.CylinderGeometry(CAR.wheelRadius, CAR.wheelRadius, width, 18));
+    tyreGeo.rotateZ(Math.PI / 2);
+    const tyre = new THREE.Mesh(tyreGeo, tyreMat);
     tyre.castShadow = !ghost;
+    const rimGeo = keep(new THREE.CylinderGeometry(CAR.wheelRadius * 0.62, CAR.wheelRadius * 0.62, width + 0.02, 8));
+    rimGeo.rotateZ(Math.PI / 2);
     const rim = new THREE.Mesh(rimGeo, rimMat);
-    spin.add(tyre, rim);
+    // A coloured sidewall stripe so wheel rotation is readable.
+    const ringGeo = keep(new THREE.TorusGeometry(CAR.wheelRadius * 0.8, 0.018, 4, 18));
+    ringGeo.rotateY(Math.PI / 2);
+    const ring = new THREE.Mesh(ringGeo, accent);
+    ring.position.x = (w.x > 0 ? 1 : -1) * (width / 2 + 0.005);
+    spin.add(tyre, rim, ring);
     pivot.add(spin);
+    // Suspension arms from the body to the hub (ride with the wheel).
+    const armLen = Math.abs(w.x) - 0.38;
+    const armGeo = keep(new THREE.BoxGeometry(armLen, 0.03, 0.05));
+    for (const dz of [-0.12, 0.12]) {
+      const arm = new THREE.Mesh(armGeo, carbon);
+      arm.position.set((w.x > 0 ? -1 : 1) * (armLen / 2 + width / 2 - 0.05), 0.05, dz);
+      pivot.add(arm);
+    }
     root.add(pivot);
     return { pivot, spin, front: w.front, mount: w };
   });
@@ -129,12 +154,13 @@ export function buildCar(opts: { color: string; accent: string; ghost?: boolean;
     update(state, braking) {
       wheels.forEach((w, i) => {
         const ws = state.wheels[i];
-        // Wheel centre sits (restLength - compression) below its mount.
+        // Wheel centre sits (restLength - compression) below its mount: when
+        // the wheel has contact, the tyre's bottom is exactly on the road.
         w.pivot.position.y = w.mount.y - (CAR.restLength - ws.comp);
         w.pivot.rotation.y = w.front ? state.steer : 0;
         w.spin.rotation.x = ws.spin;
       });
-      tail.color.set(braking ? "#ff4060" : "#b0102a");
+      brakeMat.color.copy(braking ? brakeOn : brakeOff);
     },
     dispose() {
       disposables.forEach((d) => d.dispose());

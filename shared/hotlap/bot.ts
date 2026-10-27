@@ -20,9 +20,17 @@ export interface BotTuning {
   lookGain: number;
 }
 
-// Tuned for the SIM_VERSION 2 car (~2.8–3.7 g grip, ~3 g brakes).
-export const BOT_CAREFUL: BotTuning = { latAccel: 18, brakeAccel: 18, lookBase: 7, lookGain: 0.28 };
-export const BOT_FAST: BotTuning = { latAccel: 23, brakeAccel: 22, lookBase: 7, lookGain: 0.26 };
+// Tuned for the SIM_VERSION 4 car (~2.0–2.2 g grip that fades with speed,
+// ~2.3 g brakes, controlled slides at the limit).
+export const BOT_CAREFUL: BotTuning = { latAccel: 16, brakeAccel: 17, lookBase: 7, lookGain: 0.28 };
+export const BOT_FAST: BotTuning = { latAccel: 19.5, brakeAccel: 20, lookBase: 7, lookGain: 0.26 };
+
+/** Gravity used by the car physics (m/s²) — crest-speed planning. */
+const CREST_G = 11.5;
+/** Minimum speed (m/s) the bot commits to over a jump. */
+const JUMP_MIN = 40;
+/** Takeoff speed cap (m/s) when a corner follows the landing. */
+const JUMP_MAX = 46;
 
 interface PathPt {
   p: V3;
@@ -52,6 +60,14 @@ function buildPath(track: BuiltTrack, tune: BotTuning): PathPt[] {
     const cross = (h1x * h2z - h1z * h2x) / (l1 * l2);
     const kappa = Math.abs(cross) / ((l1 + l2) / 2);
     if (kappa > 1e-5) pts[i].vCurve = Math.sqrt(tune.latAccel / kappa);
+    // Crests: over a convex hump the car leaves the road once v²·κ exceeds
+    // gravity, so treat the hump like a corner with gravity as the "grip".
+    if (!pts[i].gap && !pts[i + 1].gap && !pts[i - 1].gap) {
+      const s1 = (b.y - a.y) / l1;
+      const s2 = (c.y - b.y) / l2;
+      const kv = (s1 - s2) / ((l1 + l2) / 2); // > 0 when the road bends DOWN
+      if (kv > 1e-4) pts[i].vCurve = Math.min(pts[i].vCurve, Math.sqrt((CREST_G * 0.85) / kv));
+    }
   }
   return pts;
 }
@@ -133,7 +149,8 @@ export class Bot {
       const pt = this.path[k];
       const d = pt.s - here.s;
       if (d > 320) break;
-      if (k > best && !this.path[k - 1].boost) brakeRoom += pt.s - this.path[k - 1].s;
+      // You can't brake on a boost pad (it pushes back) or in the air.
+      if (k > best && !this.path[k - 1].boost && !this.path[k - 1].gap) brakeRoom += pt.s - this.path[k - 1].s;
       if (pt.gap) {
         if (d < 160) gapAhead = true;
         pastGap = true;
@@ -144,7 +161,12 @@ export class Bot {
         else vBefore = Math.min(vBefore, v);
       }
     }
-    const vAllowed = gapAhead ? Math.min(vBefore, Math.max(vAfter, 60)) : Math.min(vBefore, vAfter);
+    // Commit to clearing the jump (JUMP_MIN), but no faster than the corners
+    // after the landing allow — braking only counts on the ground.
+    let vAllowed = gapAhead ? Math.min(vBefore, Math.max(vAfter, JUMP_MIN)) : Math.min(vBefore, vAfter);
+    // Faster takeoffs fly further and eat the braking room after the
+    // landing, so when a corner follows the jump, take it at a measured pace.
+    if (gapAhead && vAfter < Infinity) vAllowed = Math.min(vAllowed, JUMP_MAX);
     if (speed < vAllowed - 0.5) bits |= IN_UP;
     else if (speed > vAllowed + 2.5) bits |= IN_DOWN;
     void vdot;

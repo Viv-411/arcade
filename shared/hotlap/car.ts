@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 2;
+export const SIM_VERSION = 4;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -59,26 +59,34 @@ export const CAR = {
   bumpStopDamp: 14000,
   /** Lateral grip stiffness (N per m/s of slip) per wheel. */
   latStiffFront: 72000,
-  latStiffRear: 75000,
+  latStiffRear: 70000,
   /** Max fraction of a wheel's slip its grip may cancel in one substep (4 wheels act at once). */
   gripStepFraction: 0.2,
   /** Peak friction coefficient; sliding drops to `slideFactor` of it. */
-  mu: 2.6,
-  slideFactor: 0.94,
-  engineForce: 15500,
-  topSpeedRef: 92,
+  mu: 2.3,
+  /** Fraction of grip lost by top speed (linear in speed). */
+  gripFade: 0.3,
+  /** Speed (m/s) by which the full grip fade has applied. */
+  gripFadeSpeed: 92,
+  slideFactor: 0.9,
+  engineForce: 17500,
+  /** Speed (m/s) up to which full engine force is available. */
+  pullSpeed: 50,
+  topSpeedRef: 130,
   brakeForce: 34000,
   reverseForce: 5200,
   reverseMax: 14,
   rolling: 1.2,
   coastDrag: 900,
   drag: 0.34,
-  downforce: 1.15,
+  downforce: 0.15,
   boostAccel: 16,
   maxSteer: 0.5,
-  steerFalloff: 24,
+  steerFalloff: 17,
   /** Seconds from centre to full lock, and from full lock back to centre. */
   steerRampTime: 0.06,
+  /** Extra ramp time per m/s of speed: calmer, less twitchy steering when fast. */
+  steerRampPerMs: 0.0013,
   steerReturnTime: 0.05,
   /** Air control: target yaw rate (rad/s), nose alignment, and response. */
   airYaw: 1.3,
@@ -91,6 +99,14 @@ export const CAR = {
   /** Yaw assist strength (1/s) and the lateral acceleration it may demand (m/s²). */
   yawAssist: 9,
   yawAssistGrip: 30,
+  /** >1 lets rotation outpace the turn of the velocity: a controlled slide. */
+  slideLead: 1.3,
+  /** How much rear grip goes at full lock and speed (0 = none). */
+  rearSlide: 0.26,
+  /** Slide angle (as lateral/forward speed ratio, ~rad) a held corner settles at. */
+  maxSlip: 0.3,
+  /** Speed (m/s) at which the rear-slide effect is fully in. */
+  slideSpeed: 40,
   /** 0 = tyre forces at the contact patch, 1 = at the centre of mass. */
   rollCentre: 0.88,
   /** Body collision spheres (local centres) and radius. */
@@ -326,7 +342,10 @@ export function stepCar(car: CarState, world: CollisionWorld, input: number) {
   // Steering ramps over a FIXED time at every speed (lock shrinks with speed,
   // so the rate scales with it): a quick tap gives a small, repeatable
   // correction — that's what makes feathering a digital key precise.
-  const rampTime = target === 0 || target * car.steer < 0 ? CAR.steerReturnTime : CAR.steerRampTime;
+  const rampTime =
+    target === 0 || target * car.steer < 0
+      ? CAR.steerReturnTime
+      : CAR.steerRampTime + Math.abs(vf0) * CAR.steerRampPerMs;
   const rate = Math.max(lock, Math.abs(car.steer)) / rampTime / TICK_HZ;
   if (car.steer < target) car.steer = Math.min(target, car.steer + rate);
   else if (car.steer > target) car.steer = Math.max(target, car.steer - rate);
@@ -366,8 +385,11 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
   if (up && !down) {
     if (vf < -0.5) braking = true;
     else {
-      const k = vf / CAR.topSpeedRef;
-      drive = CAR.engineForce * Math.max(0, 1 - k * k);
+      // Flat, strong pull up to `pullSpeed`, then a gentle taper to zero at
+      // `topSpeedRef` — acceleration that stays punchy deep into the speed
+      // range instead of dying off early.
+      const over = vf > CAR.pullSpeed ? (vf - CAR.pullSpeed) / (CAR.topSpeedRef - CAR.pullSpeed) : 0;
+      drive = CAR.engineForce * Math.max(0, 1 - over * over);
     }
   } else if (down && !up) {
     if (vf > 0.5) braking = true;
@@ -376,6 +398,14 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     braking = true;
   }
 
+  // Grip bookkeeping for the yaw assist: total grip available vs. the part
+  // already spent on driving/braking this substep.
+  let gripTotal = 0;
+  let gripLong = 0;
+  const steerLockNow = CAR.maxSteer / (1 + Math.abs(vf) / CAR.steerFalloff);
+  // Current slide angle (lateral / forward speed at the centre of mass).
+  const slipNow = Math.abs(vdot(car.vel, left)) / Math.max(6, Math.abs(vf));
+  const slideRoom = Math.max(0, 1 - slipNow / CAR.maxSlip);
   const ray = { x: -upV.x, y: -upV.y, z: -upV.z };
   const reach = CAR.restLength + CAR.wheelRadius;
   const cs = dcos(car.steer);
@@ -462,7 +492,17 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     fLong -= vLong * CAR.rolling;
 
     // Friction circle: grip up to mu·N, then slide with reduced grip.
-    const limit = CAR.mu * load;
+    // Grip fades a little with speed: fast corners need a wider arc.
+    const fade = 1 - CAR.gripFade * Math.min(1, Math.abs(vf) / CAR.gripFadeSpeed);
+    // Steering hard at speed lets the REAR give up some grip: the tail steps
+    // out into a controlled slide and tucks back in as you unwind the wheel.
+    const steerFrac = Math.min(1, Math.abs(car.steer) / Math.max(1e-3, steerLockNow));
+    const speedFrac = Math.min(1, Math.abs(vf) / CAR.slideSpeed);
+    // Fades out as the slide reaches its target angle, so it self-limits.
+    const rearLoose = wd.front ? 1 : 1 - CAR.rearSlide * steerFrac * speedFrac * slideRoom;
+    const limit = CAR.mu * load * fade * rearLoose;
+    gripTotal += limit;
+    gripLong += Math.abs(fLong);
     const total = Math.sqrt(fLat * fLat + fLong * fLong);
     if (total > limit) {
       const k = (limit * CAR.slideFactor) / total;
@@ -505,7 +545,17 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
   if (grounded >= 2) {
     const wYaw = vdot(car.angVel, upV);
     const kin = (vf * (sn / cs)) / CAR.wheelbase;
-    const cap = CAR.yawAssistGrip / Math.max(6, Math.abs(vf));
+    // Only the grip left over after braking/driving may be used to turn —
+    // so braking hard into a corner trades rotation for stopping power.
+    const latBudget = Math.sqrt(Math.max(0, gripTotal * gripTotal - gripLong * gripLong)) / m;
+    // The assist may rotate the car a bit FASTER than the tyres can turn its
+    // velocity (`slideLead`), so at the limit the nose leads and the car
+    // slides through the corner — the slip angle scrubs speed by itself.
+    // ...but only until the slide reaches `maxSlip`; past that the lead turns
+    // into a correction, so a held corner settles at a steady drift angle
+    // instead of building into a spin.
+    const lead = 1 + (CAR.slideLead - 1) * (1 - slipNow / CAR.maxSlip);
+    const cap = (Math.min(CAR.yawAssistGrip, latBudget) * Math.max(0.6, lead)) / Math.max(6, Math.abs(vf));
     const target = kin > cap ? cap : kin < -cap ? -cap : kin;
     const aYaw = (target - wYaw) * CAR.yawAssist * CAR.inertia.y * (grounded / 4);
     tx += upV.x * aYaw;

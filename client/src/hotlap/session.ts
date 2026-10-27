@@ -99,6 +99,7 @@ export class HotlapSession {
   private lastInput = 0;
   private camMode: CameraMode;
   private camYaw = 0;
+  private camRoll = new THREE.Vector3(0, 1, 0);
   private camPitch = 0;
   private camInit = false;
   private gateFlash: number[] = [];
@@ -379,9 +380,9 @@ export class HotlapSession {
   }
 
   /**
-   * Rigid chase camera. It sits a FIXED distance behind and above the car and
-   * only rotates to follow the car's heading (with a touch of smoothing so
-   * steering inputs don't jolt the view) and, gently, the road's slope. The
+   * Chase camera. It sits a FIXED distance behind and above the car, turning
+   * to follow the car's direction of TRAVEL (so a slide reads as the car
+   * angled in frame), the road's slope, and partly its lean on banks. The
    * distance and field of view never change with speed — accelerating,
    * braking or hitting a boost pad doesn't zoom or stretch anything — and
    * there is no shake. What you see is a stable frame you can judge lines by.
@@ -399,10 +400,15 @@ export class HotlapSession {
       return;
     }
 
-    // Target yaw/pitch from the car's own heading (not its velocity).
-    const flatLen = Math.hypot(fwd.x, fwd.z);
-    const targetYaw = flatLen > 0.2 ? Math.atan2(fwd.x, fwd.z) : this.camYaw;
-    const targetPitch = Math.max(-0.5, Math.min(0.5, Math.atan2(fwd.y, Math.max(flatLen, 1e-3)))) * 0.6;
+    // Aim along the direction of TRAVEL (so a sliding car shows its drift
+    // angle in frame), falling back to the heading when slow or reversing.
+    const vel = this.curr.vel;
+    const speed = Math.hypot(vel.x, vel.z);
+    const movingForward = this.curr.speed > 3;
+    const aim = movingForward && speed > 6 ? new THREE.Vector3(vel.x, vel.y, vel.z) : fwd.clone();
+    const flatLen = Math.hypot(aim.x, aim.z);
+    const targetYaw = flatLen > 0.2 ? Math.atan2(aim.x, aim.z) : this.camYaw;
+    const targetPitch = Math.max(-0.5, Math.min(0.5, Math.atan2(aim.y, Math.max(flatLen, 1e-3)))) * 0.6;
     if (!this.camInit) {
       this.camYaw = targetYaw;
       this.camPitch = targetPitch;
@@ -420,7 +426,9 @@ export class HotlapSession {
     const dir = new THREE.Vector3(Math.sin(this.camYaw) * cp, Math.sin(this.camPitch), Math.cos(this.camYaw) * cp);
     this.camera.position.copy(pos).addScaledVector(dir, -dist);
     this.camera.position.y += height;
-    this.camera.up.set(0, 1, 0);
+    // Lean partly with the car on banks and walls; never fully (stays readable).
+    this.camRoll.lerp(upCar, 1 - Math.exp(-dt * 5));
+    this.camera.up.set(0, 1, 0).lerp(this.camRoll, 0.35).normalize();
     this.camera.lookAt(pos.clone().addScaledVector(dir, 3).add(new THREE.Vector3(0, 1.1, 0)));
     this.setFov(CAMERA_FOV);
   }
