@@ -127,22 +127,14 @@ function checkerTexture() {
   }, false);
 }
 
-function gridTexture(theme: Theme) {
+function groundTexture(theme: Theme) {
+  // Mown stripes with a little texture — reads as ground at any distance.
   return canvasTex(256, 256, (c) => {
     c.fillStyle = theme.ground;
     c.fillRect(0, 0, 256, 256);
-    c.strokeStyle = theme.grid;
-    c.globalAlpha = 0.55;
-    c.lineWidth = 3;
-    c.strokeRect(0, 0, 256, 256);
-    c.globalAlpha = 0.18;
-    c.lineWidth = 1;
-    c.beginPath();
-    c.moveTo(128, 0);
-    c.lineTo(128, 256);
-    c.moveTo(0, 128);
-    c.lineTo(256, 128);
-    c.stroke();
+    c.fillStyle = theme.groundStripe;
+    c.fillRect(0, 0, 128, 256);
+    noise(c, 256, 256, 10);
   });
 }
 
@@ -259,7 +251,7 @@ export function buildTrackVisuals(track: BuiltTrack, theme: Theme): TrackVisuals
       map: boostTex,
       emissive: new THREE.Color(theme.accent2),
       emissiveMap: boostTex,
-      emissiveIntensity: 1.6,
+      emissiveIntensity: 0.9,
       roughness: 0.4,
     }));
     const mesh = new THREE.Mesh(keep(boost.build()), m);
@@ -268,25 +260,25 @@ export function buildTrackVisuals(track: BuiltTrack, theme: Theme): TrackVisuals
   }
 
   const slabMat = keep(new THREE.MeshStandardMaterial({
-    color: new THREE.Color(theme.road).multiplyScalar(0.55),
+    color: "#a7adb5", // concrete — reads as structure in daylight
     roughness: 0.9,
     side: THREE.DoubleSide,
   }));
   group.add(new THREE.Mesh(keep(slab.build()), slabMat));
 
   if (wallGlass.pos.length) {
+    // Solid barrier panels (slightly translucent so they never hide the car
+    // completely) with a coloured rail on top.
     const glass = keep(new THREE.MeshStandardMaterial({
       color: theme.wall,
-      emissive: new THREE.Color(theme.wall),
-      emissiveIntensity: 0.25,
-      transparent: true,
+      transparent: theme.wallOpacity < 1,
       opacity: theme.wallOpacity,
       side: THREE.DoubleSide,
-      depthWrite: false,
-      roughness: 0.2,
+      depthWrite: theme.wallOpacity >= 0.85,
+      roughness: 0.6,
     }));
     group.add(new THREE.Mesh(keep(wallGlass.build()), glass));
-    const rail = keep(new THREE.MeshBasicMaterial({ color: theme.accent, side: THREE.DoubleSide }));
+    const rail = keep(new THREE.MeshStandardMaterial({ color: theme.accent, side: THREE.DoubleSide, roughness: 0.5 }));
     group.add(new THREE.Mesh(keep(wallRail.build()), rail));
   }
   if (kerb.pos.length) {
@@ -298,7 +290,7 @@ export function buildTrackVisuals(track: BuiltTrack, theme: Theme): TrackVisuals
   // Support pillars under raised road (visual only).
   const groundY = track.bounds.minY - 18;
   const pillarGeo = keep(new THREE.BoxGeometry(1.6, 1, 1.6));
-  const pillarMat = keep(new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.road).multiplyScalar(0.7), roughness: 0.95 }));
+  const pillarMat = keep(new THREE.MeshStandardMaterial({ color: "#b8bec6", roughness: 0.95 }));
   const pillarSpots: THREE.Vector3[] = [];
   track.def.segs.forEach((seg, si) => {
     if (seg.gap) return;
@@ -339,7 +331,7 @@ export function buildTrackVisuals(track: BuiltTrack, theme: Theme): TrackVisuals
 
   // Gates.
   const gateMeshes: THREE.Object3D[] = [];
-  const beamMat = keep(new THREE.MeshBasicMaterial({ color: theme.accent }));
+  const beamMat = keep(new THREE.MeshStandardMaterial({ color: theme.accent, roughness: 0.5 }));
   const postGeo = keep(new THREE.BoxGeometry(0.5, 1, 0.5));
   const makeArch = (f: Frame, color: THREE.Material, label?: THREE.Texture) => {
     const g = new THREE.Group();
@@ -368,18 +360,18 @@ export function buildTrackVisuals(track: BuiltTrack, theme: Theme): TrackVisuals
     if (gate.isFinish) {
       gateMeshes.push(makeArch(gate.frame, beamMat, keep(checkerTexture())));
     } else {
-      const mat = keep(new THREE.MeshBasicMaterial({ color: theme.accent2 }));
+      const mat = keep(new THREE.MeshStandardMaterial({ color: theme.accent2, roughness: 0.5 }));
       gateMeshes.push(makeArch(gate.frame, mat));
     }
   }
 
-  // Ground: a neon grid far below the track.
-  const gridTex = keep(gridTexture(theme));
+  // Ground far below the track: mown stripes, lit normally.
+  const gridTex = keep(groundTexture(theme));
   const size = 8000;
-  gridTex.repeat.set(size / 40, size / 40);
+  gridTex.repeat.set(size / 60, size / 60);
   const ground = new THREE.Mesh(
     keep(new THREE.PlaneGeometry(size, size)),
-    keep(new THREE.MeshStandardMaterial({ map: gridTex, emissive: new THREE.Color(theme.grid), emissiveMap: gridTex, emissiveIntensity: 0.35, roughness: 1 })),
+    keep(new THREE.MeshStandardMaterial({ map: gridTex, roughness: 1 })),
   );
   ground.rotation.x = -Math.PI / 2;
   const cx = (track.bounds.minX + track.bounds.maxX) / 2;

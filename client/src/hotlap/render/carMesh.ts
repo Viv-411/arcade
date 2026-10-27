@@ -39,7 +39,7 @@ function extrudeProfile(profile: [number, number][], width: number, bevel: numbe
   return g;
 }
 
-export function buildCar(opts: { color: string; accent: string; ghost?: boolean }): CarVisual {
+export function buildCar(opts: { color: string; accent: string; ghost?: boolean; underglow?: boolean }): CarVisual {
   const root = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -95,8 +95,8 @@ export function buildCar(opts: { color: string; accent: string; ghost?: boolean 
     t.position.set(side * 0.58, 0.08, -2.16);
     root.add(h, t);
   }
-  // Underglow strip (not on the ghost).
-  if (!ghost) {
+  // Underglow strip — off: it read as neon in daylight (kept for later themes).
+  if (!ghost && opts.underglow) {
     const glow = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.5, 3.6)), keep(new THREE.MeshBasicMaterial({
       color: opts.accent, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending,
     })));

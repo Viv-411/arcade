@@ -252,7 +252,9 @@ export class Effects {
     }
 
     // Exhaust glow: brighter under throttle, big flare on boost pads.
-    const target = boosting ? 1.6 : throttle ? 0.55 : 0.2;
+    // Only flares on boost pads (a constant glow read as a blob in daylight).
+    const target = boosting ? 1.3 : 0.01;
+    void throttle;
     const cur = this.exhaust.scale.x;
     const next = cur + (target - cur) * (1 - Math.exp(-dt * 12));
     const flicker = 1 + (Math.random() - 0.5) * 0.15;

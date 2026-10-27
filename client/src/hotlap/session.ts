@@ -27,6 +27,8 @@ import type { CameraMode, HotlapSettings } from "./storage";
 import { themeOf } from "./themes";
 
 const DRIVE_MASK = IN_UP | IN_DOWN | IN_LEFT | IN_RIGHT;
+/** Constant field of view — never changes with speed. */
+const CAMERA_FOV = 70;
 const TICK = 1 / TICK_HZ;
 
 export type Phase = "ready" | "running" | "finished";
@@ -96,11 +98,9 @@ export class HotlapSession {
   private raf = 0;
   private lastInput = 0;
   private camMode: CameraMode;
-  private camPos = new THREE.Vector3();
-  private camLook = new THREE.Vector3();
+  private camYaw = 0;
+  private camPitch = 0;
   private camInit = false;
-  private shake = 0;
-  private fovKick = 0;
   private gateFlash: number[] = [];
   private disposed = false;
   private resizeObs: ResizeObserver;
@@ -126,7 +126,7 @@ export class HotlapSession {
     host.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.display = "block";
 
-    this.camera = new THREE.PerspectiveCamera(72, 1, 0.1, 5000);
+    this.camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 5000);
     this.scene.fog = new THREE.Fog(theme.fog, theme.fogNear, theme.fogFar);
     this.scene.background = new THREE.Color(theme.fog);
 
@@ -143,7 +143,7 @@ export class HotlapSession {
     this.ghostCar = buildCar({ color: "#cfe3ff", accent: "#ffffff", ghost: true });
     this.ghostCar.root.visible = false;
     this.scene.add(this.ghostCar.root);
-    this.effects = new Effects(track.def.theme === "night" || track.def.theme === "neon", this.car.root);
+    this.effects = new Effects(false, this.car.root); // daytime everywhere: no headlights
     this.scene.add(this.effects.group);
 
     this.camMode = settings.camera;
@@ -271,10 +271,7 @@ export class HotlapSession {
       this.ghostCurr = this.ghostRun.snapshot();
     }
     if (this.curr.impact > this.pendingImpact) this.pendingImpact = this.curr.impact;
-    if (this.curr.impact > 2500) {
-      this.shake = Math.min(1, this.shake + this.curr.impact / 12000);
-      this.audio.impact(Math.min(1, this.curr.impact / 9000));
-    }
+    if (this.curr.impact > 2500) this.audio.impact(Math.min(1, this.curr.impact / 9000));
     for (const e of events) this.handle(e);
   }
 
@@ -381,63 +378,55 @@ export class HotlapSession {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /**
+   * Rigid chase camera. It sits a FIXED distance behind and above the car and
+   * only rotates to follow the car's heading (with a touch of smoothing so
+   * steering inputs don't jolt the view) and, gently, the road's slope. The
+   * distance and field of view never change with speed — accelerating,
+   * braking or hitting a boost pad doesn't zoom or stretch anything — and
+   * there is no shake. What you see is a stable frame you can judge lines by.
+   */
   private updateCamera(pos: THREE.Vector3, rot: THREE.Quaternion, dt: number) {
-    const fwd = _v.set(0, 0, 1).applyQuaternion(rot).clone();
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(rot);
     const upCar = new THREE.Vector3(0, 1, 0).applyQuaternion(rot);
-    const speed = Math.abs(this.curr.speed);
-    // Follow the direction of travel (blended with heading) so slides and
-    // spins don't whip the camera around.
-    const vel = new THREE.Vector3(this.curr.vel.x, this.curr.vel.y, this.curr.vel.z);
-    const flat = fwd.clone();
-    if (speed > 6 && this.curr.speed > 0) flat.lerp(vel.clone().normalize(), 0.45);
-    flat.y *= 0.35;
-    flat.normalize();
 
-    let dist = 7.2, height = 2.5, lookAhead = 6, lookUp = 1.0;
-    if (this.camMode === "far") {
-      dist = 11;
-      height = 4.2;
-      lookAhead = 8;
-    }
     if (this.camMode === "hood") {
       const eye = pos.clone().addScaledVector(upCar, 0.75).addScaledVector(fwd, 0.4);
       this.camera.position.copy(eye);
       this.camera.up.copy(upCar);
       this.camera.lookAt(eye.clone().addScaledVector(fwd, 20).addScaledVector(upCar, 0.3));
-      this.applyFov(speed, dt);
+      this.setFov(CAMERA_FOV);
       return;
     }
-    dist += Math.min(2.2, speed * 0.018);
-    const desired = pos.clone().addScaledVector(flat, -dist).add(new THREE.Vector3(0, height, 0));
-    // Keep the camera above the car's own up direction on banks/loops.
-    desired.addScaledVector(upCar, 0.4);
-    const look = pos.clone().addScaledVector(flat, lookAhead).add(new THREE.Vector3(0, lookUp, 0));
+
+    // Target yaw/pitch from the car's own heading (not its velocity).
+    const flatLen = Math.hypot(fwd.x, fwd.z);
+    const targetYaw = flatLen > 0.2 ? Math.atan2(fwd.x, fwd.z) : this.camYaw;
+    const targetPitch = Math.max(-0.5, Math.min(0.5, Math.atan2(fwd.y, Math.max(flatLen, 1e-3)))) * 0.6;
     if (!this.camInit) {
-      this.camPos.copy(desired);
-      this.camLook.copy(look);
+      this.camYaw = targetYaw;
+      this.camPitch = targetPitch;
       this.camInit = true;
     }
-    const kPos = 1 - Math.exp(-dt * 9);
-    const kLook = 1 - Math.exp(-dt * 14);
-    this.camPos.lerp(desired, kPos);
-    this.camLook.lerp(look, kLook);
-    this.camera.position.copy(this.camPos);
-    if (this.shake > 0) {
-      const s = this.shake * 0.25;
-      this.camera.position.x += (Math.random() - 0.5) * s;
-      this.camera.position.y += (Math.random() - 0.5) * s;
-      this.shake = Math.max(0, this.shake - dt * 3);
-    }
+    let dy = targetYaw - this.camYaw;
+    dy = Math.atan2(Math.sin(dy), Math.cos(dy)); // shortest way round
+    this.camYaw += dy * (1 - Math.exp(-dt * 12));
+    this.camPitch += (targetPitch - this.camPitch) * (1 - Math.exp(-dt * 6));
+
+    const far = this.camMode === "far";
+    const dist = far ? 10.5 : 7.0;
+    const height = far ? 3.9 : 2.5;
+    const cp = Math.cos(this.camPitch);
+    const dir = new THREE.Vector3(Math.sin(this.camYaw) * cp, Math.sin(this.camPitch), Math.cos(this.camYaw) * cp);
+    this.camera.position.copy(pos).addScaledVector(dir, -dist);
+    this.camera.position.y += height;
     this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(this.camLook);
-    this.applyFov(speed, dt);
+    this.camera.lookAt(pos.clone().addScaledVector(dir, 3).add(new THREE.Vector3(0, 1.1, 0)));
+    this.setFov(CAMERA_FOV);
   }
 
-  private applyFov(speed: number, dt: number) {
-    const boosting = this.curr.wheels.some((w) => w.onBoost);
-    this.fovKick += ((boosting ? 1 : 0) - this.fovKick) * (1 - Math.exp(-dt * 4));
-    const fov = 70 + Math.min(14, speed * 0.17) + this.fovKick * 6;
-    if (Math.abs(this.camera.fov - fov) > 0.01) {
+  private setFov(fov: number) {
+    if (this.camera.fov !== fov) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();
     }

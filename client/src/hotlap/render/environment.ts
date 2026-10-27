@@ -64,22 +64,42 @@ export function buildEnvironment(theme: Theme, center: THREE.Vector3, radius: nu
     sky.add(halo);
   }
 
-  if (theme.stars) {
-    const pts: number[] = [];
-    let seed = 7;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 1400; i++) {
-      const u = rnd() * 2 - 1;
-      const a = rnd() * Math.PI * 2;
-      const y = Math.abs(u) * 0.9 + 0.05;
-      const r = Math.sqrt(1 - y * y);
-      pts.push(Math.cos(a) * r * 3800, y * 3800, Math.sin(a) * r * 3800);
+  // Soft clouds: a few billboard puffs high above, drawn into the sky group
+  // so they follow the camera like the sky does.
+  if (theme.clouds > 0) {
+    const cv = document.createElement("canvas");
+    cv.width = 256;
+    cv.height = 128;
+    const c = cv.getContext("2d")!;
+    let cs = 11;
+    const crand = () => ((cs = (cs * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 9; i++) {
+      const x = 40 + crand() * 176;
+      const y = 60 + (crand() - 0.5) * 30;
+      const r = 26 + crand() * 30;
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, "rgba(255,255,255,0.95)");
+      g.addColorStop(0.6, "rgba(255,255,255,0.6)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      c.fillStyle = g;
+      c.fillRect(0, 0, 256, 128);
     }
-    const g = keep(new THREE.BufferGeometry());
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
-    const stars = new THREE.Points(g, keep(new THREE.PointsMaterial({ color: "#ffffff", size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85, depthWrite: false })));
-    stars.renderOrder = -9;
-    sky.add(stars);
+    const tex = keep(new THREE.CanvasTexture(cv));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = keep(new THREE.SpriteMaterial({ map: tex, fog: false, transparent: true, depthWrite: false, opacity: 0.9 }));
+    let seed = 3;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < theme.clouds; i++) {
+      const a = rnd() * Math.PI * 2;
+      const elev = 0.08 + rnd() * 0.32;
+      const d = 3000;
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(Math.cos(a) * Math.cos(elev) * d, Math.sin(elev) * d, Math.sin(a) * Math.cos(elev) * d);
+      const w = 500 + rnd() * 700;
+      sp.scale.set(w, w * 0.42, 1);
+      sp.renderOrder = -8;
+      sky.add(sp);
+    }
   }
 
   // Two layered rings of low-poly ridges around the track. The far ring is
@@ -116,8 +136,18 @@ export function buildEnvironment(theme: Theme, center: THREE.Vector3, radius: nu
     }
     const g = keep(new THREE.BufferGeometry());
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    // Lighter caps near the summits.
+    const peak = new THREE.Color(theme.peaks).lerp(fogC, tint * 0.6);
+    const cols: number[] = [];
+    for (let i = 1; i < pos.length; i += 3) {
+      const h = (pos[i] - base) / (hMin + hVar);
+      const k = h > 0.62 ? Math.min(1, (h - 0.62) / 0.18) : 0;
+      const cc = color.clone().lerp(peak, k);
+      cols.push(cc.r, cc.g, cc.b);
+    }
+    g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
     g.computeVertexNormals();
-    const mat = keep(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 1, fog: false, side: THREE.DoubleSide }));
+    const mat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, fog: false, side: THREE.DoubleSide }));
     group.add(new THREE.Mesh(g, mat));
   };
   ridge(ringR + 500, 90, 140, 260, 0.55);

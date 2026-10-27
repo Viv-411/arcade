@@ -20,8 +20,9 @@ export interface BotTuning {
   lookGain: number;
 }
 
-export const BOT_CAREFUL: BotTuning = { latAccel: 11, brakeAccel: 11, lookBase: 7, lookGain: 0.32 };
-export const BOT_FAST: BotTuning = { latAccel: 14.5, brakeAccel: 14, lookBase: 7, lookGain: 0.3 };
+// Tuned for the SIM_VERSION 2 car (~2.8–3.7 g grip, ~3 g brakes).
+export const BOT_CAREFUL: BotTuning = { latAccel: 18, brakeAccel: 18, lookBase: 7, lookGain: 0.28 };
+export const BOT_FAST: BotTuning = { latAccel: 23, brakeAccel: 22, lookBase: 7, lookGain: 0.26 };
 
 interface PathPt {
   p: V3;

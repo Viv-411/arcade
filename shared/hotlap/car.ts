@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 1;
+export const SIM_VERSION = 2;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -42,7 +42,7 @@ export const INPUT_MASK = 31;
 export const CAR = {
   mass: 1000,
   /** Body-frame principal inertia: x = pitch, y = yaw, z = roll. */
-  inertia: { x: 2300, y: 2600, z: 900 },
+  inertia: { x: 1600, y: 1000, z: 800 },
   gravity: 11.5,
   /** Local mounts (+X = LEFT, +Y = up, +Z = forward): FL, FR, RL, RR. */
   wheels: [
@@ -53,19 +53,21 @@ export const CAR = {
   ],
   wheelRadius: 0.36,
   restLength: 0.4,
-  spring: 42000,
-  damperBump: 3200,
-  damperRebound: 4400,
+  spring: 60000,
+  damperBump: 4200,
+  damperRebound: 5600,
   bumpStopDamp: 14000,
   /** Lateral grip stiffness (N per m/s of slip) per wheel. */
-  latStiffFront: 30000,
-  latStiffRear: 31000,
+  latStiffFront: 72000,
+  latStiffRear: 75000,
+  /** Max fraction of a wheel's slip its grip may cancel in one substep (4 wheels act at once). */
+  gripStepFraction: 0.2,
   /** Peak friction coefficient; sliding drops to `slideFactor` of it. */
-  mu: 1.4,
-  slideFactor: 0.86,
-  engineForce: 11000,
-  topSpeedRef: 88,
-  brakeForce: 17000,
+  mu: 2.6,
+  slideFactor: 0.94,
+  engineForce: 15500,
+  topSpeedRef: 92,
+  brakeForce: 34000,
   reverseForce: 5200,
   reverseMax: 14,
   rolling: 1.2,
@@ -73,17 +75,22 @@ export const CAR = {
   drag: 0.34,
   downforce: 1.15,
   boostAccel: 16,
-  maxSteer: 0.56,
-  steerFalloff: 13,
+  maxSteer: 0.5,
+  steerFalloff: 24,
   /** Seconds from centre to full lock, and from full lock back to centre. */
-  steerRampTime: 0.13,
-  steerReturnTime: 0.08,
+  steerRampTime: 0.06,
+  steerReturnTime: 0.05,
   /** Air control: target yaw rate (rad/s), nose alignment, and response. */
   airYaw: 1.3,
   airAlign: 0.55,
   airResponse: 5,
   airRoll: 3,
   angDamp: 0.6,
+  /** Front-to-rear axle distance (m) for the kinematic yaw rate. */
+  wheelbase: 2.58,
+  /** Yaw assist strength (1/s) and the lateral acceleration it may demand (m/s²). */
+  yawAssist: 9,
+  yawAssistGrip: 30,
   /** 0 = tyre forces at the contact patch, 1 = at the centre of mass. */
   rollCentre: 0.88,
   /** Body collision spheres (local centres) and radius. */
@@ -428,7 +435,17 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     const vLat = vdot(vc, lw);
     const load = fs;
 
-    let fLat = -vLat * (wd.front ? CAR.latStiffFront : CAR.latStiffRear);
+    // Lateral grip, capped so a single substep can never over-correct: the
+    // cap is the force that would cancel a fraction of this wheel's slip in
+    // one step given the car's effective mass AT this wheel (translation +
+    // rotation). Without it, stiff grip makes the yaw chatter back and forth
+    // every substep — invisible on screen, but it eats grip and feels vague.
+    const rw = { x: cp.x - car.pos.x, y: cp.y - car.pos.y, z: cp.z - car.pos.z };
+    const rl = vcross(rw, lw);
+    const invMeff = 1 / m + vdot(vcross(invInertia(car.rot, rl), rw), lw);
+    const stiffCap = (CAR.gripStepFraction / invMeff) / DT;
+    const stiff = Math.min(wd.front ? CAR.latStiffFront : CAR.latStiffRear, stiffCap);
+    let fLat = -vLat * stiff;
     let fLong = 0;
     if (braking) {
       const share = (wd.front ? 0.6 : 0.4) * CAR.brakeForce * 0.5;
@@ -457,12 +474,14 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     // leans a little, but lateral grip can never trip the car onto its roof.
     const rise = vdot({ x: car.pos.x - cp.x, y: car.pos.y - cp.y, z: car.pos.z - cp.z }, upV) * CAR.rollCentre;
     const app = { x: cp.x + upV.x * rise, y: cp.y + upV.y * rise, z: cp.z + upV.z * rise };
-    const F = {
-      x: fwx * fLong + lw.x * fLat,
-      y: fwy * fLong + lw.y * fLat,
-      z: fwz * fLong + lw.z * fLat,
-    };
-    addForceAt(app, F);
+    // Cornering force acts at the wheel. Drive/brake force acts on the car's
+    // centreline (as a differential would balance it): otherwise a wheel
+    // clipped by the friction circle on one side lets the other side push
+    // harder, and the car steers itself — a slow phantom drift under throttle.
+    addForceAt(app, { x: lw.x * fLat, y: lw.y * fLat, z: lw.z * fLat });
+    const off = (app.x - car.pos.x) * left.x + (app.y - car.pos.y) * left.y + (app.z - car.pos.z) * left.z;
+    const mid = { x: app.x - left.x * off, y: app.y - left.y * off, z: app.z - left.z * off };
+    addForceAt(mid, { x: fwx * fLong, y: fwy * fLong, z: fwz * fLong });
 
     if (world.surf[hit.tri] === SURF_BOOST) {
       ws.onBoost = true;
@@ -477,6 +496,22 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     ws.spin += ws.spinVel * DT;
   }
   car.grounded = grounded;
+
+  // Yaw assist (grounded): pull the car's rotation toward what the steering
+  // asks for — the kinematic yaw rate v·tan(δ)/wheelbase — capped by what the
+  // tyres can actually deliver. Steering becomes direct and predictable, a
+  // released key settles the car straight instead of leaving it in a slow
+  // drift, and slides still happen when you overcook the grip.
+  if (grounded >= 2) {
+    const wYaw = vdot(car.angVel, upV);
+    const kin = (vf * (sn / cs)) / CAR.wheelbase;
+    const cap = CAR.yawAssistGrip / Math.max(6, Math.abs(vf));
+    const target = kin > cap ? cap : kin < -cap ? -cap : kin;
+    const aYaw = (target - wYaw) * CAR.yawAssist * CAR.inertia.y * (grounded / 4);
+    tx += upV.x * aYaw;
+    ty += upV.y * aYaw;
+    tz += upV.z * aYaw;
+  }
 
   // Aerodynamics.
   const sp = Math.sqrt(car.vel.x * car.vel.x + car.vel.y * car.vel.y + car.vel.z * car.vel.z);

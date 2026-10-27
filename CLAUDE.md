@@ -215,6 +215,19 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
+  OWNER FEEL RULES (2026-10-26): the car must feel ZIPPY like a racecar, not
+  heavy — ~3 g brakes, 2.8–3.7 g cornering, steering that bites in ≤~120 ms
+  (measure with a probe before/after any tuning, don't guess). Two pieces of
+  car.ts are load-bearing for that: the per-wheel grip cap
+  (`gripStepFraction`) — stiff grip without it makes yaw chatter every
+  substep, invisible but it eats grip and feels vague — and the grounded
+  yaw assist toward the kinematic yaw rate (kills phantom drift, makes taps
+  precise). The CAMERA is a rigid chase cam: fixed distance/height, constant
+  FOV, no shake, follows the car's HEADING (not velocity) — never let speed,
+  braking or boost move or zoom it (owner request). All themes are DAYTIME
+  (owner found night/neon distracting); theme keys kept for the tracks.
+  After physics changes also retune BOT_CAREFUL/BOT_FAST to the car's grip,
+  or medals calibrate far too easy.
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -1001,7 +1014,27 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       where another road lies underneath).
     - Fixed a latent chess test race: the first gameStart snapshot nets off
       elapsed time, so it can read 179999 ms; the test now allows ≤2 s.
-    - NOT pushed at time of writing; the hotlap_records migration is NOT
+    - NOT pushed at time of writing (owner chose to playtest first); the
+      hotlap_records migration is NOT
       applied (Supabase paused). Until it is, production picks the Supabase
       store and the leaderboard answers 503 (UI shows "unavailable"); local
       PBs, ghosts and medals still work.
+
+34. **Hotlap playtest round 1 (2026-10-26)** — owner feedback: night too
+    distracting, car heavy/unresponsive ("pull so hard to brake and turn"),
+    camera shouldn't move with acceleration. SIM_VERSION 1 → 2.
+    - Measured first (scratch probe): 1.4 g at 80 km/h, 300 ms steering
+      response, 1.5 g brakes. Retuned to 0–100 in 1.9 s, ~3 g brakes,
+      2.8–3.7 g grip, 25–120 ms steering response (lower yaw inertia,
+      stiffer grip/suspension, faster steering ramp, more lock at speed).
+    - Two real physics bugs surfaced by a tap test: (1) stiff lateral grip
+      made yaw oscillate every substep (heading flat while angVel read
+      0.08 rad/s) — fixed with a per-wheel effective-mass cap; (2) a slow
+      phantom drift after any tap — fixed by the grounded yaw assist; drive/
+      brake forces also now act on the centreline (differential-like).
+    - Camera rewritten as a rigid chase cam (see the Hotlap rules).
+    - All six themes repainted as daytime (morning/noon/golden/alpine/coast/
+      bright overcast): mown ground, clouds, snow-capped ridges, white
+      barriers with coloured rails, concrete undersides; no headlights or
+      underglow; exhaust glow only on boost pads.
+    - Bot retuned to the new grip; medals recalibrated (laps ~15–20% faster).
