@@ -15,7 +15,8 @@ before making changes.
 3. **Pushing:** commits go to `origin main` → https://github.com/Viv-411/arcade.
    Ask before pushing unless the user's request already says to push.
 4. **Verify before committing:** `npm run typecheck && npm test` (test builds and
-   plays full games of all six titles over real sockets). Every game must pass —
+   plays full games of all six multiplayer titles over real sockets, plus Hotlap's
+   determinism + verified-leaderboard suite). Every game must pass —
    Mind Meld must never regress when touching shared infra. CI runs the same on
    GitHub.
 5. Games must remain **testable in two browser tabs** on one machine — player
@@ -34,7 +35,9 @@ games are live: **Mind Meld** 🧠 (2–4 players converge on the same word),
 pass-and-play mode), and **Codewords** 🗝️ (two-team word-association deduction on
 a 5×5 grid, with a Remote mode and a Shared Board + QR-spymaster-phones mode),
 and **Chess** ♟ (standard chess with server-authoritative clocks, online PLUS a
-pass-and-play mode).
+pass-and-play mode). Plus one single-player title: **Hotlap** (precision 3D
+time-trial racing on 12 original tracks — deterministic physics, millisecond
+timing, ghosts, and server-VERIFIED leaderboards; three.js, lazy-loaded).
 The README.md holds the full player-facing rules; this file holds contributor
 context.
 
@@ -105,6 +108,23 @@ build`, start `npm start`, `PORT` env respected.
                             recovery, the error boundary, and preloadChess().
                             Board coordinates are drawn by US in gutters, not
                             by react-chessboard (see the gotcha below).
+/shared/hotlap/             Hotlap's DETERMINISTIC simulation, shared by client and
+                            server (see the Hotlap rules below): dmath.ts (exact
+                            math + polynomial sin/cos), track.ts (segment list →
+                            swept road + hash-grid collision world), car.ts
+                            (physics, SIM_VERSION, input bits), run.ts (gates,
+                            ms timing, respawn), replay.ts (input RLE codec),
+                            bot.ts (validation driver), tracks.ts (campaign),
+                            api.ts (HTTP contract).
+/server/src/hotlap/         /api/hotlap router; verifier.ts runs replays in a
+                            worker_thread (verifyWorker; inline fallback);
+                            store.ts = Supabase (hotlap_records) or SQLite.
+/client/src/hotlap/         session.ts (fixed-120Hz loop + render interpolation,
+                            camera, ghost), render/ (trackMesh, carMesh,
+                            environment, effects), input.ts, audio.ts (Web
+                            Audio synth), storage.ts (local PBs/settings),
+                            themes.ts, TrackMap.tsx, lazyHotlap.tsx.
+/tools/hotlap-tracks.ts     Track QA + medal calibration (see Hotlap rules).
 /client/src/pages/          Home (game grid), MindMeldPage, TriviaPage — each game
                             page shows its own "How to play" on the entry screen.
                             Codewords has FOUR pages: choice, remote, board
@@ -172,6 +192,29 @@ scoring). Clients render optimistically but never decide results.
   running, they can rejoin); LEAVING ends the game. playAgain swaps colours.
   Base minutes are FRACTIONAL on the wire on purpose so tests can flag a clock
   in seconds; the UI only offers whole minutes.
+- Hotlap (single player, route /hotlap, no sockets): an ORIGINAL game — its
+  own handling, tracks and look. The owner asked for a 1:1 PolyTrack copy;
+  that was declined (recreating a specific existing game), and Hotlap was
+  built instead around the qualities they named: one car, no upgrades,
+  deterministic, millisecond timing. Never copy another game's tracks/look.
+  **DETERMINISM IS LOAD-BEARING**: anything under shared/hotlap that feeds
+  the sim may use only + - * /, Math.sqrt/abs/min/max/floor/round/sign and
+  dmath.ts — NEVER Math.sin/cos/atan2/pow/exp/hypot (engines differ, and a
+  Safari run would then fail verification on Node). Iteration order must be
+  deterministic (arrays, insertion-ordered maps). Bump `SIM_VERSION` on ANY
+  change that alters sim results (physics constants, track building,
+  timing) and a track's `version` when its geometry changes — records and
+  ghosts are keyed by both, so stale ones simply stop matching. After any
+  physics or track change run `npx tsx tools/hotlap-tracks.ts` (validation,
+  self-overlap check, both bots finish with 0 respawns, determinism) and
+  paste its calibrated `medals:` lines (ace = fast-bot × 0.94, gold × 1.02,
+  silver × 1.12, bronze × 1.30); `--strict-medals` must pass. The clock
+  starts on the first tick a DRIVE input is held (no countdown); tick 0 of
+  the replay is that tick. Respawn = input bit 16 (edge-triggered), so
+  respawns replay too. Server stores the time IT computes; claimedMs ≠
+  computed → 422. Posting needs an account; anonymous players keep local
+  PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
+  on the play page is a QA hook (the bot drives; such runs are never posted).
 - Bid Battle: EXACTLY 2 (1v1) or 4 (2v2) players in fixed teams; per-mode quick
   play pools (full-lobby-only auto-start applies like everywhere). **Leaving mid-match forfeits for the
   leaver's team; disconnecting does NOT** (timers keep the match moving — a silent
@@ -271,7 +314,11 @@ child process (real `socket.io-client` sockets playing full games). `npm run
 test:only` skips the rebuild. CI (`.github/workflows/ci.yml`) runs typecheck + build
 + tests on every push/PR.
 
-Coverage: full Mind Meld win flow (normalization, no-repeat rejection at lock-in,
+Coverage: Hotlap (every track: careful bot finishes with 0 respawns and
+re-simulates to the identical ms directly and after replay encode/decode;
+API: 401/400/404/409/422/429 paths, verified time = local sim, improved vs
+not, ranks + ties + `you`, replay round-trip, /me). Full Mind Meld win flow
+(normalization, no-repeat rejection at lock-in,
 unlock/re-lock, playAgain reset), full trivia flow (host-only difficulty, vote +
 early resolve, decoded questions, hidden correct answer, duplicate/late answer
 rejection, scoring bounds 500–1000, sorted scoreboard, tie winners, playAgain),
@@ -325,7 +372,17 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
 
 ## Environment / ops notes
 
-- Env vars: `PORT` (default 3001), `STATS_DB` (default `data/stats.db`).
+- Env vars: `PORT` (default 3001), `STATS_DB` (default `data/stats.db`; also
+  Hotlap's SQLite records), `HOTLAP_STORE=sqlite` (force SQLite records even
+  with Supabase configured). `tests/run.mjs` boots the test server with
+  `HOTLAP_STORE=sqlite` + a test `SUPABASE_JWT_SECRET` (HS256 tokens minted in
+  the test); `process.loadEnvFile` never overrides vars already set, so the
+  owner's real `.env` can't leak into tests.
+- Visual QA without the Chrome extension: drive headless Chrome over CDP
+  (`--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader`,
+  `Input.dispatchKeyEvent` for held keys, `Page.captureScreenshot`). Software
+  WebGL starves the main thread, so fetches resolve seconds late and the sim
+  runs slower than real time there — don't mistake either for a bug.
 - Long-running dev servers started from a Claude session get killed by session task
   cleanup — start detached: `nohup npm run dev > /tmp/dev.log 2>&1 & disown`.
   Stop everything: `lsof -nP -iTCP:5173,3001,3199 -sTCP:LISTEN -t | xargs kill`.
@@ -378,6 +435,11 @@ Gotchas encoded in `tests/helpers.mjs` — keep them in mind when writing new te
   pinned deliberately; do not "upgrade" it without moving React first.
 - Home's game grid is six cards; accents are pink/yellow/green/cyan/red plus
   chess's `--accent-mono` off-white.
+- Hotlap shipped locally (2026-10-26): 12 tracks, verified leaderboards,
+  ghosts. Client deps: three 0.170 (only in the lazy HotlapPlayPage chunk,
+  ~560 kB; no modulepreload — verified). Migration
+  20261026000000_hotlap_records.sql must be pushed after the owner resumes
+  Supabase, or production leaderboards stay 503.
 - Deps (2026-10-26): React Router 7 (react-router-dom 7.18, library mode —
   same `BrowserRouter`/`Routes`/`Link`/`useNavigate`/`useSearchParams` API
   the app already used, no code changes needed) and Vite 6.4 (NOT 7/8 —
@@ -431,6 +493,10 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
 - Sign-in bursts can hit Supabase auth rate limits — retry with backoff.
 
 ## Backlog (agreed future work, not started)
+
+- Hotlap: multiplayer later (the owner's stated next step — live ghosts of
+  other players are the natural first stage, since runs are deterministic);
+  a track editor (the segment format is editor-friendly); more tracks.
 
 - Home's Singleplayer section has ONE placeholder card left: Daily Challenge
   (Solo Trivia shipped 2026-07-19 at /solo/trivia).
@@ -907,3 +973,35 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
     - Supabase project found PAUSED (see Current state) — owner action.
     - Doc drift fixed: "five titles" → six in this file, the CI comment, and
       PROJECT_CONTEXT.md's status line.
+
+33. **Hotlap (2026-10-26)** — single-player precision time-trial racer, the
+    owner's request (they asked for a 1:1 PolyTrack copy; declined, and an
+    ORIGINAL game built around the qualities they named). Built with two
+    background agents: one designed the 12-track campaign + tools/hotlap-
+    tracks.ts, one built the verified leaderboard backend + tests.
+    - Physics tuned by probe scripts, not feel alone: 0–100 km/h 2.7 s, top
+      ~280 km/h, ~1.7 g braking, grip 1.2 g → 1.7 g with downforce. Lessons:
+      tyre forces at the contact patch rolled the car at ~1 g (now applied
+      88% of the way up to the CoM); mapping throttle to air pitch flipped
+      cars mid-jump because players hold throttle (air now: nose slowly
+      follows velocity + yaw-rate steering only); a damped bump stop stops
+      big landings from bouncing; steering ramps over a FIXED 0.13 s at any
+      speed so tapping a digital key gives fine, repeatable corrections.
+    - Determinism verified three ways: Node runs repeat bit-identically; the
+      browser's autopilot lap time equals Node's for the same bot (32.907 s,
+      33.584 s); a browser-recorded replay posted to the server verified to
+      the identical ms and took #1 on a local board.
+    - Bot fixes from the track agent's notes: corners before a jump are
+      always respected (the floor only lifts limits beyond the gap), whole-
+      path re-localisation after respawn (was an endless respawn loop), and
+      braking distance on boost pads doesn't count (it fell off Skywire).
+    - Visual bugs caught only by screenshots: spiky mountains, an oversized
+      sun, the start prompt covering the car, dark headlights, and support
+      pillars of upper decks passing THROUGH the road below (now skipped
+      where another road lies underneath).
+    - Fixed a latent chess test race: the first gameStart snapshot nets off
+      elapsed time, so it can read 179999 ms; the test now allows ≤2 s.
+    - NOT pushed at time of writing; the hotlap_records migration is NOT
+      applied (Supabase paused). Until it is, production picks the Supabase
+      store and the leaderboard answers 503 (UI shows "unavailable"); local
+      PBs, ghosts and medals still work.

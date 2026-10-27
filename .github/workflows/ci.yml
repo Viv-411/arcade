@@ -18,7 +18,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
-      # Plays full games of all six titles over real sockets (seven test files).
+      # Plays full games of all six multiplayer titles over real sockets, plus the
+      # Hotlap determinism + verified-leaderboard suite (eight test files).
       # Trivia falls back to built-in questions if OpenTDB is unreachable or
       # rate-limits the runner, so this stays deterministic in CI.
       - run: node tests/run.mjs

@@ -19,6 +19,7 @@ import { InMemoryRoomStore } from "./store.js";
 import { createStatsStore } from "./stats.js";
 import { optionalAuth, socketOptionalAuth } from "./auth.js";
 import { SocialManager } from "./social/manager.js";
+import { createHotlapApi } from "./hotlap/index.js";
 
 // npm scripts run from the repo root, so resolve paths from cwd. This keeps
 // the same logic working for both tsx (dev) and the compiled dist build.
@@ -102,11 +103,14 @@ app.get("/healthz", (_req, res) => {
 });
 
 // All /api routes get optional auth: req.userId is set when a valid Supabase
-// access token is sent, null otherwise. Nothing is gated yet.
+// access token is sent, null otherwise. Routes that need an account (posting
+// Hotlap records) check req.userId themselves; game play is never gated.
 app.use("/api", optionalAuth);
 app.get("/api/me", (req, res) => {
   res.json({ userId: req.userId ?? null });
 });
+// Hotlap (single-player time trial): server-verified records + ghosts.
+app.use("/api/hotlap", await createHotlapApi(STATS_DB));
 
 if (fs.existsSync(CLIENT_DIST)) {
   app.use(express.static(CLIENT_DIST));

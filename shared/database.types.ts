@@ -317,6 +317,46 @@ export interface Database {
           },
         ];
       };
+      hotlap_records: {
+        Row: {
+          id: string;
+          user_id: string;
+          track_id: string;
+          track_version: number;
+          sim_version: number;
+          time_ms: number;
+          replay: string;
+          set_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          track_id: string;
+          track_version: number;
+          sim_version: number;
+          time_ms: number;
+          replay: string;
+          set_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          track_id?: string;
+          track_version?: number;
+          sim_version?: number;
+          time_ms?: number;
+          replay?: string;
+          set_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hotlap_records_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

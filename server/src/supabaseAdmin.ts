@@ -15,6 +15,8 @@ let cached: SupabaseClient<Database> | null | undefined;
  * - social/manager.ts — friendships, presence, and the deny-all chat tables.
  * - trivia/customSets.ts — loads a host's custom set for a private lobby,
  *   re-implementing the owner-or-share access rule in code.
+ * - hotlap/store.ts — the deny-all hotlap_records table; only ever writes
+ *   times the server itself verified, for the authenticated caller.
  */
 export function getSupabaseAdmin(): SupabaseClient<Database> | null {
   if (cached !== undefined) return cached;

@@ -19,6 +19,12 @@
 > refreshed the same day (React Router 7, Vite 6.4, Node ≥20.12; 0 audit findings), and
 > the hosted Supabase project was found paused (free-tier idle pause; owner restores it
 > from the dashboard).
+>
+> **Update 2026-10-26 (later):** **Hotlap** shipped — a single-player, ORIGINAL precision
+> time-trial racer (12 tracks, deterministic shared physics, millisecond timing, ghosts,
+> server-verified leaderboards). The owner had asked for a 1:1 copy of PolyTrack; that was
+> declined and Hotlap was built around the qualities they wanted instead. See `CLAUDE.md`
+> (rules, especially the determinism rule) and `README.md` (player rules).
 
 ---
 

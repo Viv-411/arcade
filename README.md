@@ -393,6 +393,51 @@ board can auto-flip to whoever is to move (toggleable).
 - Time controls accept **fractional** base minutes on the wire so the test suite
   can flag a clock in seconds; the UI only ever offers whole minutes.
 
+## Hotlap — the rules
+
+A single-player precision time-trial racer (route `/hotlap`). It is an
+ORIGINAL game: its own car, handling model, tracks and look — not a copy of
+any existing racing game.
+
+- **One car, no upgrades, no tuning.** Everyone drives identical physics.
+- **Twelve tracks** in a campaign (3 easy, 3 medium, 3 hard, 3 expert), with
+  banked curves, hairpins, climbs, jumps, boost pads, narrowing roads and
+  wall-less sections where a mistake means falling off.
+- **The clock starts the moment you touch the controls** (no countdown, so
+  restarts are instant) and stops on the finish line. Times are to the
+  **millisecond**: physics ticks at a fixed 120 Hz and gate crossings are
+  interpolated *inside* the tick.
+- **Checkpoints must be hit in order.** Fall off and you're put back at your
+  last checkpoint — the clock keeps running. `Enter` does the same by hand.
+- **Medals:** bronze, silver, gold and ace per track, calibrated from an
+  automatic driver (`tools/hotlap-tracks.ts`). Ace needs a better line than
+  the bot drives.
+- **Ghosts:** race your own best (stored on this device), or press play on any
+  leaderboard row to race that record's exact run.
+- **Controls:** arrows/WASD to drive, `Enter` checkpoint, `R` restart, `Esc`
+  pause, `C` camera (chase / far / hood), `G` ghost, `M` mute. Gamepads work
+  (triggers + stick) and touch devices get on-screen controls. Inputs are
+  digital on every device, so nobody gets an analog advantage.
+
+### Determinism and verified leaderboards
+
+The simulation in `shared/hotlap/` runs identically in every browser and on
+the server: it uses only IEEE-exact operations (`+ - * /`, `Math.sqrt`) and its
+own polynomial sine/cosine — never `Math.sin`/`cos`/`pow`, which engines are
+free to compute differently. That makes a run's **inputs** a complete replay.
+
+Signed-in players' finishes are posted as replays; the server re-simulates
+them in a worker thread and stores the time **it** computed, so a time that
+wasn't actually driven can't be posted. Anonymous players keep personal bests
+and ghosts on their device; posting needs an account (`/api/hotlap/*`, see
+`shared/hotlap/api.ts`). Records are kept per track version and physics
+version (`SIM_VERSION`), so a physics change starts fresh boards instead of
+mixing incomparable times.
+
+Leaderboard storage is Supabase (`hotlap_records`, migration
+`20261026000000_hotlap_records.sql`, deny-all RLS — server-mediated) when the
+service role is configured, otherwise SQLite next to the stats DB.
+
 ## Running it
 
 ```bash
@@ -409,9 +454,10 @@ npm start              # open http://localhost:3001
 npm run typecheck
 
 # End-to-end tests: builds, boots the server on a test port, and plays full
-# games of ALL SIX titles over real sockets (seven test files, including a
-# 10-player trivia game, the Codewords secrecy sweeps, and a chess game where
-# the server flags a clock).
+# games of all six multiplayer titles over real sockets, plus Hotlap (eight
+# test files, including a 10-player trivia game, the Codewords secrecy sweeps,
+# a chess game where the server flags a clock, and Hotlap determinism on every
+# track + the verified-leaderboard API).
 # `npm run test:only` skips the rebuild.
 npm test
 ```
@@ -447,7 +493,8 @@ session key, so the three kinds of tab don't clobber each other.
 | Var        | Default         | Meaning                          |
 | ---------- | --------------- | -------------------------------- |
 | `PORT`     | `3001`          | Port the Node server listens on  |
-| `STATS_DB` | `data/stats.db` | Path of the SQLite stats file    |
+| `STATS_DB` | `data/stats.db` | Path of the SQLite stats file (also holds Hotlap records when Supabase isn't configured) |
+| `HOTLAP_STORE` | *(auto)* | Set to `sqlite` to force Hotlap records into SQLite even when Supabase is configured (the test suite does this) |
 
 ## Imposter — the rules
 

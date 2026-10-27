@@ -18,7 +18,13 @@ const TESTS = [
   "imposter.test.mjs",
   "codewords.test.mjs",
   "chess.test.mjs",
+  "hotlap.test.mjs",
 ];
+// HS256 secret the server trusts for this run, so tests can mint Supabase-
+// style access tokens for fake users (auth.ts tries HS256 before JWKS). The
+// server's .env loading never overrides variables already set here, so these
+// also win over the owner's local .env.
+const TEST_JWT_SECRET = "arcade-test-jwt-secret-not-for-production";
 
 if (!existsSync(SERVER)) {
   console.error("dist/ not found — run `npm run build` first (or use `npm test`).");
@@ -28,7 +34,14 @@ if (!existsSync(SERVER)) {
 const statsDb = path.join(mkdtempSync(path.join(os.tmpdir(), "arcade-test-")), "stats.db");
 const server = spawn(process.execPath, [SERVER], {
   cwd: ROOT,
-  env: { ...process.env, PORT: String(PORT), STATS_DB: statsDb },
+  env: {
+    ...process.env,
+    PORT: String(PORT),
+    STATS_DB: statsDb,
+    SUPABASE_JWT_SECRET: TEST_JWT_SECRET,
+    // Hotlap records go to the isolated SQLite file, never a real Supabase.
+    HOTLAP_STORE: "sqlite",
+  },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let serverLog = "";
@@ -68,7 +81,11 @@ for (const file of TESTS) {
   const result = spawnSync(
     process.execPath,
     [path.join(ROOT, "tests", file)],
-    { env: { ...process.env, PORT: String(PORT) }, stdio: "inherit", timeout: 150000 },
+    {
+      env: { ...process.env, PORT: String(PORT), TEST_JWT_SECRET },
+      stdio: "inherit",
+      timeout: 150000,
+    },
   );
   if (result.status !== 0) fail(`${file} FAILED`);
 }

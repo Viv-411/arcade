@@ -67,6 +67,16 @@ import userPlus from "pixelarticons/svg/user-plus.svg?raw";
 import users from "pixelarticons/svg/users.svg?raw";
 import warning from "pixelarticons/svg/warning-diamond.svg?raw";
 import zap from "pixelarticons/svg/zap.svg?raw";
+// Hotlap
+import arrowLeft from "pixelarticons/svg/arrow-left.svg?raw";
+import camera from "pixelarticons/svg/camera.svg?raw";
+import car from "pixelarticons/svg/car.svg?raw";
+import chartBar from "pixelarticons/svg/chart-bar-big.svg?raw";
+import listBox from "pixelarticons/svg/list-box.svg?raw";
+import reload from "pixelarticons/svg/reload.svg?raw";
+import speedFast from "pixelarticons/svg/speed-fast.svg?raw";
+import volume from "pixelarticons/svg/volume-3.svg?raw";
+import volumeOff from "pixelarticons/svg/volume.svg?raw";
 
 const ICONS = {
   alien,
@@ -134,6 +144,15 @@ const ICONS = {
   users,
   warning,
   zap,
+  "arrow-left": arrowLeft,
+  "camera": camera,
+  "car": car,
+  "chart-bar": chartBar,
+  "list-box": listBox,
+  "reload": reload,
+  "speed-fast": speedFast,
+  "volume": volume,
+  "volume-off": volumeOff,
 } as const;
 
 export type IconName = keyof typeof ICONS;

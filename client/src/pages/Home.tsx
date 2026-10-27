@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Icon, { type IconName } from "../components/Icon";
 import { preloadChess } from "../chess/lazyChess";
+import { preloadHotlap } from "../hotlap/lazyHotlap";
 
 const SOLO_COMING_SOON = [
   { name: "Daily Challenge", icon: "calendar", blurb: "One puzzle a day, streaks included." },
@@ -95,6 +96,21 @@ export default function Home() {
 
       <h2 className="section-title"><Icon name="gamepad" /> Singleplayer</h2>
       <div className="game-grid">
+        <Link
+          to="/hotlap"
+          className="game-card active accent-orange"
+          onMouseEnter={preloadHotlap}
+          onTouchStart={preloadHotlap}
+          onFocus={preloadHotlap}
+        >
+          <div className="game-emoji"><Icon name="car" /></div>
+          <h2>Hotlap</h2>
+          <p>
+            Precision time trials on twelve tracks. One car, no upgrades, millisecond
+            timing, ghosts and server-verified leaderboards.
+          </p>
+          <span className="badge play-badge"><Icon name="play" /> Play now</span>
+        </Link>
         <Link to="/solo/trivia" className="game-card active accent-yellow">
           <div className="game-emoji"><Icon name="target" /></div>
           <h2>Solo Trivia</h2>

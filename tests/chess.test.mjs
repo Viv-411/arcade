@@ -44,7 +44,12 @@ async function playLine(sockets, moves) {
   a.emit("startGame");
   const started = await start;
   assert(started.colors.white === created.data.playerId, "host got the colour they picked");
-  assert(started.clocks.whiteMs === 180000, "white starts with 3:00");
+  // The snapshot nets off time already burned on the running clock, so a
+  // millisecond tick between start and snapshot legitimately reads 179999.
+  assert(
+    started.clocks.whiteMs <= 180000 && started.clocks.whiteMs > 180000 - 2000,
+    `white starts with ~3:00 (got ${started.clocks.whiteMs}ms)`,
+  );
   assert(started.clocks.running === "white", "white's clock is the one running");
 
   // --- the server, not the client, decides legality ---

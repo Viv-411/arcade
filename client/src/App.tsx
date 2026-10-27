@@ -25,9 +25,10 @@ import {
   ChessOnlinePage,
   ChessRouteFrame,
 } from "./chess/lazyChess";
+import { HotlapHubPage, HotlapPlayPage, HotlapRouteFrame } from "./hotlap/lazyHotlap";
 
-// Chess is the only code-split route group; see chess/lazyChess for why and
-// for how stale-chunk failures are handled.
+// Chess and Hotlap are code-split route groups (heavy libraries); see
+// chess/lazyChess and hotlap/lazyHotlap for how stale chunks are handled.
 export default function App() {
   return (
     <AuthProvider>
@@ -60,6 +61,16 @@ export default function App() {
             <Route path="/chess" element={<ChessChoicePage />} />
             <Route path="/chess/online" element={<ChessOnlinePage />} />
             <Route path="/chess/local" element={<ChessLocalPage />} />
+          </Route>
+          <Route
+            element={
+              <HotlapRouteFrame>
+                <Outlet />
+              </HotlapRouteFrame>
+            }
+          >
+            <Route path="/hotlap" element={<HotlapHubPage />} />
+            <Route path="/hotlap/:trackId" element={<HotlapPlayPage />} />
           </Route>
           <Route path="/account" element={<AccountPage />} />
           <Route path="/friends" element={<FriendsPage />} />
