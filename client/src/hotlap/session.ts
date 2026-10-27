@@ -27,6 +27,8 @@ import type { CameraMode, HotlapSettings } from "./storage";
 import { themeOf } from "./themes";
 
 const DRIVE_MASK = IN_UP | IN_DOWN | IN_LEFT | IN_RIGHT;
+/** Speed-graph sample spacing: every 2 ticks = 60 samples per second. */
+export const SPEED_SAMPLE_TICKS = 2;
 /** Constant field of view — never changes with speed. */
 const CAMERA_FOV = 70;
 const TICK = 1 / TICK_HZ;
@@ -40,6 +42,8 @@ export interface FinishInfo {
   respawns: number;
   /** Driven by the QA autopilot — never posted to the leaderboard. */
   autopilot: boolean;
+  /** Speed (km/h) every SPEED_SAMPLE_TICKS ticks, from the first tick. */
+  speedTrace: number[];
 }
 
 export interface SessionCallbacks {
@@ -83,6 +87,7 @@ export class HotlapSession {
 
   private run!: Run;
   private recorder!: InputRecorder;
+  private speedTrace: number[] = [];
   private prev!: CarState;
   private curr!: CarState;
   private ghostRun: Run | null = null;
@@ -168,6 +173,7 @@ export class HotlapSession {
   reset() {
     this.run = new Run(this.track);
     this.recorder = new InputRecorder();
+    this.speedTrace = [];
     this.prev = this.run.snapshot();
     this.curr = this.run.snapshot();
     this.acc = 0;
@@ -265,6 +271,7 @@ export class HotlapSession {
     this.prev = this.curr;
     this.recorder.push(bits);
     const events = this.run.step(bits);
+    if (this.run.tick % SPEED_SAMPLE_TICKS === 0) this.speedTrace.push(Math.abs(this.run.car.speed) * 3.6);
     this.curr = this.run.snapshot();
     if (this.ghostRun && this.ghostPlayer && !this.ghostRun.finished) {
       this.ghostPrev = this.ghostCurr;
@@ -297,6 +304,7 @@ export class HotlapSession {
         replay: encodeInputs(this.recorder.spans),
         respawns: this.run.respawns,
         autopilot: this.autopilotUsed,
+        speedTrace: [...this.speedTrace],
       });
     }
   }

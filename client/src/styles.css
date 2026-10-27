@@ -3839,3 +3839,52 @@ body.hl-playing::after {
   font-size: 14px;
   margin: -4px 0 12px;
 }
+
+/* ---- Hotlap finish-screen speed graph ---- */
+.hl-panel.hl-finish {
+  width: min(620px, 100%);
+}
+.hl-graph {
+  margin: 14px 0 4px;
+  padding: 8px 8px 6px;
+  border-radius: 12px;
+  background: rgba(8, 8, 24, 0.55);
+  border: 1px solid var(--panel-edge);
+}
+.hl-graph svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.hl-graph-grid {
+  stroke: rgba(255, 255, 255, 0.09);
+  stroke-width: 1;
+}
+.hl-graph-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-body);
+}
+.hl-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.hl-graph-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hl-graph-legend i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.hl-graph-axis {
+  opacity: 0.7;
+}

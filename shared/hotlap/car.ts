@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 7;
+export const SIM_VERSION = 8;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -62,10 +62,12 @@ export const CAR = {
   latStiffRear: 70000,
   /** Max fraction of a wheel's slip its grip may cancel in one substep (4 wheels act at once). */
   gripStepFraction: 0.2,
+  /** Max multiple of a wheel's static load that counts toward grip. */
+  gripLoadCap: 1.6,
   /** Braking/traction friction coefficient (doesn't fade with speed). */
   muLong: 5.0,
   /** Peak cornering friction coefficient; sliding drops to `slideFactor` of it. */
-  mu: 2.0,
+  mu: 2.6,
   /** Fraction of grip lost by top speed (linear in speed). */
   gripFade: 0.06,
   /** Speed (m/s) by which the full grip fade has applied. */
@@ -84,7 +86,7 @@ export const CAR = {
   downforce: 0.15,
   boostAccel: 16,
   maxSteer: 0.5,
-  steerFalloff: 17,
+  steerFalloff: 26,
   /** Seconds from centre to full lock, and from full lock back to centre. */
   steerRampTime: 0.06,
   /** Extra ramp time per m/s of speed: calmer, less twitchy steering when fast. */
@@ -98,12 +100,12 @@ export const CAR = {
   /** Front-to-rear axle distance (m) for the kinematic yaw rate. */
   wheelbase: 2.58,
   /** Yaw assist strength (1/s) and the lateral acceleration it may demand (m/s²). */
-  yawAssist: 9,
-  yawAssistGrip: 34,
+  yawAssist: 11,
+  yawAssistGrip: 44,
   /** >1 lets rotation outpace the turn of the velocity: a controlled slide. */
-  slideLead: 1.1,
+  slideLead: 1.0,
   /** How much rear grip goes at full lock and speed (0 = none). */
-  rearSlide: 0.08,
+  rearSlide: 0,
   /** Slide angle (as lateral/forward speed ratio, ~rad) a held corner settles at. */
   maxSlip: 0.14,
   /** Speed (m/s) at which the rear-slide effect is fully in. */
@@ -463,7 +465,10 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     const vc = pointVel(car, cp);
     const vLong = vc.x * fwx + vc.y * fwy + vc.z * fwz;
     const vLat = vdot(vc, lw);
-    const load = fs;
+    // Grip comes from load, but a landing slams the suspension and briefly
+    // multiplies it — cap the load that counts for GRIP so touchdown with the
+    // wheels turned can't yank the car around (the spring still absorbs it).
+    const load = Math.min(fs, CAR.gripLoadCap * (CAR.mass * CAR.gravity) / 4);
 
     // Lateral grip, capped so a single substep can never over-correct: the
     // cap is the force that would cancel a fraction of this wheel's slip in

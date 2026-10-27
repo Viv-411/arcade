@@ -8,6 +8,8 @@ import type { SubmitRunResponse } from "@shared/hotlap/api";
 import Icon from "../components/Icon";
 import { useAuth } from "../auth/AuthContext";
 import { HotlapApiError, fetchReplay, submitRun } from "../hotlap/api";
+import SpeedGraph from "../hotlap/SpeedGraph";
+import { traceFromReplay, traceFromSpans } from "../hotlap/trace";
 import { HotlapSession, type FinishInfo, type Phase } from "../hotlap/session";
 import {
   formatDelta,
@@ -34,6 +36,8 @@ interface FinishView {
   info: FinishInfo;
   previous: number | null;
   improved: boolean;
+  /** What this run is compared against on the speed graph. */
+  compare: { label: string; speeds: number[] } | null;
 }
 
 const CAMERAS: { key: CameraMode; label: string }[] = [
@@ -135,9 +139,18 @@ function HotlapPlay() {
     (info: FinishInfo) => {
       if (!def) return;
       const prev = bestRef.current;
+      // Speed-graph comparison: the ghost you raced, else your previous best.
+      let compare: FinishView["compare"] = null;
+      if (built && remoteGhost.current) {
+        const sp = traceFromSpans(built, remoteGhost.current.spans);
+        if (sp) compare = { label: remoteGhost.current.label, speeds: sp };
+      } else if (built && prev) {
+        const sp = traceFromReplay(built, prev.replay);
+        if (sp) compare = { label: `Best ${formatTime(prev.ms)}`, speeds: sp };
+      }
       const res = offerLocalBest(def, { ms: info.ms, splits: info.splits, replay: info.replay, at: Date.now() });
       if (res.improved) bestRef.current = { ms: info.ms, splits: info.splits, replay: info.replay, at: Date.now() };
-      setFinish({ info, previous: prev?.ms ?? null, improved: res.improved });
+      setFinish({ info, previous: prev?.ms ?? null, improved: res.improved, compare });
       sessionRef.current?.audio.finish(res.improved);
       if (info.autopilot) {
         setSubmit({ kind: "error", msg: "Autopilot run — not posted." });
@@ -169,7 +182,7 @@ function HotlapPlay() {
           setSubmit({ kind: "error", msg });
         });
     },
-    [def],
+    [def, built],
   );
 
   // Create the session once per track.
@@ -499,6 +512,12 @@ function HotlapPlay() {
               )}
               {submit.kind === "error" && <span className="hl-err">{submit.msg}</span>}
             </div>
+            <SpeedGraph
+              traces={[
+                { label: `This run ${formatTime(finish.info.ms)}`, speeds: finish.info.speedTrace, color: "#ff8a3d" },
+                ...(finish.compare ? [{ ...finish.compare, color: "#5aa9ff" }] : []),
+              ]}
+            />
             {finish.info.respawns > 0 && <div className="muted small">{finish.info.respawns} checkpoint reset{finish.info.respawns > 1 ? "s" : ""}</div>}
             <div className="hl-menu">
               <button className="btn primary" onClick={restart}><Icon name="reload" /> Retry <kbd>R</kbd></button>

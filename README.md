@@ -400,9 +400,16 @@ ORIGINAL game: its own car, handling model, tracks and look — not a copy of
 any existing racing game.
 
 - **One car, no upgrades, no tuning.** Everyone drives identical physics.
-- **Twelve tracks** in a campaign (3 easy, 3 medium, 3 hard, 3 expert), with
-  banked curves, hairpins, climbs, jumps, boost pads, narrowing roads and
-  wall-less sections where a mistake means falling off.
+- **Twelve tracks** in a campaign (3 easy, 3 medium, 3 hard, 3 expert):
+  compact, technical layouts built on tight 90° corners, hairpins, short
+  straights, ramps and jumps, banked U-turns and, on the hardest tracks,
+  wall-less sections where a mistake means falling off. No boost pads — all
+  speed is earned. Four plain **test courses** (fixed-radius arcs, a 90°
+  corner ladder, hairpins, a slalom + braking zone) sit apart from the
+  campaign for comparing handling corner by corner.
+- **Speed graph:** the finish screen plots your speed over time, overlaid on
+  your previous best (or the ghost you raced) — re-simulated from its replay,
+  so it's exact.
 - **The clock starts the moment you touch the controls** (no countdown, so
   restarts are instant) and stops on the finish line. Times are to the
   **millisecond**: physics ticks at a fixed 120 Hz and gate crossings are

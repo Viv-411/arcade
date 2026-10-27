@@ -20,9 +20,9 @@ export interface BotTuning {
   lookGain: number;
 }
 
-// Tuned for the SIM_VERSION 7 car (~3 g cornering, ~7.4 g brakes).
-export const BOT_CAREFUL: BotTuning = { latAccel: 22, brakeAccel: 50, lookBase: 7, lookGain: 0.28 };
-export const BOT_FAST: BotTuning = { latAccel: 27, brakeAccel: 62, lookBase: 7, lookGain: 0.26 };
+// Tuned for the SIM_VERSION 8 car (~3.7 g cornering, no slide, ~7.3 g brakes).
+export const BOT_CAREFUL: BotTuning = { latAccel: 27, brakeAccel: 50, lookBase: 7, lookGain: 0.28 };
+export const BOT_FAST: BotTuning = { latAccel: 33, brakeAccel: 62, lookBase: 7, lookGain: 0.26 };
 
 /** Gravity used by the car physics (m/s²) — crest-speed planning. */
 const CREST_G = CAR.gravity;

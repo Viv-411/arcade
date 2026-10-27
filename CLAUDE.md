@@ -215,7 +215,7 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
-  OWNER FEEL RULES (2026-10-27, SIM_VERSION 7 — see sessions 36–38 for the
+  OWNER FEEL RULES (2026-10-27, SIM_VERSION 8 — see sessions 36–39 for the
   latest numbers, which supersede the ones in this paragraph): the owner wants the driving
   as close to PolyTrack's FEEL as possible (handling only — the game, tracks
   and look stay original). Targets were MEASURED from PolyTrack's public
@@ -522,9 +522,6 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
 
 ## Backlog (agreed future work, not started)
 
-- Hotlap: the owner finds the campaign tracks "not fun" — a redesign pass
-  (more rhythm/flow, tighter technical sections, better jumps) is wanted;
-  original designs only.
 - Hotlap: multiplayer later (the owner's stated next step — live ghosts of
   other players are the natural first stage, since runs are deterministic);
   a track editor (the segment format is editor-friendly); more tracks.
@@ -1135,3 +1132,31 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       can't bite. Smoothed the climb (80 m/rise 8 → 110 m/rise 4.5, and the
       matching descent) and bumped it to version 2. Lesson: after any big
       speed increase, re-check crests that lead into corners.
+
+39. **Hotlap round 5 (2026-10-27): speed graph, new campaign, grip + landing
+    fixes** — owner asked to recreate PolyTrack's Summer 5 privately and
+    replay the #1 run's inputs to clone the physics — DECLINED (copying
+    their track, even temporarily; also infeasible: inputs can't be lifted
+    from a replay frame-accurately, and tick rates differ).
+    - SPEED GRAPH on the finish screen (client/src/hotlap/SpeedGraph.tsx):
+      this run vs your previous best or the ghost you raced. The session
+      records speed every SPEED_SAMPLE_TICKS (2) ticks; comparison traces
+      are rebuilt by re-simulating the replay (hotlap/trace.ts) — exact,
+      no telemetry stored (autopilot re-runs overlay perfectly, +0.000).
+    - LANDING SNAP fixed: touchdown spikes suspension load several-fold, and
+      grip ∝ load, so pre-turned front wheels yanked the car (31° in 0.3 s vs
+      9° for the same input on the ground). Grip now counts at most
+      `gripLoadCap` (1.6×) static wheel load.
+    - Drift removed (rearSlide 0, slideLead 1.0) and turning authority up:
+      mu 2.6, steerFalloff 26, yawAssist 11, yawAssistGrip 44 → ~3.75 g flat,
+      <1° slip at full lock. SIM 7 → 8. Bots 27/50 and 33/62.
+    - CAMPAIGN REPLACED (background agent): 12 new ORIGINAL compact,
+      technical tracks — chalk-line, hopscotch, rooftops (easy); ratchet,
+      sawtooth, crossover (medium); pinwheel, stepwell, foundry (hard);
+      filament, clockwork, gauntlet (expert). Tight 90s/hairpins, short
+      straights, kickers and step-down drops, stacked laps and overpasses,
+      NO boost pads. New ids, version 1. The cheatsheet at the top of
+      tracks.ts records the design lessons (safe crests, jump-speed formula,
+      hairpin spacing, stacked-lap rules). Known bot limitation: it ignores
+      banking (runs ~5 m wide in banked hairpins), so medals on banked
+      hairpins are slightly soft.
