@@ -26,7 +26,7 @@
 import { buildTrack, validateTrack, type TrackDef } from "../shared/hotlap/track.js";
 import { Run } from "../shared/hotlap/run.js";
 import { botLap, BOT_CAREFUL, BOT_FAST, type BotTuning } from "../shared/hotlap/bot.js";
-import { TRACKS } from "../shared/hotlap/tracks.js";
+import { ALL_TRACKS as TRACKS } from "../shared/hotlap/tracks.js";
 
 const THEMES = ["dawn", "noon", "dusk", "night", "neon", "storm"];
 const OVERLAP_MIN_S = 60;

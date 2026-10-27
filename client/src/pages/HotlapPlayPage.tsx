@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { IN_DOWN, IN_LEFT, IN_RESPAWN, IN_RIGHT, IN_UP, SIM_VERSION } from "@shared/hotlap/car";
 import { decodeInputs, type InputSpan } from "@shared/hotlap/replay";
 import { buildTrack } from "@shared/hotlap/track";
-import { TRACKS, getTrack } from "@shared/hotlap/tracks";
+import { TEST_TRACKS, TRACKS, getTrack, isTestTrack } from "@shared/hotlap/tracks";
 import type { SubmitRunResponse } from "@shared/hotlap/api";
 import Icon from "../components/Icon";
 import { useAuth } from "../auth/AuthContext";
@@ -78,8 +78,9 @@ function HotlapPlay() {
   const userRef = useRef(user);
   userRef.current = user;
 
-  const trackIndex = def ? TRACKS.indexOf(def) : -1;
-  const nextTrack = trackIndex >= 0 ? TRACKS[trackIndex + 1] : undefined;
+  const list = def && isTestTrack(def) ? TEST_TRACKS : TRACKS;
+  const trackIndex = def ? list.indexOf(def) : -1;
+  const nextTrack = trackIndex >= 0 ? list[trackIndex + 1] : undefined;
 
   const updateSettings = useCallback((patch: Partial<HotlapSettings>) => {
     setSettings((s) => {

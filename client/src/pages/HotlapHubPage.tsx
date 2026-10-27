@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { LeaderboardResponse, MyRecordsResponse } from "@shared/hotlap/api";
-import { TRACKS } from "@shared/hotlap/tracks";
+import { ALL_TRACKS, TEST_TRACKS, TRACKS } from "@shared/hotlap/tracks";
 import type { Difficulty, TrackDef } from "@shared/hotlap/track";
 import Icon from "../components/Icon";
 import { useAuth } from "../auth/AuthContext";
@@ -84,7 +84,7 @@ export default function HotlapHubPage() {
   const { user, configured, openAuthModal } = useAuth();
   const [mine, setMine] = useState<MyRecordsResponse["records"]>({});
   const selectedId = params.get("track") ?? TRACKS[0]?.id;
-  const selected = TRACKS.find((t) => t.id === selectedId) ?? TRACKS[0];
+  const selected = ALL_TRACKS.find((t) => t.id === selectedId) ?? TRACKS[0];
 
   useEffect(() => {
     if (!user) {
@@ -98,13 +98,33 @@ export default function HotlapHubPage() {
 
   const bests = useMemo(() => {
     const out: Record<string, number | null> = {};
-    for (const t of TRACKS) {
+    for (const t of ALL_TRACKS) {
       const local = getLocalBest(t)?.ms ?? null;
       const server = mine[t.id]?.timeMs ?? null;
       out[t.id] = local == null ? server : server == null ? local : Math.min(local, server);
     }
     return out;
   }, [mine]);
+
+  const renderCard = (t: TrackDef, num: string) => {
+    const best = bests[t.id];
+    return (
+      <button
+        key={t.id}
+        className={`hl-card ${t.id === selected?.id ? "selected" : ""}`}
+        onClick={() => setParams({ track: t.id }, { replace: true })}
+        onDoubleClick={() => navigate(`/hotlap/${t.id}`)}
+      >
+        <span className="hl-card-num">{num}</span>
+        <TrackMap def={t} size={84} />
+        <span className="hl-card-name">{t.name}</span>
+        <span className="hl-card-best">
+          <MedalBadge medal={medalFor(t, best)} small />
+          {best != null ? formatTime(best) : "No time"}
+        </span>
+      </button>
+    );
+  };
 
   const medalCount = TRACKS.filter((t) => medalFor(t, bests[t.id]) !== null).length;
   const aceCount = TRACKS.filter((t) => medalFor(t, bests[t.id]) === "ace").length;
@@ -169,30 +189,22 @@ export default function HotlapHubPage() {
           <section key={key} className="hl-tier">
             <h2 className="section-title">{label}</h2>
             <div className="hl-grid">
-              {list.map((t) => {
-                const idx = TRACKS.indexOf(t) + 1;
-                const best = bests[t.id];
-                return (
-                  <button
-                    key={t.id}
-                    className={`hl-card ${t.id === selected?.id ? "selected" : ""}`}
-                    onClick={() => setParams({ track: t.id }, { replace: true })}
-                    onDoubleClick={() => navigate(`/hotlap/${t.id}`)}
-                  >
-                    <span className="hl-card-num">{String(idx).padStart(2, "0")}</span>
-                    <TrackMap def={t} size={84} />
-                    <span className="hl-card-name">{t.name}</span>
-                    <span className="hl-card-best">
-                      <MedalBadge medal={medalFor(t, best)} small />
-                      {best != null ? formatTime(best) : "No time"}
-                    </span>
-                  </button>
-                );
-              })}
+              {list.map((t) => renderCard(t, String(TRACKS.indexOf(t) + 1).padStart(2, "0")))}
             </div>
           </section>
         );
       })}
+
+      <section className="hl-tier">
+        <h2 className="section-title">Test courses</h2>
+        <p className="hl-tier-note">
+          Plain proving grounds for comparing handling corner by corner — fixed-radius
+          arcs, 90° corners at known radii, hairpins, a slalom and a braking zone.
+        </p>
+        <div className="hl-grid">
+          {TEST_TRACKS.map((t, i) => renderCard(t, `T${i + 1}`))}
+        </div>
+      </section>
 
       <section className="hl-howto panel">
         <h2><Icon name="gamepad" /> How to play</h2>

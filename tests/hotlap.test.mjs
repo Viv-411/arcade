@@ -7,7 +7,7 @@ import { assert, globalTimeout, PORT, sleep } from "./helpers.mjs";
 import { SIM_VERSION, TICK_HZ } from "../dist/shared/hotlap/car.js";
 import { buildTrack } from "../dist/shared/hotlap/track.js";
 import { Run } from "../dist/shared/hotlap/run.js";
-import { TRACKS } from "../dist/shared/hotlap/tracks.js";
+import { ALL_TRACKS as TRACKS } from "../dist/shared/hotlap/tracks.js";
 import { Bot, botLap, BOT_CAREFUL, BOT_FAST } from "../dist/shared/hotlap/bot.js";
 import { decodeInputs, encodeInputs, InputPlayer, InputRecorder } from "../dist/shared/hotlap/replay.js";
 

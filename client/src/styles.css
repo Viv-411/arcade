@@ -3833,3 +3833,9 @@ body.hl-playing::after {
   font-size: 12px;
   margin: 0 0 8px;
 }
+
+.hl-tier-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: -4px 0 12px;
+}

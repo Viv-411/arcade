@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 5;
+export const SIM_VERSION = 6;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -65,9 +65,9 @@ export const CAR = {
   /** Braking/traction friction coefficient (doesn't fade with speed). */
   muLong: 2.5,
   /** Peak cornering friction coefficient; sliding drops to `slideFactor` of it. */
-  mu: 1.42,
+  mu: 2.0,
   /** Fraction of grip lost by top speed (linear in speed). */
-  gripFade: 0.22,
+  gripFade: 0.06,
   /** Speed (m/s) by which the full grip fade has applied. */
   gripFadeSpeed: 92,
   slideFactor: 0.96,
@@ -99,7 +99,7 @@ export const CAR = {
   wheelbase: 2.58,
   /** Yaw assist strength (1/s) and the lateral acceleration it may demand (m/s²). */
   yawAssist: 9,
-  yawAssistGrip: 26,
+  yawAssistGrip: 34,
   /** >1 lets rotation outpace the turn of the velocity: a controlled slide. */
   slideLead: 1.1,
   /** How much rear grip goes at full lock and speed (0 = none). */

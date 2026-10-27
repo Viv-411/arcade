@@ -40,7 +40,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dawn",
     blurb: "Wide, walled and forgiving. Learn the throttle.",
-    medals: { bronze: 33260, silver: 28650, gold: 26090, ace: 24050 },
+    medals: { bronze: 33200, silver: 28610, gold: 26050, ace: 24010 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: -90, r: 60, bank: 8 },
@@ -66,7 +66,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "noon",
     blurb: "Long straights, lazy sweepers and boost pads. Keep it pinned.",
-    medals: { bronze: 35300, silver: 30410, gold: 27700, ace: 25520 },
+    medals: { bronze: 34800, silver: 29980, gold: 27300, ace: 25160 },
     segs: [
       { k: "s", len: 90 },
       { k: "s", len: 40, boost: true },
@@ -92,7 +92,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dusk",
     blurb: "Climb the ridge, crest the top and hop the gully home.",
-    medals: { bronze: 33580, silver: 28930, gold: 26350, ace: 24280 },
+    medals: { bronze: 33350, silver: 28730, gold: 26170, ace: 24120 },
     segs: [
       { k: "s", len: 80 },
       { k: "t", deg: 45, r: 60, bank: -6 },
@@ -123,7 +123,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "storm",
     blurb: "A climbing ladder of hairpins. Brake late, turn early.",
-    medals: { bronze: 37860, silver: 32610, gold: 29700, ace: 27370 },
+    medals: { bronze: 37430, silver: 32250, gold: 29370, ace: 27070 },
     segs: [
       { k: "s", len: 90 },
       { k: "t", deg: 180, r: 22, rise: 5, bank: -12 },
@@ -151,7 +151,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "noon",
     blurb: "Two steep banked bowls split by a tight chicane.",
-    medals: { bronze: 41260, silver: 35550, gold: 32370, ace: 29830 },
+    medals: { bronze: 41380, silver: 35650, gold: 32470, ace: 29920 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: -25, r: 80, bank: 22 },
@@ -182,7 +182,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "night",
     blurb: "Leap off the sea wall and keep it tidy on the open causeway.",
-    medals: { bronze: 42520, silver: 36630, gold: 33360, ace: 30740 },
+    medals: { bronze: 41640, silver: 35880, gold: 32670, ace: 30110 },
     segs: [
       { k: "s", len: 90 },
       { k: "t", deg: 90, r: 50, bank: -10 },
@@ -213,7 +213,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "neon",
     blurb: "A road that ties itself in knots, over and under its own bridge.",
-    medals: { bronze: 50790, silver: 43760, gold: 39850, ace: 36720 },
+    medals: { bronze: 50510, silver: 43520, gold: 39630, ace: 36520 },
     segs: [
       { k: "s", len: 150 },
       { k: "t", deg: 270, r: 45, rise: 12, bank: -12 },
@@ -247,7 +247,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "storm",
     blurb: "Climb into the cloud, then fall out of it in big leaps.",
-    medals: { bronze: 55960, silver: 48210, gold: 43910, ace: 40460 },
+    medals: { bronze: 54800, silver: 47220, gold: 43000, ace: 39630 },
     segs: [
       { k: "s", len: 80 },
       { k: "s", len: 100, rise: 14 },
@@ -289,7 +289,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "night",
     blurb: "The walls close in and the bends keep coming. Thread it.",
-    medals: { bronze: 52940, silver: 45610, gold: 41540, ace: 38280 },
+    medals: { bronze: 52250, silver: 45010, gold: 40990, ace: 37780 },
     segs: [
       { k: "s", len: 100 },
       { k: "t", deg: -90, r: 40, bank: 8 },
@@ -327,7 +327,7 @@ export const TRACKS: TrackDef[] = [
     walls: "none",
     theme: "dawn",
     blurb: "A bare ribbon strung across the sky. No walls to save you.",
-    medals: { bronze: 55450, silver: 47770, gold: 43510, ace: 40090 },
+    medals: { bronze: 55300, silver: 47640, gold: 43390, ace: 39990 },
     segs: [
       { k: "s", len: 80, walls: "both" },
       { k: "s", len: 160, rise: 16, walls: "both" },
@@ -364,7 +364,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "neon",
     blurb: "Wind up the spiral tower, then dive off the top.",
-    medals: { bronze: 73900, silver: 63670, gold: 57980, ace: 53440 },
+    medals: { bronze: 73620, silver: 63420, gold: 57760, ace: 53230 },
     segs: [
       { k: "s", len: 120 },
       { k: "t", deg: 360, r: 40, rise: 13, bank: -14 },
@@ -400,7 +400,7 @@ export const TRACKS: TrackDef[] = [
     walls: "both",
     theme: "dusk",
     blurb: "Everything you have learned, all at once, as the sun goes down.",
-    medals: { bronze: 75450, silver: 65010, gold: 59200, ace: 54560 },
+    medals: { bronze: 75340, silver: 64910, gold: 59110, ace: 54470 },
     segs: [
       { k: "s", len: 100 },
       { k: "t", deg: 90, r: 40, bank: -10 },
@@ -437,6 +437,104 @@ export const TRACKS: TrackDef[] = [
   },
 ];
 
+/**
+ * Test courses (owner request, 2026-10-27): plain, ORIGINAL proving-ground
+ * layouts — constant-radius arcs, a ladder of 90° corners at known radii,
+ * hairpins, a slalom and a braking zone — for comparing the car's handling
+ * corner-type by corner-type. Not part of the campaign; shown separately.
+ */
+export const TEST_TRACKS: TrackDef[] = [
+  {
+    id: "test-radius-gauge",
+    name: "Radius Gauge",
+    difficulty: "easy",
+    version: 1,
+    width: 14,
+    walls: "both",
+    theme: "noon",
+    blurb: "Three half-circles: 30 m, 60 m and 100 m radius. How fast can you hold each?",
+    medals: { bronze: 33980, silver: 29270, gold: 26660, ace: 24570 },
+    segs: [
+      { k: "s", len: 150 },
+      { k: "t", deg: 180, r: 30, cp: true },
+      { k: "s", len: 60 },
+      { k: "t", deg: -180, r: 60, cp: true },
+      { k: "s", len: 80 },
+      { k: "t", deg: 180, r: 100 },
+      { k: "s", len: 150 },
+    ],
+  },
+  {
+    id: "test-corner-ladder",
+    name: "Corner Ladder",
+    difficulty: "easy",
+    version: 1,
+    width: 14,
+    walls: "both",
+    theme: "dawn",
+    blurb: "Flat 90° corners at 12, 20, 30 and 45 m radius with straights between.",
+    medals: { bronze: 25480, silver: 21950, gold: 19990, ace: 18420 },
+    segs: [
+      { k: "s", len: 120 },
+      { k: "t", deg: -90, r: 12 },
+      { k: "s", len: 80 },
+      { k: "t", deg: 90, r: 20, cp: true },
+      { k: "s", len: 80 },
+      { k: "t", deg: -90, r: 30 },
+      { k: "s", len: 80, cp: true },
+      { k: "t", deg: 90, r: 45 },
+      { k: "s", len: 120 },
+    ],
+  },
+  {
+    id: "test-hairpins",
+    name: "Hairpin Pair",
+    difficulty: "easy",
+    version: 1,
+    width: 14,
+    walls: "both",
+    theme: "storm",
+    blurb: "Two flat 14 m hairpins off long straights: brake, turn, launch.",
+    medals: { bronze: 20480, silver: 17640, gold: 16070, ace: 14810 },
+    segs: [
+      { k: "s", len: 150 },
+      { k: "t", deg: 180, r: 14, cp: true },
+      { k: "s", len: 150, cp: true },
+      { k: "t", deg: -180, r: 14 },
+      { k: "s", len: 150 },
+    ],
+  },
+  {
+    id: "test-slalom-stop",
+    name: "Slalom & Stop",
+    difficulty: "easy",
+    version: 1,
+    width: 14,
+    walls: "both",
+    theme: "dusk",
+    blurb: "Flat-out straight, a 40 m-radius slalom, then a big stop for a 15 m hairpin.",
+    medals: { bronze: 29660, silver: 25550, gold: 23270, ace: 21450 },
+    segs: [
+      { k: "s", len: 300 },
+      { k: "t", deg: 30, r: 40 },
+      { k: "t", deg: -60, r: 40 },
+      { k: "t", deg: 60, r: 40 },
+      { k: "t", deg: -60, r: 40 },
+      { k: "t", deg: 30, r: 40, cp: true },
+      { k: "s", len: 300, cp: true },
+      { k: "t", deg: -180, r: 15 },
+      { k: "s", len: 120 },
+    ],
+  },
+];
+
+/** Campaign + test courses: everything playable (and verifiable). */
+export const ALL_TRACKS: TrackDef[] = [...TRACKS, ...TEST_TRACKS];
+
 export function getTrack(id: string): TrackDef | undefined {
-  return TRACKS.find((t) => t.id === id);
+  return ALL_TRACKS.find((t) => t.id === id);
+}
+
+export function isTestTrack(def: TrackDef): boolean {
+  return TEST_TRACKS.includes(def);
 }

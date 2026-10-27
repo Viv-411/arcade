@@ -18,7 +18,7 @@ import type {
   SubmitRunResponse,
 } from "../../../shared/hotlap/api.js";
 import { SIM_VERSION } from "../../../shared/hotlap/car.js";
-import { getTrack, TRACKS } from "../../../shared/hotlap/tracks.js";
+import { ALL_TRACKS, getTrack } from "../../../shared/hotlap/tracks.js";
 import type { BoardKey, HotlapStore } from "./store.js";
 import type { ReplayVerifier } from "./verifier.js";
 
@@ -171,7 +171,7 @@ export function createHotlapRouter(store: HotlapStore | null, verifier: ReplayVe
     handle(async (req, res, store) => {
       const userId = req.userId;
       if (!userId) return fail(res, 401, "sign in to see your records");
-      const current = new Set(TRACKS.map((t) => `${t.id}@${t.version}@${SIM_VERSION}`));
+      const current = new Set(ALL_TRACKS.map((t) => `${t.id}@${t.version}@${SIM_VERSION}`));
       const mine = (await store.listForUser(userId)).filter((r) =>
         current.has(`${r.trackId}@${r.trackVersion}@${r.simVersion}`),
       );

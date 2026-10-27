@@ -215,7 +215,7 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
-  OWNER FEEL RULES (2026-10-27, SIM_VERSION 5 — see session 36 for the
+  OWNER FEEL RULES (2026-10-27, SIM_VERSION 6 — see sessions 36–37 for the
   latest numbers, which supersede the ones in this paragraph): the owner wants the driving
   as close to PolyTrack's FEEL as possible (handling only — the game, tracks
   and look stay original). Targets were MEASURED from PolyTrack's public
@@ -522,6 +522,9 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
 
 ## Backlog (agreed future work, not started)
 
+- Hotlap: the owner finds the campaign tracks "not fun" — a redesign pass
+  (more rhythm/flow, tighter technical sections, better jumps) is wanted;
+  original designs only.
 - Hotlap: multiplayer later (the owner's stated next step — live ghosts of
   other players are the natural first stage, since runs are deterministic);
   a track editor (the segment format is editor-friendly); more tracks.
@@ -1095,3 +1098,24 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       a passive nose-toward-travel alignment and roll levelling remain.
     - Bot: crest planning now reads CAR.gravity (was hard-coded 11.5 — would
       have silently mis-planned); brake planning raised for the new brakes.
+
+37. **Hotlap round 4 (2026-10-27)** — owner: car still struggles to make tight
+    turns at speed vs PolyTrack; our tracks "aren't fun"; asked to COPY all
+    PolyTrack tracks for side-by-side testing — DECLINED (their tracks are
+    someone else's creative work; never copy them, even "temporarily").
+    Instead added TEST_TRACKS (shared/hotlap/tracks.ts): four plain,
+    original proving grounds — Radius Gauge (30/60/100 m half-circles),
+    Corner Ladder (90° at 12/20/30/45 m), Hairpin Pair (14 m), Slalom &
+    Stop — shown in their own hub section, excluded from medal counts,
+    playable/verifiable like any track (`ALL_TRACKS`, `getTrack` covers
+    both; the QA tool and the hotlap test iterate ALL_TRACKS).
+    - SIM 5 → 6: cornering grip mu 1.42 → 2.0 and grip fade 0.22 → 0.06, so
+      cornering is ~3 g FLAT at every speed (150 km/h: 51 m radius, was 79;
+      220 km/h: 108 m, was 169). The earlier "too twitchy" complaint was
+      the steering ramp, which stays calm at speed.
+    - The owner's own PolyTrack run couldn't be read: the extension's Chrome
+      profile showed no personal best (different profile/window). Ask for a
+      screenshot of the Graphs panel instead. Top leaderboard runs are
+      exploit-heavy (Winter 4 #1 accelerates continuously to 525 km/h) —
+      don't tune to them.
+    - Owner wants better campaign tracks too (open item — see Backlog).
