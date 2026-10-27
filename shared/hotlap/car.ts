@@ -25,7 +25,7 @@ import {
 import { SURF_BOOST, SURF_WALL, type CollisionWorld } from "./track.js";
 
 /** Bump on ANY change that alters simulation results (invalidates records). */
-export const SIM_VERSION = 4;
+export const SIM_VERSION = 5;
 
 export const TICK_HZ = 120;
 export const SUBSTEPS = 2;
@@ -43,7 +43,7 @@ export const CAR = {
   mass: 1000,
   /** Body-frame principal inertia: x = pitch, y = yaw, z = roll. */
   inertia: { x: 1600, y: 1000, z: 800 },
-  gravity: 11.5,
+  gravity: 15.5,
   /** Local mounts (+X = LEFT, +Y = up, +Z = forward): FL, FR, RL, RR. */
   wheels: [
     { x: 0.82, y: -0.22, z: 1.32, front: true },
@@ -62,18 +62,20 @@ export const CAR = {
   latStiffRear: 70000,
   /** Max fraction of a wheel's slip its grip may cancel in one substep (4 wheels act at once). */
   gripStepFraction: 0.2,
-  /** Peak friction coefficient; sliding drops to `slideFactor` of it. */
-  mu: 2.3,
+  /** Braking/traction friction coefficient (doesn't fade with speed). */
+  muLong: 2.5,
+  /** Peak cornering friction coefficient; sliding drops to `slideFactor` of it. */
+  mu: 1.42,
   /** Fraction of grip lost by top speed (linear in speed). */
-  gripFade: 0.3,
+  gripFade: 0.22,
   /** Speed (m/s) by which the full grip fade has applied. */
   gripFadeSpeed: 92,
-  slideFactor: 0.9,
+  slideFactor: 0.96,
   engineForce: 17500,
   /** Speed (m/s) up to which full engine force is available. */
   pullSpeed: 50,
   topSpeedRef: 130,
-  brakeForce: 34000,
+  brakeForce: 40000,
   reverseForce: 5200,
   reverseMax: 14,
   rolling: 1.2,
@@ -88,8 +90,7 @@ export const CAR = {
   /** Extra ramp time per m/s of speed: calmer, less twitchy steering when fast. */
   steerRampPerMs: 0.0013,
   steerReturnTime: 0.05,
-  /** Air control: target yaw rate (rad/s), nose alignment, and response. */
-  airYaw: 1.3,
+  /** Air behaviour: passive nose alignment toward travel, and response. */
   airAlign: 0.55,
   airResponse: 5,
   airRoll: 3,
@@ -98,13 +99,13 @@ export const CAR = {
   wheelbase: 2.58,
   /** Yaw assist strength (1/s) and the lateral acceleration it may demand (m/s²). */
   yawAssist: 9,
-  yawAssistGrip: 30,
+  yawAssistGrip: 26,
   /** >1 lets rotation outpace the turn of the velocity: a controlled slide. */
-  slideLead: 1.3,
+  slideLead: 1.1,
   /** How much rear grip goes at full lock and speed (0 = none). */
-  rearSlide: 0.26,
+  rearSlide: 0.08,
   /** Slide angle (as lateral/forward speed ratio, ~rad) a held corner settles at. */
-  maxSlip: 0.3,
+  maxSlip: 0.14,
   /** Speed (m/s) at which the rear-slide effect is fully in. */
   slideSpeed: 40,
   /** 0 = tyre forces at the contact patch, 1 = at the centre of mass. */
@@ -400,8 +401,7 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
 
   // Grip bookkeeping for the yaw assist: total grip available vs. the part
   // already spent on driving/braking this substep.
-  let gripTotal = 0;
-  let gripLong = 0;
+  let latAvail = 0;
   const steerLockNow = CAR.maxSteer / (1 + Math.abs(vf) / CAR.steerFalloff);
   // Current slide angle (lateral / forward speed at the centre of mass).
   const slipNow = Math.abs(vdot(car.vel, left)) / Math.max(6, Math.abs(vf));
@@ -500,15 +500,22 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     const speedFrac = Math.min(1, Math.abs(vf) / CAR.slideSpeed);
     // Fades out as the slide reaches its target angle, so it self-limits.
     const rearLoose = wd.front ? 1 : 1 - CAR.rearSlide * steerFrac * speedFrac * slideRoom;
-    const limit = CAR.mu * load * fade * rearLoose;
-    gripTotal += limit;
-    gripLong += Math.abs(fLong);
-    const total = Math.sqrt(fLat * fLat + fLong * fLong);
-    if (total > limit) {
-      const k = (limit * CAR.slideFactor) / total;
+    // Friction ELLIPSE: cornering grip (fades with speed, loosens at the
+    // rear in a slide) and braking/traction grip (strong, never fades) are
+    // separate limits — so brakes bite hard at any speed.
+    const latLimit = CAR.mu * load * fade * rearLoose;
+    const longLimit = CAR.muLong * load;
+    const ex = fLat / latLimit;
+    const ez = fLong / longLimit;
+    const e = Math.sqrt(ex * ex + ez * ez);
+    if (e > 1) {
+      const k = CAR.slideFactor / e;
       fLat *= k;
       fLong *= k;
     }
+    // Cornering grip still free after braking/driving (for the yaw assist).
+    const usedLong = Math.min(1, Math.abs(fLong) / longLimit);
+    latAvail += latLimit * Math.sqrt(1 - usedLong * usedLong);
     ws.slip = Math.abs(vLat);
     // Tyre forces act part-way up toward the centre of mass: the body still
     // leans a little, but lateral grip can never trip the car onto its roof.
@@ -547,7 +554,7 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     const kin = (vf * (sn / cs)) / CAR.wheelbase;
     // Only the grip left over after braking/driving may be used to turn —
     // so braking hard into a corner trades rotation for stopping power.
-    const latBudget = Math.sqrt(Math.max(0, gripTotal * gripTotal - gripLong * gripLong)) / m;
+    const latBudget = latAvail / m;
     // The assist may rotate the car a bit FASTER than the tyres can turn its
     // velocity (`slideLead`), so at the limit the nose leads and the car
     // slides through the corner — the slip angle scrubs speed by itself.
@@ -575,9 +582,8 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
     fz -= upV.z * df;
   } else {
     // Air behaviour. The nose slowly weathervanes toward the direction of
-    // travel, so landings line up with downhill slopes; steering adds a
-    // limited yaw RATE (a rate, not a torque, so holding a key can never spin
-    // the car out of control).
+    // travel (a passive aero effect, not player control), so landings line
+    // up with downhill slopes.
     if (sp > 2) {
       const vdir = { x: car.vel.x / sp, y: car.vel.y / sp, z: car.vel.z / sp };
       const align = vdot(vcross(fwd, vdir), left); // + means pitch-down aligns
@@ -586,12 +592,14 @@ function substep(car: CarState, world: CollisionWorld, up: boolean, down: boolea
       // No pitch input on purpose: players hold throttle through jumps, and
       // every jump must fly the same way every time.
       const tPitch = align * CAR.airAlign;
-      const tYaw = steerIn * CAR.airYaw;
+      // NO steering in the air (owner rule): the front wheels still turn,
+      // but nothing the player presses rotates the car while airborne.
+      void steerIn;
+      void wYaw;
       const aPitch = (tPitch - wPitch) * CAR.airResponse * CAR.inertia.x;
-      const aYaw = (tYaw - wYaw) * CAR.airResponse * 0.6 * CAR.inertia.y;
-      tx += left.x * aPitch + upV.x * aYaw;
-      ty += left.y * aPitch + upV.y * aYaw;
-      tz += left.z * aPitch + upV.z * aYaw;
+      tx += left.x * aPitch;
+      ty += left.y * aPitch;
+      tz += left.z * aPitch;
     }
     // Gentle roll levelling toward world-up keeps jumps readable.
     const rollErr = vdot(left, { x: 0, y: 1, z: 0 });

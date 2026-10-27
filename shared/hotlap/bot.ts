@@ -5,7 +5,7 @@
  * player can do. It is deliberately conservative: it drives the centreline,
  * not a racing line, and good players should beat it.
  */
-import { IN_DOWN, IN_LEFT, IN_RESPAWN, IN_RIGHT, IN_UP, TICK_HZ } from "./car.js";
+import { CAR, IN_DOWN, IN_LEFT, IN_RESPAWN, IN_RIGHT, IN_UP, TICK_HZ } from "./car.js";
 import { qrot, vdot, type V3 } from "./dmath.js";
 import type { Run } from "./run.js";
 import type { BuiltTrack, Frame } from "./track.js";
@@ -20,13 +20,12 @@ export interface BotTuning {
   lookGain: number;
 }
 
-// Tuned for the SIM_VERSION 4 car (~2.0–2.2 g grip that fades with speed,
-// ~2.3 g brakes, controlled slides at the limit).
-export const BOT_CAREFUL: BotTuning = { latAccel: 16, brakeAccel: 17, lookBase: 7, lookGain: 0.28 };
-export const BOT_FAST: BotTuning = { latAccel: 19.5, brakeAccel: 20, lookBase: 7, lookGain: 0.26 };
+// Tuned for the SIM_VERSION 5 car (~2.0 g cornering, ~3.8 g brakes).
+export const BOT_CAREFUL: BotTuning = { latAccel: 16, brakeAccel: 28, lookBase: 7, lookGain: 0.28 };
+export const BOT_FAST: BotTuning = { latAccel: 19.5, brakeAccel: 33, lookBase: 7, lookGain: 0.26 };
 
 /** Gravity used by the car physics (m/s²) — crest-speed planning. */
-const CREST_G = 11.5;
+const CREST_G = CAR.gravity;
 /** Minimum speed (m/s) the bot commits to over a jump. */
 const JUMP_MIN = 40;
 /** Takeoff speed cap (m/s) when a corner follows the landing. */

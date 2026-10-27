@@ -215,7 +215,8 @@ scoring). Clients render optimistically but never decide results.
   computed → 422. Posting needs an account; anonymous players keep local
   PBs (localStorage is fine here — device data, not identity). `?autopilot=1`
   on the play page is a QA hook (the bot drives; such runs are never posted).
-  OWNER FEEL RULES (2026-10-27, SIM_VERSION 4): the owner wants the driving
+  OWNER FEEL RULES (2026-10-27, SIM_VERSION 5 — see session 36 for the
+  latest numbers, which supersede the ones in this paragraph): the owner wants the driving
   as close to PolyTrack's FEEL as possible (handling only — the game, tracks
   and look stay original). Targets were MEASURED from PolyTrack's public
   leaderboard replays + their speed graph (no code/assets used): constant
@@ -1076,3 +1077,21 @@ stress) live only in session scratchpads — recreate on demand. The recipe:
       jumps followed by corners, retuned grip. All 12 tracks pass both bots.
     - New open-wheel car mesh + brake lights; higher sun on low-sun themes
       so the shadow sits under the car.
+
+36. **Hotlap playtest round 3 (2026-10-27)** — owner: "much better", but
+    brakes too weak vs PolyTrack, too much skidding at speed, too much
+    airtime, and NO steering in the air ("wheels can turn, but it shouldn't
+    move the car"). SIM 4 → 5.
+    - Friction is now an ELLIPSE with separate limits: cornering (`mu`,
+      fades with speed, rear loosens slightly in a slide) and braking/
+      traction (`muLong`, never fades). Brakes ~3.85 g at any speed (150→0
+      in 23 m; was 39 m). The yaw-assist budget uses the cornering grip
+      left after braking (`latAvail`).
+    - Slide cut way back: ~5–6° at full lock (rearSlide 0.08, maxSlip
+      0.14, slideLead 1.1); cornering a steady ~2.05 g.
+    - Gravity 11.5 → 15.5 m/s² (less floaty); `mu` rebalanced to 1.42 so
+      cornering g stays the same (grip scales with load = gravity).
+    - Air: steering input does NOTHING to the car (wheels still turn). Only
+      a passive nose-toward-travel alignment and roll levelling remain.
+    - Bot: crest planning now reads CAR.gravity (was hard-coded 11.5 — would
+      have silently mis-planned); brake planning raised for the new brakes.
