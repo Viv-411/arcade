@@ -2,7 +2,13 @@
 
 A real-time multiplayer web arcade for party games: **Mind Meld** 🧠,
 **Speed Trivia** ⚡, **Bid Battle** 💰, **Imposter** 🕵️, **Codewords** 🗝️, and
-**Chess** ♟.
+**Chess** ♟, plus **Hotlap** 🏎️, a single-player 3D time-trial racer.
+
+Make a room, share the 4-letter code, and everyone plays live from their own
+phone or laptop. No account needed.
+
+**▶ [Play it live](https://arcade-1628.onrender.com)** (free hosting: the first
+load can take up to a minute while the server wakes up)
 
 ## How it works
 
